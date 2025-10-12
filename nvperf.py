@@ -24,9 +24,9 @@ devenv.update({
 def run_cmd(args, cwd=f"{os.getcwd()}", newline=False):
     try:
         if isinstance(args, list):
-            subprocess.run(args, check=True, cwd=cwd)
+            subprocess.run(args, check=True, cwd=cwd, env=devenv)
         elif isinstance(args, str):
-            subprocess.run(["/bin/bash", "-lci", args], check=True, cwd=cwd)
+            subprocess.run(["/bin/bash", "-lci", args], check=True, cwd=cwd, env=devenv)
         else:
             raise RuntimeError("")
         if newline:
