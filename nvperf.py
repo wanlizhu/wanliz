@@ -96,7 +96,8 @@ def draw_menu(stdscr, cmds):
     curses.curs_set(0)
     stdscr.keypad(True)
     idx, top = 0, 0
-    while True:
+    finished = False
+    while not finished:
         h, w = stdscr.getmaxyx()
         view = max(1, h - 2)
         top = max(min(top, idx), idx - view + 1)
@@ -118,6 +119,7 @@ def draw_menu(stdscr, cmds):
             curses.endwin()
             cmds[idx].run()
             curses.reset_prog_mode()
+            finished = True
 
 
 if __name__ == "__main__":

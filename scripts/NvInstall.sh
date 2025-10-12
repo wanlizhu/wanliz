@@ -26,7 +26,7 @@ esac
 if [[ "$host" != localhost ]]; then 
     #sudo rm -rf /tmp/drivers  
     mkdir -p /tmp/drivers 
-    Load-Wanli-Tools && NoPasswd-SSH "$host" 
+    source ~/wanliz/scripts/NvConfig.sh && NoPasswd-SSH "$host" 
     echo "Downloading from $host:$driver"
     rsync -ah --progress "$host:$driver" /tmp/drivers  
     if [[ $driver == *".run" ]]; then 
@@ -53,7 +53,7 @@ read -p "Press [Enter] to install $driver:"
 if [[ $driver == *".run" ]]; then 
     echo "Kill all graphics apps and install $driver"
     read -p "Press [Enter] to continue: "
-    Load-Wanli-Tools && Remove-Nvidia-Kernel-Module 
+    source ~/wanliz/scripts/NvConfig.sh && Remove-Nvidia-Kernel-Module 
     sleep 3
     
     sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 $driver -s --no-kernel-module-source --skip-module-load || { 

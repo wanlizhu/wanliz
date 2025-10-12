@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PATH="$PATH:$HOME/Wanli-Tools:/mnt/linuxqa/wanliz/Wanli-Tools"
+export PATH="$PATH:$HOME/wanliz:/mnt/linuxqa/wanliz/wanliz"
 export __GL_SYNC_TO_VBLANK=0
 export vblank_mode=0
 export __GL_DEBUG_BYPASS_ASSERT=c 
@@ -56,44 +56,9 @@ for _host_ in "${!_address_[@]}"; do
 done 
 unset _address_ _host_ _ip_
 
-# Ensure env loader defined in ~/.bashrc
-grep -qF 'function Load-Wanli-Tools' "$HOME/.bashrc" || cat >>"$HOME/.bashrc" <<'EOF'
-function Load-Wanli-Tools {
-    if [[ -f ~/Wanli-Tools/NvConfig.sh ]]; then 
-        source ~/Wanli-Tools/NvConfig.sh
-    elif [[ -f /mnt/linuxqa/wanliz/Wanli-Tools/NvConfig.sh ]]; then 
-        source /mnt/linuxqa/wanliz/Wanli-Tools/NvConfig.sh
-    else
-        echo "Folder ~/Wanli-Tools doesn't exist"
-    fi 
-}
-export -f Load-Wanli-Tools
-if [[ $USER == wanliz ]]; then
-    Load-Wanli-Tools
-fi
-EOF
-source $HOME/.bashrc
+
 
 # <<<<<<<<<<<<<<<<<<<< Begin: helper functions
-function Sync-Wanli-Tools {
-    if [[ -d ~/Wanli-Tools ]]; then 
-        pushd ~/Wanli-Tools >/dev/null 
-        if [[ -n $(git status --porcelain=v1 2>/dev/null) ]]; then
-            git add . && git commit -m "$(date)"
-            git pull && git push
-        else
-            git pull 
-        fi 
-        popd >/dev/null
-    fi 
-
-    if [[ -d /mnt/linuxqa/wanliz/Wanli-Tools ]]; then 
-        pushd /mnt/linuxqa/wanliz/Wanli-Tools >/dev/null 
-        echo -e "\nUpdating /mnt/linuxqa/wanliz/Wanli-Tools"
-        git -c safe.directory='*' pull
-        popd >/dev/null 
-    fi 
-}
 
 function Add-SSH-Key {
     if [[ -f ~/.ssh/id_ed25519 ]]; then 
