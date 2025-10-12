@@ -23,26 +23,61 @@ devenv.update({
 
 class CMD_info:
     def __str__(self):
-        return "Query GPU list and driver info"
+        return "Get GPU HW and driver info"
     
     def run(self):
-        os.system('bash -lci "nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total --format=csv"'); print()
-        os.system('bash -lci "modinfo nvidia -F version || cat /proc/driver/nvidia/version"'); print()
+        subprocess.run("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total --format=csv", shell=True, check=True)
+        subprocess.run("bash -lci 'modinfo nvidia -F version || cat /proc/driver/nvidia/version'", shell=True, check=True)
         for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
             value = os.environ.get(key)
             print(f"{key}={value}") if value is not None else None 
-        print()
-        os.system('bash -lci "glxinfo -B | grep \"renderer string\""'); print()
+        subprocess.run("bash -lci 'glxinfo -B | grep \"renderer string\"'", shell=True, check=True)
 
 class CMD_config:
     def __str__(self):
-        return "Configure test environment for NVIDIA GPU"
+        return "Configure test environment"
     
     def run(self):
         if not any(p.mountpoint == "/mnt/linuxqa" for p in psutil.disk_partitions(all=True)):
             subprocess.run("sudo mkdir -p /mnt/linuxqa", shell=True, check=True)
             subprocess.run("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa", shell=True, check=True)
             print("Mounted /mnt/linuxqa")
+        else:
+            print("Mounted /mnt/linuxqa\t[ SKIPPED ]")
+
+class CMD_nvmake:
+    def __str__(self):
+        return "Build nvidia driver"
+    
+    def run(self):
+        config = "develop"
+        arch = "aarch64"
+        subprocess.run([
+            f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
+            "--unshare-namespaces", 
+            "--tools",  f"{os.environ['P4ROOT']}/tools",
+            "--devrel", f"{os.environ['P4ROOT']}/devrel/SDK/inc/GL",
+            "nvmake",
+            "NV_COLOR_OUTPUT=1",
+            "NV_GUARDWORD=",
+            f"NV_COMPRESS_THREADS={os.cpu_count() or 1}",
+            "NV_FAST_PACKAGE_COMPRESSION=zstd",
+            "NV_USE_FRAME_POINTER=1",
+            "NV_UNIX_LTO_ENABLED=",
+            "NV_LTCG=",
+            "NV_UNIX_CHECK_DEBUG_INFO=0",
+            "NV_MANGLE_SYMBOLS=",
+            f"NV_TRACE_CODE={1 if config == 'release' else 0}",
+            "drivers", "dist", "linux", f"{arch}", f"{config}", f"-j{os.cpu_count() or 1}"
+        ], cwd=f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00", check=True)
+        
+class CMD_nvinstall:
+    def __str__(self):
+        return "Install nvidia driver"
+    
+    def run(self):
+        pass 
+
 
 def draw_menu(stdscr, cmds):
     curses.curs_set(0)
