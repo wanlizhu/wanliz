@@ -27,9 +27,11 @@ def run_cmd(args, cwd=f"{os.getcwd()}", newline=False):
             subprocess.run(args, check=True, cwd=cwd)
         elif isinstance(args, str):
             subprocess.run(["/bin/bash", "-lci", args], check=True, cwd=cwd)
+        else:
+            raise RuntimeError("")
         if newline:
             print("")
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except (subprocess.CalledProcessError, FileNotFoundError, RuntimeError):
         exit(1)
 
 class CMD_info:
