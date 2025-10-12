@@ -21,17 +21,28 @@ devenv.update({
     "P4IGNORE": "~/.p4ignore"
 })
 
+def run_cmd(args, cwd=f"{os.getcwd()}", newline=False):
+    try:
+        if isinstance(args, list):
+            subprocess.run(args, check=True, cwd=cwd)
+        elif isinstance(args, str):
+            subprocess.run(["/bin/bash", "-lci", args], check=True, cwd=cwd)
+        if newline:
+            print("")
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        exit(1)
+
 class CMD_info:
     def __str__(self):
         return "Get GPU HW and driver info"
     
     def run(self):
-        subprocess.run("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total --format=csv", shell=True, check=True)
-        subprocess.run("bash -lci 'modinfo nvidia -F version || cat /proc/driver/nvidia/version'", shell=True, check=True)
+        run_cmd("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total --format=csv")
+        run_cmd("bash -lci 'modinfo nvidia -F version || cat /proc/driver/nvidia/version'")
         for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
             value = os.environ.get(key)
             print(f"{key}={value}") if value is not None else None 
-        subprocess.run("bash -lci 'glxinfo -B | grep \"renderer string\"'", shell=True, check=True)
+        run_cmd("bash -lci 'glxinfo -B | grep \"renderer string\"'")
 
 class CMD_config:
     def __str__(self):
@@ -39,8 +50,8 @@ class CMD_config:
     
     def run(self):
         if not any(p.mountpoint == "/mnt/linuxqa" for p in psutil.disk_partitions(all=True)):
-            subprocess.run("sudo mkdir -p /mnt/linuxqa", shell=True, check=True)
-            subprocess.run("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa", shell=True, check=True)
+            run_cmd("sudo mkdir -p /mnt/linuxqa")
+            run_cmd("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa")
             print("Mounted /mnt/linuxqa")
         else:
             print("Mounted /mnt/linuxqa\t[ SKIPPED ]")
@@ -52,7 +63,7 @@ class CMD_nvmake:
     def run(self):
         config = "develop"
         arch = "aarch64"
-        subprocess.run([
+        run_cmd([
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
             "--unshare-namespaces", 
             "--tools",  f"{os.environ['P4ROOT']}/tools",
@@ -69,7 +80,7 @@ class CMD_nvmake:
             "NV_MANGLE_SYMBOLS=",
             f"NV_TRACE_CODE={1 if config == 'release' else 0}",
             "drivers", "dist", "linux", f"{arch}", f"{config}", f"-j{os.cpu_count() or 1}"
-        ], cwd=f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00", check=True)
+        ], cwd=f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00")
         
 class CMD_nvinstall:
     def __str__(self):
