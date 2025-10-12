@@ -117,7 +117,6 @@ def draw_menu(stdscr, cmds):
             curses.def_prog_mode()
             curses.endwin()
             cmds[idx].run()
-            input("\nPress [Enter] to return...")
             curses.reset_prog_mode()
 
 
