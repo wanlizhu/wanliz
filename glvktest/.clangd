@@ -1,0 +1,15 @@
+CompileFlags:
+  CompilationDatabase: build/
+
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+
+InlayHints:
+  Enabled: No
+  ParameterNames: No
+  DeducedTypes: No
+  
+Index:
+  Background: Build
+  StandardLibrary: Yes

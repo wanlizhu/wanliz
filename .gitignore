@@ -1,0 +1,5 @@
+_out/
+.vs/
+.vscode/
+**/build*/
+.ipynb_checkpoints/
