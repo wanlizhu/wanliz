@@ -7,8 +7,7 @@ import inspect
 import subprocess
 import psutil
 
-devenv = os.environ.copy()
-devenv.update({
+os.environ.update({
     "__GL_SYNC_TO_VBLANK": "0",
     "vblank_mode": "0",
     "__GL_DEBUG_BYPASS_ASSERT": "c",
@@ -24,9 +23,9 @@ devenv.update({
 def run_cmd(args, cwd=f"{os.getcwd()}", newline=False):
     try:
         if isinstance(args, list):
-            subprocess.run(args, check=True, cwd=cwd, env=devenv)
+            subprocess.run(args, check=True, cwd=cwd)
         elif isinstance(args, str):
-            subprocess.run(["/bin/bash", "-lci", args], check=True, cwd=cwd, env=devenv)
+            subprocess.run(["/bin/bash", "-lci", args], check=True, cwd=cwd)
         else:
             raise RuntimeError("")
         if newline:
