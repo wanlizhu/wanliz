@@ -14,6 +14,7 @@ os.environ.update({
     "PIP_BREAK_SYSTEM_PACKAGES": "1",
     "NVM_GTLAPI_USER": "wanliz",
     "NVM_GTLAPI_TOKEN": "eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlODVjZDU4LTM2YWUtNGZkMS1iNzZkLTZkZmZhNDg2ZjIzYSIsInNlY3JldCI6IkpuMjN0RkJuNTVMc3JFOWZIZW9tWk56a1Qvc0hpZVoxTW9LYnVTSkxXZk09In0.NzUoZbUUPQbcwFooMEhG4O0nWjYJPjBiBi78nGkhUAQ",
+    "P4ROOT": "/wanliz_sw_linux",
     "P4PORT": "p4proxy-sc.nvidia.com:2006",
     "P4USER": "wanliz",
     "P4CLIENT": "wanliz_sw_linux",
