@@ -28,6 +28,7 @@ else
             --api=ogl \
             --check_clocks=0 \
             --startframe=122 \
+			--frames=20 \
             --name=$name \
             --exe=viewperf/bin/viewperf \
             --arg="viewsets/$viewset/config/$viewset.xml $subtest -resolution 3840x2160" \
