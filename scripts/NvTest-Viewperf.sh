@@ -27,7 +27,7 @@ else
         sudo $HOME/SinglePassCapture/pic-x \
             --api=ogl \
             --check_clocks=0 \
-            --startframe=126 \
+            --startframe=122 \
             --name=$name \
             --exe=viewperf/bin/viewperf \
             --arg="viewsets/$viewset/config/$viewset.xml $subtest -resolution 3840x2160" \
