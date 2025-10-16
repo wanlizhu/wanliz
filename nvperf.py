@@ -173,13 +173,7 @@ class CMD_install:
             driver = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
         elif driver == "office":
             branch, config, arch, version = self.__select_nvidia_driver("office")
-            remote = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
-            driver = os.path.expanduser(f"~/NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
-            subprocess.run([
-                "rsync", "-ah", "--progress",
-                "wanliz@office:" + remote,
-                driver 
-            ], check=True)
+            driver = os.path.expanduser(f"/tmp/office/_out/Linux_{arch}_{config}/NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
         else: 
             raise RuntimeError("Invalid argument")
 
@@ -218,6 +212,22 @@ class CMD_install:
             "--skip-module-load"
         ], check=True)
 
+    def __select_nvidia_driver(self, host):
+        branch  = input(f"{BOLD}{CYAN}[1/4] Target branch ({RESET}{DIM}[r580]{RESET}{BOLD}{CYAN}/bugfix_main): {RESET}")
+        branch  = "r580" if branch == "" else branch
+        branch  = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
+        branch  = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
+        config  = input(f"{BOLD}{CYAN}[2/4] Target config ({RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}/debug/release): {RESET}")
+        config  = "develop" if config == "" else config 
+        if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e"):
+            arch    = input(f"{BOLD}{CYAN}[3/4] Target architecture ({RESET}{DIM}[aarch64]{RESET}{BOLD}{CYAN}/amd64): {RESET}")
+            arch    = "aarch64" if arch == "" else arch 
+        else:
+            arch    = input(f"{BOLD}{CYAN}[3/4] Target architecture ({RESET}{DIM}[amd64]{RESET}{BOLD}{CYAN}/aarch64): {RESET}")
+            arch    = "amd64" if arch == "" else arch 
+        version = self.__select_nvidia_driver_version(host, branch, config, arch)
+        return branch, config, arch, version 
+    
     def __select_nvidia_driver_version(self, host, branch, config, arch):
         if "P4ROOT" not in os.environ: 
             raise RuntimeError("P4ROOT is not defined")
@@ -252,22 +262,6 @@ class CMD_install:
             raise RuntimeError("No version found")
 
         return versions[0] if selected == "" else selected 
-
-    def __select_nvidia_driver(self, host):
-        branch  = input(f"{BOLD}{CYAN}[1/4] Target branch ({RESET}{DIM}[r580]{RESET}{BOLD}{CYAN}/bugfix_main): {RESET}")
-        branch  = "r580" if branch == "" else branch
-        branch  = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
-        branch  = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
-        config  = input(f"{BOLD}{CYAN}[2/4] Target config ({RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}/debug/release): {RESET}")
-        config  = "develop" if config == "" else config 
-        if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e"):
-            arch    = input(f"{BOLD}{CYAN}[3/4] Target architecture ({RESET}{DIM}[aarch64]{RESET}{BOLD}{CYAN}/amd64): {RESET}")
-            arch    = "aarch64" if arch == "" else arch 
-        else:
-            arch    = input(f"{BOLD}{CYAN}[3/4] Target architecture ({RESET}{DIM}[amd64]{RESET}{BOLD}{CYAN}/aarch64): {RESET}")
-            arch    = "amd64" if arch == "" else arch 
-        version = self.__select_nvidia_driver_version(host, branch, config, arch)
-        return branch, config, arch, version 
 
 
 if __name__ == "__main__":
