@@ -46,15 +46,12 @@ class CMD_info:
         return "Get GPU HW and driver info"
     
     def run(self):
-        if platform.system() == "Linux":
-            run_cmd("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total --format=csv")
-            run_cmd("bash -lci 'modinfo nvidia -F version || cat /proc/driver/nvidia/version'")
-            for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
-                value = os.environ.get(key)
-                print(f"{key}={value}") if value is not None else None 
-            run_cmd("bash -lci 'glxinfo -B | grep \"renderer string\"'")
-        else:
-            print("Windows platform")
+        run_cmd("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total --format=csv")
+        print("Nvidia driver version: "); run_cmd("modinfo nvidia -F version")
+        for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
+            value = os.environ.get(key)
+            print(f"{key}={value}") if value is not None else None 
+        run_cmd("bash -lci 'glxinfo -B | grep \"renderer string\"'")
 
 class CMD_config:
     def __str__(self):
@@ -99,6 +96,7 @@ class CMD_nvmake:
                 "--devrel", f"{os.environ['P4ROOT']}/devrel/SDK/inc/GL",
                 "nvmake", "sweep"
             ], cwd=f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00")
+
         run_cmd([
             "time",
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
