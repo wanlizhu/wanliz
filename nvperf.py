@@ -258,6 +258,7 @@ class CMD_install:
             selected = input(f"{BOLD}{CYAN}[4/4] Target driver version ({RESET}{DIM}{versions[0]}{RESET}{BOLD}{CYAN}{'/'.join(versions[1:])}): {RESET}")
         elif len(versions) == 1:
             selected = versions[0]
+            print(f"[4/4] Target driver version {selected} [ONLY]")
         else: 
             raise RuntimeError("No version found")
 
