@@ -85,7 +85,7 @@ class CMD_nvmake:
                 "nvmake", "sweep"
             ], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
 
-        subprocess.run([
+        subprocess.run([x for x in [
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
             "--unshare-namespaces", 
             "--tools",  f"{os.environ['P4ROOT']}/tools",
@@ -108,7 +108,7 @@ class CMD_nvmake:
             f"{arch}", 
             f"{config}", 
             f"-j{jobs}"
-        ], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
+        ] if x is not None and x != ""], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
         
 def select_nvidia_driver_version(host, branch, config, arch):
     if host == "local":
