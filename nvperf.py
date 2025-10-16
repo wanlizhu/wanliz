@@ -177,7 +177,7 @@ class CMD_install:
         else: 
             raise RuntimeError("Invalid argument")
 
-        if os.path.exists(driver):
+        if not os.path.exists(driver):
             raise RuntimeError(f"File doesn't exist: {driver}")
         
         print(f"Kill all graphics apps and install $driver")
