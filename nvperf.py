@@ -180,8 +180,6 @@ class CMD_install:
         if not os.path.exists(driver):
             raise RuntimeError(f"File doesn't exist: {driver}")
         
-        print(f"Kill all graphics apps and install $driver")
-        input("Press [Enter] to continue: ")
         subprocess.run("sudo fuser -v /dev/nvidia* 2>/dev/null | awk 'NR>1 {print $3}' | sort -u | xargs -r sudo kill -9", check=True, shell=True)
         subprocess.run("while mods=$(lsmod | awk '/^nvidia/ {print $1}'); [ -n \"$mods\" ] && sudo modprobe -r $mods 2>/dev/null; do :; done", check=True, shell=True)
         subprocess.run([
@@ -263,6 +261,9 @@ if __name__ == "__main__":
         cmd = input(f"{BOLD}{CYAN}Enter the cmd to run: {RESET}")
         if globals().get(f"CMD_{cmd}") is None:
             raise RuntimeError(f"No command class for {cmd!r}")
-    cmd = globals().get(f"CMD_{cmd}")()
-    cmd.run()
+    try:
+        cmd = globals().get(f"CMD_{cmd}")()
+        cmd.run()
+    except Exception as e:
+        print(f"{type(e).__name__}: {e}", file=sys.stderr)
     
