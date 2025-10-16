@@ -79,17 +79,17 @@ class CMD_nvmake:
             raise RuntimeError(f"Path doesn't exist: {os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00")
 
         config = input(f"{BOLD}{CYAN}[1/5] Target config ({RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}/debug/release): {RESET}")
-        config = "develop" if config is None else config 
+        config = "develop" if config is "" else config 
         arch   = input(f"{BOLD}{CYAN}[2/5] Target architecture ({RESET}{DIM}[amd64]{RESET}{BOLD}{CYAN}/aarch64)  : {RESET}")
-        arch   = "amd64" if arch is None else arch 
+        arch   = "amd64" if arch is "" else arch 
         module = input(f"{BOLD}{CYAN}[3/5] Target module ({RESET}{DIM}[drivers]{RESET}{BOLD}{CYAN}/opengl/sass): {RESET}")
-        module = "drivers" if module is None else module 
+        module = "drivers" if module is "" else module 
         regen  = input(f"{BOLD}{CYAN}[3a/5] Regen opengl code ({RESET}{DIM}[yes]{RESET}{BOLD}{CYAN}/no): {RESET}") if module == "opengl" else "no"
-        regen  = "yes" if regen is None else regen 
+        regen  = "yes" if regen is "" else regen 
         jobs   = input(f"{BOLD}{CYAN}[4/5] Number of compiling threads ({RESET}{DIM}[{os.cpu_count()}]{RESET}{BOLD}{CYAN}/1): {RESET}")
-        jobs   = str(os.cpu_count()) if jobs is None else jobs 
+        jobs   = str(os.cpu_count()) if jobs is "" else jobs 
         clean  = input(f"{BOLD}{CYAN}[5/5] Make a clean build ({RESET}{DIM}[no]{RESET}{BOLD}{CYAN}/yes): {RESET}")
-        clean  = "no" if clean is None else clean 
+        clean  = "no" if clean is "" else clean 
 
         run_cmd([
             "time",
