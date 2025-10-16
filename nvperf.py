@@ -180,7 +180,7 @@ class CMD_install:
         if not os.path.exists(driver):
             raise RuntimeError(f"File doesn't exist: {driver}")
         
-        subprocess.run(r"""\
+        subprocess.run(r"""
             for dm in gdm3 gdm sddm lightdm; do 
                 if systemctl is-active --quiet $dm; then 
                     sudo systemctl stop $dm 
