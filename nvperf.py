@@ -174,6 +174,11 @@ class CMD_install:
         subprocess.run("while mods=$(lsmod | awk '/^nvidia/ {print $1}'); [ -n \"$mods\" ] && sudo modprobe -r $mods 2>/dev/null; do :; done", check=True, shell=True)
         subprocess.run(f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} -s --no-kernel-module-source --skip-module-load", check=True, shell=True)
         subprocess.run("nvidia-smi", check=True, shell=True)
+        tests = pathlib.Path(driver).parent / f"tests-Linux-{'x86_64' if arch == 'amd64' else arch}.tar"
+        if tests.is_file():
+            subprocess.run(f"tar -xf {tests} -C {pathlib.Path(driver).parent}", check=True, shell=True)
+            subprocess.run(f"cp -vf {pathlib.Path(driver).parent}/tests-Linux-{'x86_64' if arch == 'amd64' else arch}/sandbag-tool/sandbag-tool ~", check=True, shell=True)
+
 
     def __select_nvidia_driver(self, host):
         branch  = input(f"{BOLD}{CYAN}[1/4] Target branch ({RESET}{DIM}[r580]{RESET}{BOLD}{CYAN}/bugfix_main): {RESET}")
