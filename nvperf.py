@@ -31,6 +31,7 @@ if not os.environ.get("XAUTHORITY"): os.environ["XAUTHORITY"] = os.path.expandus
 
 signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
+
 class CMD_info:
     def __str__(self):
         return "Get GPU HW and driver info"
@@ -40,6 +41,7 @@ class CMD_info:
         for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
             value = os.environ.get(key)
             print(f"{key}={value}") if value is not None else None 
+
 
 class CMD_config:
     def __str__(self):
@@ -53,12 +55,14 @@ class CMD_config:
         else: 
             print("Mounted /mnt/linuxqa\t[ SKIPPED ]")
 
+
 class CMD_nvmake:
     def __str__(self):
         return "Build nvidia driver"
     
     def run(self):
-        if "P4ROOT" not in os.environ: raise RuntimeError("P4ROOT is not defined")
+        if "P4ROOT" not in os.environ: 
+            raise RuntimeError("P4ROOT is not defined")
         branch = input(f"{BOLD}{CYAN}[1/6] Target branch ({RESET}{DIM}[r580]{RESET}{BOLD}{CYAN}/bugfix_main): {RESET}")
         branch = "r580" if branch == "" else branch
         branch = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
@@ -110,49 +114,6 @@ class CMD_nvmake:
             f"-j{jobs}"
         ] if x is not None and x != ""], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
         
-def select_nvidia_driver_version(host, branch, config, arch):
-    if host == "local":
-        output_dir = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}")
-    else:
-        output_dir = f"/tmp/office/_out/Linux_{arch}_{config}"
-        subprocess.run([
-            "rsync", "-ah", "--progress", 
-            os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}"), 
-            output_dir
-        ])
-
-    pattern = re.compile(r'^NVIDIA-Linux-(?:x86_64|aarch64)-(?P<ver>\d+\.\d+(?:\.\d+)?)-internal\.run$')
-    versions = [
-        match.group('ver') for path in pathlib.Path(output_dir).iterdir()
-        if path.is_file() and (match := pattern.match(path.name))
-    ]
-
-    maxlen = max(v.count(".") + 1 for v in versions)
-    versions.sort(
-        key=lambda s: list(map(int, s.split("."))) + [0] * (maxlen - (s.count(".") + 1)),
-        reverse=True,
-    ) # versions[0] is the latest
-
-    if len(versions) > 1:
-        selected = input(f"{BOLD}{CYAN}[4/4] Target driver version ({RESET}{DIM}{versions[0]}{RESET}{BOLD}{CYAN}{'/'.join(versions[1:])}): {RESET}")
-    elif len(versions) == 1:
-        selected = versions[0]
-    else: 
-        raise RuntimeError("No version found")
-
-    return versions[0] if selected == "" else selected 
-
-def select_nvidia_driver(host):
-    branch  = input(f"{BOLD}{CYAN}[1/4] Target branch ({RESET}{DIM}[r580]{RESET}{BOLD}{CYAN}/bugfix_main): {RESET}")
-    branch  = "r580" if branch == "" else branch
-    branch  = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
-    branch  = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
-    config  = input(f"{BOLD}{CYAN}[2/4] Target config ({RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}/debug/release): {RESET}")
-    config  = "develop" if config == "" else config 
-    arch    = input(f"{BOLD}{CYAN}[3/4] Target architecture ({RESET}{DIM}[amd64]{RESET}{BOLD}{CYAN}/aarch64): {RESET}")
-    arch    = "amd64" if arch == "" else arch 
-    version = select_nvidia_driver_version(host, branch, config, arch)
-    return branch, config, arch, version 
 
 class CMD_install:
     def __str__(self):
@@ -161,10 +122,10 @@ class CMD_install:
     def run(self):
         driver = input(f"{BOLD}{CYAN}Driver path ({RESET}{DIM}[local]{RESET}{BOLD}{CYAN}/office): {RESET}")
         if driver == "local" or driver == "":
-            branch, config, arch, version = select_nvidia_driver("local")
+            branch, config, arch, version = self.__select_nvidia_driver("local")
             driver = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
         elif driver == "office":
-            branch, config, arch, version = select_nvidia_driver("office")
+            branch, config, arch, version = self.__select_nvidia_driver("office")
             remote = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
             driver = os.path.expanduser(f"~/NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
             subprocess.run([
@@ -211,6 +172,53 @@ class CMD_install:
             "--no-kernel-module-source", 
             "--skip-module-load"
         ], check=True)
+
+    def __select_nvidia_driver_version(self, host, branch, config, arch):
+        if "P4ROOT" not in os.environ: 
+            raise RuntimeError("P4ROOT is not defined")
+        if host == "local":
+            output_dir = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}")
+        else:
+            output_dir = f"/tmp/office/_out/Linux_{arch}_{config}"
+            subprocess.run([
+                "rsync", "-ah", "--progress", 
+                os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}"), 
+                output_dir
+            ])
+
+        pattern = re.compile(r'^NVIDIA-Linux-(?:x86_64|aarch64)-(?P<ver>\d+\.\d+(?:\.\d+)?)-internal\.run$')
+        versions = [
+            match.group('ver') for path in pathlib.Path(output_dir).iterdir()
+            if path.is_file() and (match := pattern.match(path.name))
+        ]
+
+        maxlen = max(v.count(".") + 1 for v in versions)
+        versions.sort(
+            key=lambda s: list(map(int, s.split("."))) + [0] * (maxlen - (s.count(".") + 1)),
+            reverse=True,
+        ) # versions[0] is the latest
+
+        if len(versions) > 1:
+            selected = input(f"{BOLD}{CYAN}[4/4] Target driver version ({RESET}{DIM}{versions[0]}{RESET}{BOLD}{CYAN}{'/'.join(versions[1:])}): {RESET}")
+        elif len(versions) == 1:
+            selected = versions[0]
+        else: 
+            raise RuntimeError("No version found")
+
+        return versions[0] if selected == "" else selected 
+
+    def __select_nvidia_driver(self, host):
+        branch  = input(f"{BOLD}{CYAN}[1/4] Target branch ({RESET}{DIM}[r580]{RESET}{BOLD}{CYAN}/bugfix_main): {RESET}")
+        branch  = "r580" if branch == "" else branch
+        branch  = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
+        branch  = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
+        config  = input(f"{BOLD}{CYAN}[2/4] Target config ({RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}/debug/release): {RESET}")
+        config  = "develop" if config == "" else config 
+        arch    = input(f"{BOLD}{CYAN}[3/4] Target architecture ({RESET}{DIM}[amd64]{RESET}{BOLD}{CYAN}/aarch64): {RESET}")
+        arch    = "amd64" if arch == "" else arch 
+        version = self.__select_nvidia_driver_version(host, branch, config, arch)
+        return branch, config, arch, version 
+
 
 if __name__ == "__main__":
     cmds = []
