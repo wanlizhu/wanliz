@@ -166,8 +166,9 @@ class CMD_install:
         return "Install nvidia driver or other packages"
     
     def run(self):
-        driver = input(f"{BOLD}{CYAN}Driver path ({RESET}{DIM}[local]{RESET}{BOLD}{CYAN}/office): {RESET}")
-        if driver == "local" or driver == "":
+        driver = input(f"{BOLD}{CYAN}Driver path ({RESET}{DIM}[office]{RESET}{BOLD}{CYAN}/local): {RESET}")
+        driver = "office" if driver == "" else driver
+        if driver == "local":
             branch, config, arch, version = self.__select_nvidia_driver("local")
             driver = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
         elif driver == "office":
