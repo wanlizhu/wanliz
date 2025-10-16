@@ -91,6 +91,14 @@ class CMD_nvmake:
         clean  = input(f"{BOLD}{CYAN}[5/5] Make a clean build ({RESET}{DIM}[no]{RESET}{BOLD}{CYAN}/yes): {RESET}")
         clean  = "no" if clean == "" else clean 
 
+        if clean == "yes":
+            run_cmd([
+                f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
+                "--unshare-namespaces", 
+                "--tools",  f"{os.environ['P4ROOT']}/tools",
+                "--devrel", f"{os.environ['P4ROOT']}/devrel/SDK/inc/GL",
+                "nvmake", "sweep"
+            ], cwd=f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00")
         run_cmd([
             "time",
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
@@ -110,7 +118,6 @@ class CMD_nvmake:
             f"NV_TRACE_CODE={1 if config == 'release' else 0}",
             module, 
             "dist" if module == "drivers" else "", 
-            "sweep" if clean == "yes" else "",
             "@generate" if regen == "yes" else "",
             "linux", 
             f"{arch}", 
