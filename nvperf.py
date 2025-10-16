@@ -34,10 +34,11 @@ def run_cmd(args, cwd=f"{os.getcwd()}", newline=False):
         elif isinstance(args, str):
             subprocess.run(["/bin/bash", "-lci", args], check=True, cwd=cwd)
         else:
-            raise RuntimeError("")
+            raise RuntimeError("Invalid arguments")
         if newline:
             print("")
     except (subprocess.CalledProcessError, FileNotFoundError, RuntimeError):
+        print("Failed to run external command")
         exit(1)
 
 class CMD_info:
@@ -88,7 +89,7 @@ class CMD_nvmake:
         jobs   = input(f"{BOLD}{CYAN}[4/5] Number of compiling threads ({RESET}{DIM}[{os.cpu_count()}]{RESET}{BOLD}{CYAN}/1): {RESET}")
         jobs   = str(os.cpu_count()) if jobs is None else jobs 
         clean  = input(f"{BOLD}{CYAN}[5/5] Make a clean build ({RESET}{DIM}[no]{RESET}{BOLD}{CYAN}/yes): {RESET}")
-        clean  = "yes" if clean is None else clean 
+        clean  = "no" if clean is None else clean 
 
         run_cmd([
             "time"
