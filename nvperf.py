@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os
 import sys
+import stat 
+import time 
 import inspect
 import subprocess
 import psutil
@@ -53,7 +55,51 @@ class CMD_config:
             subprocess.run("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa", check=True, shell=True)
             print("Mounted /mnt/linuxqa")
         else: 
-            print("Mounted /mnt/linuxqa\t[ SKIPPED ]")
+            print("Mounted /mnt/linuxqa \t [ SKIPPED ]")
+
+
+class CMD_startx:
+    def __str__(self):
+        return "Start a bare X server for graphics profiling"
+    
+    def run(self):
+        subprocess.run([
+            "screen", "-S", "bareX", "-c", f"sudo X {os.environ['DISPLAY']} -ac +iglx || read -p 'Press [Enter] to exit: '"
+        ], check=True)
+        while not (os.path.exists("/tmp/.X11-unix/X0") \
+                   and stat.S_ISSOCK(os.stat("/tmp/.X11-unix/X0").st_mode)):
+            time.sleep(0.1)
+
+        if os.path.exists(os.path.expanduser("~/sandbag-tool")):
+            subprocess.run(f"{os.path.expanduser('~/sandbag-tool')} -unsandbag", check=True, shell=True)
+        else:
+            print("File doesn't exist: ~/sandbag-tool")
+            print("Unsandbag \t [ SKIPPED ]")
+
+        if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e"):
+            subprocess.run([
+                "sudo", 
+                "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug",
+                "--lock_loose",
+                "set", "pstateId", "P0"
+            ], check=True)
+            subprocess.run([
+                "sudo", 
+                "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug",
+                "--lock_strict",
+                "set", "gpcclkkHz", "2000000"
+            ], check=True)
+            subprocess.run([
+                "sudo", 
+                "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug",
+                "--lock_loose",
+                "set", "xbarclkkHz", "1800000"
+            ], check=True)
+            subprocess.run([
+                "sudo", 
+                "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug",
+                "--force_regime", "ffr"
+            ], check=True)
 
 
 class CMD_nvmake:
