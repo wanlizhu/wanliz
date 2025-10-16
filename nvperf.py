@@ -260,8 +260,12 @@ class CMD_install:
         branch  = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
         config  = input(f"{BOLD}{CYAN}[2/4] Target config ({RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}/debug/release): {RESET}")
         config  = "develop" if config == "" else config 
-        arch    = input(f"{BOLD}{CYAN}[3/4] Target architecture ({RESET}{DIM}[amd64]{RESET}{BOLD}{CYAN}/aarch64): {RESET}")
-        arch    = "amd64" if arch == "" else arch 
+        if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e"):
+            arch    = input(f"{BOLD}{CYAN}[3/4] Target architecture ({RESET}{DIM}[aarch64]{RESET}{BOLD}{CYAN}/amd64): {RESET}")
+            arch    = "aarch64" if arch == "" else arch 
+        else:
+            arch    = input(f"{BOLD}{CYAN}[3/4] Target architecture ({RESET}{DIM}[amd64]{RESET}{BOLD}{CYAN}/aarch64): {RESET}")
+            arch    = "amd64" if arch == "" else arch 
         version = self.__select_nvidia_driver_version(host, branch, config, arch)
         return branch, config, arch, version 
 
