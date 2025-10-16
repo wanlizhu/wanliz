@@ -4,8 +4,10 @@ import sys
 import inspect
 import subprocess
 import psutil
-import platform
+import textwrap
 import signal
+import re
+import pathlib
 
 RESET = "\033[0m"
 DIM   = "\033[90m"  
@@ -29,25 +31,12 @@ if not os.environ.get("XAUTHORITY"): os.environ["XAUTHORITY"] = os.path.expandus
 
 signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
-def run_cmd(args, cwd=f"{os.getcwd()}", newline=False):
-    try:
-        if isinstance(args, list):
-            subprocess.run([x for x in args if x is not None and x != ""], check=True, cwd=cwd)
-        elif isinstance(args, str):
-            subprocess.run(["/bin/bash", "-lci", args], check=True, cwd=cwd)
-        else:
-            raise RuntimeError("Invalid arguments")
-        if newline:
-            print("")
-    except (subprocess.CalledProcessError, FileNotFoundError, RuntimeError) as e:
-        print(type(e).__name__, "-", e)
-
 class CMD_info:
     def __str__(self):
         return "Get GPU HW and driver info"
     
     def run(self):
-        run_cmd("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total --format=csv", newline=True)
+        subprocess.run("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total --format=csv", check=True, shell=True)
         for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
             value = os.environ.get(key)
             print(f"{key}={value}") if value is not None else None 
@@ -58,10 +47,10 @@ class CMD_config:
     
     def run(self):
         if not any(p.mountpoint == "/mnt/linuxqa" for p in psutil.disk_partitions(all=True)):
-            run_cmd("sudo mkdir -p /mnt/linuxqa")
-            run_cmd("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa")
+            subprocess.run("sudo mkdir -p /mnt/linuxqa", check=True, shell=True)
+            subprocess.run("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa", check=True, shell=True)
             print("Mounted /mnt/linuxqa")
-        else:
+        else: 
             print("Mounted /mnt/linuxqa\t[ SKIPPED ]")
 
 class CMD_nvmake:
@@ -69,34 +58,34 @@ class CMD_nvmake:
         return "Build nvidia driver"
     
     def run(self):
-        if "P4ROOT" not in os.environ:
-            raise RuntimeError("P4ROOT is not defined")
-        if not os.path.exists(f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"):
-            raise RuntimeError(f"Path doesn't exist: {os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00")
-
-        config = input(f"{BOLD}{CYAN}[1/5] Target config ({RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}/debug/release): {RESET}")
+        if "P4ROOT" not in os.environ: raise RuntimeError("P4ROOT is not defined")
+        branch = input(f"{BOLD}{CYAN}[1/6] Target branch ({RESET}{DIM}[r580]{RESET}{BOLD}{CYAN}/bugfix_main): {RESET}")
+        branch = "r580" if branch == "" else branch
+        branch = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
+        branch = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
+        config = input(f"{BOLD}{CYAN}[2/6] Target config ({RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}/debug/release): {RESET}")
         config = "develop" if config == "" else config 
-        arch   = input(f"{BOLD}{CYAN}[2/5] Target architecture ({RESET}{DIM}[amd64]{RESET}{BOLD}{CYAN}/aarch64)  : {RESET}")
+        arch   = input(f"{BOLD}{CYAN}[3/6] Target architecture ({RESET}{DIM}[amd64]{RESET}{BOLD}{CYAN}/aarch64)  : {RESET}")
         arch   = "amd64" if arch == "" else arch 
-        module = input(f"{BOLD}{CYAN}[3/5] Target module ({RESET}{DIM}[drivers]{RESET}{BOLD}{CYAN}/opengl/sass): {RESET}")
+        module = input(f"{BOLD}{CYAN}[4/6] Target module ({RESET}{DIM}[drivers]{RESET}{BOLD}{CYAN}/opengl/sass): {RESET}")
         module = "drivers" if module == "" else module 
-        regen  = input(f"{BOLD}{CYAN}[3a/5] Regen opengl code ({RESET}{DIM}[yes]{RESET}{BOLD}{CYAN}/no): {RESET}") if module == "opengl" else "no"
+        regen  = input(f"{BOLD}{CYAN}[4a/6] Regen opengl code ({RESET}{DIM}[yes]{RESET}{BOLD}{CYAN}/no): {RESET}") if module == "opengl" else "no"
         regen  = "yes" if regen == "" else regen 
-        jobs   = input(f"{BOLD}{CYAN}[4/5] Number of compiling threads ({RESET}{DIM}[{os.cpu_count()}]{RESET}{BOLD}{CYAN}/1): {RESET}")
+        jobs   = input(f"{BOLD}{CYAN}[5/6] Number of compiling threads ({RESET}{DIM}[{os.cpu_count()}]{RESET}{BOLD}{CYAN}/1): {RESET}")
         jobs   = str(os.cpu_count()) if jobs == "" else jobs 
-        clean  = input(f"{BOLD}{CYAN}[5/5] Make a clean build ({RESET}{DIM}[no]{RESET}{BOLD}{CYAN}/yes): {RESET}")
+        clean  = input(f"{BOLD}{CYAN}[6/6] Make a clean build ({RESET}{DIM}[no]{RESET}{BOLD}{CYAN}/yes): {RESET}")
         clean  = "no" if clean == "" else clean 
 
         if clean == "yes":
-            run_cmd([
+            subprocess.run([
                 f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
                 "--unshare-namespaces", 
                 "--tools",  f"{os.environ['P4ROOT']}/tools",
                 "--devrel", f"{os.environ['P4ROOT']}/devrel/SDK/inc/GL",
                 "nvmake", "sweep"
-            ], cwd=f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00")
+            ], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
 
-        run_cmd([
+        subprocess.run([
             "time",
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
             "--unshare-namespaces", 
@@ -120,14 +109,109 @@ class CMD_nvmake:
             f"{arch}", 
             f"{config}", 
             f"-j{jobs}"
-        ], cwd=f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00")
+        ], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
         
+def select_nvidia_driver_version(host, branch, config, arch):
+    if host == "local":
+        output_dir = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}")
+    else:
+        output_dir = f"/tmp/office/_out/Linux_{arch}_{config}"
+        subprocess.run([
+            "rsync", "-ah", "--progress", 
+            os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}"), 
+            output_dir
+        ])
+
+    pattern = re.compile(r'^NVIDIA-Linux-(?:x86_64|aarch64)-(?P<ver>\d+\.\d+(?:\.\d+)?)-internal\.run$')
+    versions = [
+        match.group('ver') for path in pathlib.Path(output_dir).iterdir()
+        if path.is_file() and (match := pattern.match(path.name))
+    ]
+
+    maxlen = max(v.count(".") + 1 for v in versions)
+    versions.sort(
+        key=lambda s: list(map(int, s.split("."))) + [0] * (maxlen - (s.count(".") + 1)),
+        reverse=True,
+    ) # versions[0] is the latest
+
+    if len(versions) > 1:
+        selected = input(f"{BOLD}{CYAN}[4/4] Target driver version ({RESET}{DIM}{versions[0]}{RESET}{BOLD}{CYAN}{'/'.join(versions[1:])}): {RESET}")
+    elif len(versions) == 1:
+        selected = versions[0]
+    else: 
+        raise RuntimeError("No version found")
+
+    return versions[0] if selected == "" else selected 
+
+def select_nvidia_driver(host):
+    branch  = input(f"{BOLD}{CYAN}[1/4] Target branch ({RESET}{DIM}[r580]{RESET}{BOLD}{CYAN}/bugfix_main): {RESET}")
+    branch  = "r580" if branch == "" else branch
+    branch  = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
+    branch  = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
+    config  = input(f"{BOLD}{CYAN}[2/4] Target config ({RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}/debug/release): {RESET}")
+    config  = "develop" if config == "" else config 
+    arch    = input(f"{BOLD}{CYAN}[3/4] Target architecture ({RESET}{DIM}[amd64]{RESET}{BOLD}{CYAN}/aarch64): {RESET}")
+    arch    = "amd64" if arch == "" else arch 
+    version = select_nvidia_driver_version(host, branch, config, arch)
+    return branch, config, arch, version 
+
 class CMD_install:
     def __str__(self):
         return "Install nvidia driver or other packages"
     
     def run(self):
-        pass 
+        driver = input(f"{BOLD}{CYAN}Driver path ({RESET}{DIM}[local]{RESET}{BOLD}{CYAN}/office): {RESET}")
+        if driver == "local" or driver == "":
+            branch, config, arch, version = select_nvidia_driver("local")
+            driver = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
+        elif driver == "office":
+            branch, config, arch, version = select_nvidia_driver("office")
+            remote = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
+            driver = os.path.expanduser(f"~/NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
+            subprocess.run([
+                "rsync", "-ah", "--progress",
+                "wanliz@office:" + remote,
+                driver 
+            ], check=True)
+        else: 
+            raise RuntimeError("Invalid argument")
+
+        if os.path.exists(driver):
+            raise RuntimeError(f"File doesn't exist: {driver}")
+        
+        print(f"Kill all graphics apps and install $driver")
+        input("Press [Enter] to continue: ")
+        subprocess.run([
+            "bash", "-lci", 
+            textwrap.dedent("""\
+                sudo fuser -v /dev/nvidia* 2>/dev/null | grep -v 'COMMAND' | awk '{print $3}' | sort | uniq | tee > /tmp/nvidia
+                for nvpid in $(cat /tmp/nvidia); do 
+                    echo -n "Killing $nvpid "
+                    sudo kill -9 $nvpid && echo " ... OK" || echo "-> Failed"
+                    sleep 1
+                done
+                while :; do
+                    removed=0
+                    for m in $(lsmod | awk '/^nvidia/ {print $1}'); do
+                        if [ ! -d "/sys/module/$m/holders" ] || [ -z "$(ls -A /sys/module/$m/holders 2>/dev/null)" ]; then
+                            sudo rmmod -f "$m" && removed=1
+                            echo "Remove kernel module $m ... OK"
+                        fi
+                    done
+                    [ "$removed" -eq 0 ] && break
+                done
+            """)
+        ], check=True)
+        subprocess.run([
+            "sudo", 
+            "env", 
+            "IGNORE_CC_MISMATCH=1", 
+            "IGNORE_MISSING_MODULE_SYMVERS=1", 
+            driver, 
+            "-s", 
+            "--no-kernel-module-source", 
+            "--skip-module-load"
+        ], check=True)
 
 if __name__ == "__main__":
     cmds = []
