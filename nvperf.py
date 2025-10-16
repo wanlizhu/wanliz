@@ -24,8 +24,8 @@ os.environ.update({
     "P4CLIENT": "wanliz_sw_linux",
     "P4IGNORE": os.path.expanduser("~/.p4ignore")
 })
-os.environ["DISPLAY"] = ":0" if not os.environ.get("DISPLAY") else None 
-os.environ["XAUTHORITY"] = os.path.expanduser("~/.Xauthority") if not os.environ.get("XAUTHORITY") else None 
+if not os.environ.get("DISPLAY"):    os.environ["DISPLAY"] = ":0"  
+if not os.environ.get("XAUTHORITY"): os.environ["XAUTHORITY"] = os.path.expanduser("~/.Xauthority") 
 
 signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
