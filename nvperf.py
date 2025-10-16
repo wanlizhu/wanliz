@@ -30,7 +30,7 @@ signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 def run_cmd(args, cwd=f"{os.getcwd()}", newline=False):
     try:
         if isinstance(args, list):
-            subprocess.run(args, check=True, cwd=cwd)
+            subprocess.run([x for x in args if x is not None and x != ""], check=True, cwd=cwd)
         elif isinstance(args, str):
             subprocess.run(["/bin/bash", "-lci", args], check=True, cwd=cwd)
         else:
@@ -109,9 +109,9 @@ class CMD_nvmake:
             "NV_MANGLE_SYMBOLS=",
             f"NV_TRACE_CODE={1 if config == 'release' else 0}",
             module, 
-            "dist" if module == "drivers" else " ", 
-            "sweep" if clean == "yes" else " ",
-            "@generate" if regen == "yes" else " ",
+            "dist" if module == "drivers" else "", 
+            "sweep" if clean == "yes" else "",
+            "@generate" if regen == "yes" else "",
             "linux", 
             f"{arch}", 
             f"{config}", 
