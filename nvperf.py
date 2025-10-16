@@ -73,10 +73,10 @@ class CMD_nvmake:
         return "Build nvidia driver"
     
     def run(self):
-        #if "P4ROOT" not in os.environ:
-        #    raise RuntimeError("P4ROOT is not defined")
-        #if not os.path.exists(f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"):
-        #    raise RuntimeError(f"Path doesn't exist: {os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00")
+        if "P4ROOT" not in os.environ:
+            raise RuntimeError("P4ROOT is not defined")
+        if not os.path.exists(f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"):
+            raise RuntimeError(f"Path doesn't exist: {os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00")
 
         config = input(f"{BOLD}{CYAN}[1/5] Target config ({RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}/debug/release): {RESET}")
         config = "develop" if config is None else config 
@@ -92,7 +92,7 @@ class CMD_nvmake:
         clean  = "no" if clean is None else clean 
 
         run_cmd([
-            "time"
+            "time",
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
             "--unshare-namespaces", 
             "--tools",  f"{os.environ['P4ROOT']}/tools",
