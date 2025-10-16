@@ -192,8 +192,7 @@ class CMD_install:
             textwrap.dedent("""\
                 sudo fuser -v /dev/nvidia* 2>/dev/null | grep -v 'COMMAND' | awk '{print $3}' | sort | uniq | tee > /tmp/nvidia
                 for nvpid in $(cat /tmp/nvidia); do 
-                    echo -n "Killing $nvpid "
-                    sudo kill -9 $nvpid && echo " ... OK" || echo "-> Failed"
+                    sudo kill -9 $nvpid 
                     sleep 1
                 done
                 while :; do
@@ -201,7 +200,6 @@ class CMD_install:
                     for m in $(lsmod | awk '/^nvidia/ {print $1}'); do
                         if [ ! -d "/sys/module/$m/holders" ] || [ -z "$(ls -A /sys/module/$m/holders 2>/dev/null)" ]; then
                             sudo rmmod -f "$m" && removed=1
-                            echo "Remove kernel module $m ... OK"
                         fi
                     done
                     [ "$removed" -eq 0 ] && break
@@ -226,11 +224,12 @@ class CMD_install:
             output_dir = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}")
         else:
             output_dir = f"/tmp/office/_out/Linux_{arch}_{config}"
+            subprocess.run(f"mkdir -p {output_dir}", check=True, shell=True)
             subprocess.run([
                 "rsync", "-ah", "--progress", 
-                os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}"), 
+                f"wanliz@{host}:" + os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}"), 
                 output_dir
-            ])
+            ], check=True)
 
         pattern = re.compile(r'^NVIDIA-Linux-(?:x86_64|aarch64)-(?P<ver>\d+\.\d+(?:\.\d+)?)-internal\.run$')
         versions = [
