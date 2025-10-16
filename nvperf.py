@@ -86,7 +86,6 @@ class CMD_nvmake:
             ], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
 
         subprocess.run([
-            "time",
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
             "--unshare-namespaces", 
             "--tools",  f"{os.environ['P4ROOT']}/tools",
