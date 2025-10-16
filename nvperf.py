@@ -34,9 +34,7 @@ def run_cmd(args, cwd=f"{os.getcwd()}", newline=False):
         if isinstance(args, list):
             subprocess.run([x for x in args if x is not None and x != ""], check=True, cwd=cwd)
         elif isinstance(args, str):
-            x = subprocess.run(["/bin/bash", "-lci", args], check=True, cwd=cwd, capture_output=True)
-            print(x.stdout)
-            print(x.stderr)
+            subprocess.run(["/bin/bash", "-lci", args], check=True, cwd=cwd)
         else:
             raise RuntimeError("Invalid arguments")
         if newline:
@@ -50,7 +48,7 @@ class CMD_info:
     
     def run(self):
         run_cmd("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total --format=csv")
-        run_cmd("glxinfo -B")
+        run_cmd("echo $DISPLAY")
         for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
             value = os.environ.get(key)
             print(f"{key}={value}") if value is not None else None 
