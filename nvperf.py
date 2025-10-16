@@ -22,8 +22,10 @@ os.environ.update({
     "P4PORT": "p4proxy-sc.nvidia.com:2006",
     "P4USER": "wanliz",
     "P4CLIENT": "wanliz_sw_linux",
-    "P4IGNORE": "~/.p4ignore"
+    "P4IGNORE": os.path.expanduser("~/.p4ignore")
 })
+os.environ["DISPLAY"] = ":0" if not os.environ.get("DISPLAY") else None 
+os.environ["XAUTHORITY"] = os.path.expanduser("~/.Xauthority") if not os.environ.get("XAUTHORITY") else None 
 
 signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
@@ -47,7 +49,7 @@ class CMD_info:
     
     def run(self):
         run_cmd("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total --format=csv")
-        run_cmd("DISPLAY=:0 glxinfo -B | grep \"renderer string\"")
+        run_cmd("DISPLAY=:0 glxinfo -B | grep 'renderer string'")
         for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
             value = os.environ.get(key)
             print(f"{key}={value}") if value is not None else None 
