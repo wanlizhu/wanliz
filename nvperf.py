@@ -63,11 +63,8 @@ class CMD_startx:
         return "Start a bare X server for graphics profiling"
     
     def run(self):
-        subprocess.run([
-            "screen", "-S", "bareX", "-c", f"sudo X {os.environ['DISPLAY']} -ac +iglx || read -p 'Press [Enter] to exit: '"
-        ], check=True)
-        while not (os.path.exists("/tmp/.X11-unix/X0") \
-                   and stat.S_ISSOCK(os.stat("/tmp/.X11-unix/X0").st_mode)):
+        subprocess.run(f"screen -S bareX -c \"sudo X {os.environ['DISPLAY']} -ac +iglx || read -p 'Press [Enter] to exit: '\"", check=True, shell=True)
+        while not (os.path.exists("/tmp/.X11-unix/X0") and stat.S_ISSOCK(os.stat("/tmp/.X11-unix/X0").st_mode)):
             time.sleep(0.1)
 
         if os.path.exists(os.path.expanduser("~/sandbag-tool")):
@@ -77,29 +74,10 @@ class CMD_startx:
             print("Unsandbag \t [ SKIPPED ]")
 
         if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e"):
-            subprocess.run([
-                "sudo", 
-                "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug",
-                "--lock_loose",
-                "set", "pstateId", "P0"
-            ], check=True)
-            subprocess.run([
-                "sudo", 
-                "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug",
-                "--lock_strict",
-                "set", "gpcclkkHz", "2000000"
-            ], check=True)
-            subprocess.run([
-                "sudo", 
-                "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug",
-                "--lock_loose",
-                "set", "xbarclkkHz", "1800000"
-            ], check=True)
-            subprocess.run([
-                "sudo", 
-                "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug",
-                "--force_regime", "ffr"
-            ], check=True)
+            subprocess.run("sudo /mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug --lock_loose  set pstateId   P0", check=True, shell=True)
+            subprocess.run("sudo /mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug --lock_strict set gpcclkkHz  2000000", check=True, shell=True)
+            subprocess.run("sudo /mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug --lock_loose  set xbarclkkHz 1800000", check=True, shell=True)
+            subprocess.run("sudo /mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug --force_regime  ffr", check=True, shell=True)
 
 
 class CMD_nvmake:
@@ -187,19 +165,10 @@ class CMD_install:
                 fi 
             done 
         """, check=True, shell=True)
-        subprocess.run("sudo fuser -k -TERM /dev/nvidia* 2>/dev/null", check=True, shell=True)
-        subprocess.run("sudo fuser -k -KILL /dev/nvidia* 2>/dev/null", check=True, shell=True)
+        subprocess.run("sudo fuser -k -TERM /dev/nvidia* 2>/dev/null || true", check=True, shell=True)
+        subprocess.run("sudo fuser -k -KILL /dev/nvidia* 2>/dev/null || true", check=True, shell=True)
         subprocess.run("while mods=$(lsmod | awk '/^nvidia/ {print $1}'); [ -n \"$mods\" ] && sudo modprobe -r $mods 2>/dev/null; do :; done", check=True, shell=True)
-        subprocess.run([
-            "sudo", 
-            "env", 
-            "IGNORE_CC_MISMATCH=1", 
-            "IGNORE_MISSING_MODULE_SYMVERS=1", 
-            driver, 
-            "-s", 
-            "--no-kernel-module-source", 
-            "--skip-module-load"
-        ], check=True)
+        subprocess.run(f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} -s --no-kernel-module-source --skip-module-load", check=True, shell=True)
 
     def __select_nvidia_driver(self, host):
         branch  = input(f"{BOLD}{CYAN}[1/4] Target branch ({RESET}{DIM}[r580]{RESET}{BOLD}{CYAN}/bugfix_main): {RESET}")
@@ -224,12 +193,9 @@ class CMD_install:
             output_dir = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}")
         else:
             output_dir = f"/tmp/office/_out/Linux_{arch}_{config}"
+            remote_dir = os.path.join(os.environ['P4ROOT'], branch, '_out', f'Linux_{arch}_{config}')
             subprocess.run(f"mkdir -p {output_dir}", check=True, shell=True)
-            subprocess.run([
-                "rsync", "-ah", "--progress", 
-                f"wanliz@{host}:" + os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}") + "/", 
-                output_dir
-            ], check=True)
+            subprocess.run(f"rsync -ah --progress wanliz@{host}:{remote_dir}/ {output_dir}", check=True, shell=True)
 
         pattern = re.compile(r'^NVIDIA-Linux-(?:x86_64|aarch64)-(?P<ver>\d+\.\d+(?:\.\d+)?)-internal\.run$')
         versions = [
