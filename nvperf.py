@@ -34,7 +34,9 @@ def run_cmd(args, cwd=f"{os.getcwd()}", newline=False):
         if isinstance(args, list):
             subprocess.run([x for x in args if x is not None and x != ""], check=True, cwd=cwd)
         elif isinstance(args, str):
-            subprocess.run(["/bin/bash", "-lci", args], check=True, cwd=cwd)
+            x = subprocess.run(["/bin/bash", "-lci", args], check=True, cwd=cwd, capture_output=True)
+            print(x.stdout)
+            print(x.stderr)
         else:
             raise RuntimeError("Invalid arguments")
         if newline:
