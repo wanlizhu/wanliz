@@ -180,7 +180,15 @@ class CMD_install:
         if not os.path.exists(driver):
             raise RuntimeError(f"File doesn't exist: {driver}")
         
-        subprocess.run("sudo fuser -v /dev/nvidia* 2>/dev/null | awk 'NR>1 {print $3}' | sort -u | xargs -r sudo kill -9", check=True, shell=True)
+        subprocess.run("""\
+            for dm in gdm3 gdm sddm lightdm; do 
+                if systemctl is-active --quiet $dm; then 
+                    sudo systemctl stop $dm 
+                done 
+            done 
+        """, check=True, shell=True)
+        subprocess.run("sudo fuser -k -TERM /dev/nvidia* 2>/dev/null", check=True, shell=True)
+        subprocess.run("sudo fuser -k -KILL /dev/nvidia* 2>/dev/null", check=True, shell=True)
         subprocess.run("while mods=$(lsmod | awk '/^nvidia/ {print $1}'); [ -n \"$mods\" ] && sudo modprobe -r $mods 2>/dev/null; do :; done", check=True, shell=True)
         subprocess.run([
             "sudo", 
