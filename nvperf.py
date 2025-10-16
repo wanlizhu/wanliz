@@ -77,7 +77,7 @@ class CMD_nvmake:
         #if not os.path.exists(f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"):
         #    raise RuntimeError(f"Path doesn't exist: {os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00")
 
-        config = input(f"{BOLD}{CYAN}[1/5] Target config (release/debug/{RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}): {RESET}")
+        config = input(f"{BOLD}{CYAN}[1/5] Target config ({RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}/debug/release): {RESET}")
         config = "develop" if config is None else config 
         arch   = input(f"{BOLD}{CYAN}[2/5] Target architecture ({RESET}{DIM}[amd64]{RESET}{BOLD}{CYAN}/aarch64)  : {RESET}")
         arch   = "amd64" if arch is None else arch 
@@ -87,7 +87,7 @@ class CMD_nvmake:
         regen  = "yes" if regen is None else regen 
         jobs   = input(f"{BOLD}{CYAN}[4/5] Number of compiling threads ({RESET}{DIM}[{os.cpu_count()}]{RESET}{BOLD}{CYAN}/1): {RESET}")
         jobs   = str(os.cpu_count()) if jobs is None else jobs 
-        clean  = input(f"{BOLD}{CYAN}[5/5] Make a clean build ({RESET}{DIM}[yes]{RESET}{BOLD}{CYAN}/no): {RESET}")
+        clean  = input(f"{BOLD}{CYAN}[5/5] Make a clean build ({RESET}{DIM}[no]{RESET}{BOLD}{CYAN}/yes): {RESET}")
         clean  = "yes" if clean is None else clean 
 
         run_cmd([
