@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 import os
 import sys
-import signal
-import curses
 import inspect
 import subprocess
 import psutil
+import platform
+import signal
 
+RESET = "\033[0m"
+DIM   = "\033[90m"  
+CYAN  = "\033[36m"
+BOLD  = "\033[1m"
 os.environ.update({
     "__GL_SYNC_TO_VBLANK": "0",
     "vblank_mode": "0",
@@ -20,6 +24,8 @@ os.environ.update({
     "P4CLIENT": "wanliz_sw_linux",
     "P4IGNORE": "~/.p4ignore"
 })
+
+signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
 def run_cmd(args, cwd=f"{os.getcwd()}", newline=False):
     try:
@@ -39,12 +45,15 @@ class CMD_info:
         return "Get GPU HW and driver info"
     
     def run(self):
-        run_cmd("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total --format=csv")
-        run_cmd("bash -lci 'modinfo nvidia -F version || cat /proc/driver/nvidia/version'")
-        for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
-            value = os.environ.get(key)
-            print(f"{key}={value}") if value is not None else None 
-        run_cmd("bash -lci 'glxinfo -B | grep \"renderer string\"'")
+        if platform.system() == "Linux":
+            run_cmd("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total --format=csv")
+            run_cmd("bash -lci 'modinfo nvidia -F version || cat /proc/driver/nvidia/version'")
+            for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
+                value = os.environ.get(key)
+                print(f"{key}={value}") if value is not None else None 
+            run_cmd("bash -lci 'glxinfo -B | grep \"renderer string\"'")
+        else:
+            print("Windows platform")
 
 class CMD_config:
     def __str__(self):
@@ -63,9 +72,26 @@ class CMD_nvmake:
         return "Build nvidia driver"
     
     def run(self):
-        config = "develop"
-        arch = "aarch64"
+        #if "P4ROOT" not in os.environ:
+        #    raise RuntimeError("P4ROOT is not defined")
+        #if not os.path.exists(f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"):
+        #    raise RuntimeError(f"Path doesn't exist: {os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00")
+
+        config = input(f"{BOLD}{CYAN}[1/5] Target config (release/debug/{RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}): {RESET}")
+        config = "develop" if config is None else config 
+        arch   = input(f"{BOLD}{CYAN}[2/5] Target architecture ({RESET}{DIM}[amd64]{RESET}{BOLD}{CYAN}/aarch64)  : {RESET}")
+        arch   = "amd64" if arch is None else arch 
+        module = input(f"{BOLD}{CYAN}[3/5] Target module ({RESET}{DIM}[drivers]{RESET}{BOLD}{CYAN}/opengl/sass): {RESET}")
+        module = "drivers" if module is None else module 
+        regen  = input(f"{BOLD}{CYAN}[3a/5] Regen opengl code ({RESET}{DIM}[yes]{RESET}{BOLD}{CYAN}/no): {RESET}") if module == "opengl" else "no"
+        regen  = "yes" if regen is None else regen 
+        jobs   = input(f"{BOLD}{CYAN}[4/5] Number of compiling threads ({RESET}{DIM}[{os.cpu_count()}]{RESET}{BOLD}{CYAN}/1): {RESET}")
+        jobs   = str(os.cpu_count()) if jobs is None else jobs 
+        clean  = input(f"{BOLD}{CYAN}[5/5] Make a clean build ({RESET}{DIM}[yes]{RESET}{BOLD}{CYAN}/no): {RESET}")
+        clean  = "yes" if clean is None else clean 
+
         run_cmd([
+            "time"
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
             "--unshare-namespaces", 
             "--tools",  f"{os.environ['P4ROOT']}/tools",
@@ -81,52 +107,38 @@ class CMD_nvmake:
             "NV_UNIX_CHECK_DEBUG_INFO=0",
             "NV_MANGLE_SYMBOLS=",
             f"NV_TRACE_CODE={1 if config == 'release' else 0}",
-            "drivers", "dist", "linux", f"{arch}", f"{config}", f"-j{os.cpu_count() or 1}"
+            module, 
+            "dist" if module == "drivers" else "", 
+            "sweep" if clean == "yes" else "",
+            "@generate" if regen == "yes" else "",
+            "linux", 
+            f"{arch}", 
+            f"{config}", 
+            f"-j{jobs}"
         ], cwd=f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00")
         
-class CMD_nvinstall:
+class CMD_install:
     def __str__(self):
-        return "Install nvidia driver"
+        return "Install nvidia driver or other packages"
     
     def run(self):
         pass 
 
-
-def draw_menu(stdscr, cmds):
-    curses.curs_set(0)
-    stdscr.keypad(True)
-    idx, top = 0, 0
-    finished = False
-    while not finished:
-        h, w = stdscr.getmaxyx()
-        view = max(1, h - 2)
-        top = max(min(top, idx), idx - view + 1)
-        stdscr.erase()
-        stdscr.addnstr(0, 0, "Select a command [↑/↓] to move, [Enter] to run, [Esc] to quit, [Esc] to quit", w - 1)
-        for i, cmd in enumerate(cmds[top:top + view], start=2):
-            j = top + (i - 2)
-            name = cmd.__class__.__name__[4:]
-            line = f"{j+1:2d}. {name} — {cmd}"
-            stdscr.addnstr(i, 0, line, w - 1, curses.A_REVERSE if j == idx else 0)
-        stdscr.refresh()
-
-        key = stdscr.getch()
-        if key == 27:
-            break
-        idx = (idx - (key == curses.KEY_UP) + (key == curses.KEY_DOWN)) % len(cmds)
-        if key in (10, 13, curses.KEY_ENTER):
-            curses.def_prog_mode()
-            curses.endwin()
-            cmds[idx].run()
-            curses.reset_prog_mode()
-            finished = True
-
-
 if __name__ == "__main__":
-    mods = sys.modules[__name__]
     cmds = []
-    for n, kls in inspect.getmembers(mods, inspect.isclass):
-        if kls.__module__ == __name__ and n.startswith("CMD_"):
-            cmds.append(kls())
-    cmds.sort(key=lambda x: x.__class__.__name__)
-    curses.wrapper(lambda stdscr: draw_menu(stdscr, cmds))
+    cmds_desc = []
+    for name, cls in sorted(inspect.getmembers(sys.modules[__name__], inspect.isclass)):
+        if cls.__module__ == __name__ and name.startswith("CMD_"):
+            cmds.append(name.split("_")[1])
+            cmds_desc.append(cmds[-1] + "\t:" +  str(cls()))
+    
+    if len(sys.argv) > 1 and sys.argv[1] in cmds:
+        cmd = sys.argv[1]
+    else:
+        print('\n'.join(cmds_desc))
+        cmd = input(f"{BOLD}{CYAN}Enter the cmd to run: {RESET}")
+        if globals().get(f"CMD_{cmd}") is None:
+            raise RuntimeError(f"No command class for {cmd!r}")
+    cmd = globals().get(f"CMD_{cmd}")()
+    cmd.run()
+    
