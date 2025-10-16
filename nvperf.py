@@ -37,8 +37,8 @@ def run_cmd(args, cwd=f"{os.getcwd()}", newline=False):
             raise RuntimeError("Invalid arguments")
         if newline:
             print("")
-    except (subprocess.CalledProcessError, FileNotFoundError, RuntimeError):
-        print("Failed to run external command")
+    except (subprocess.CalledProcessError, FileNotFoundError, RuntimeError) as e:
+        print(type(e).__name__, "-", e)
         exit(1)
 
 class CMD_info:
