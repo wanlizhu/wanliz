@@ -182,25 +182,8 @@ class CMD_install:
         
         print(f"Kill all graphics apps and install $driver")
         input("Press [Enter] to continue: ")
-        subprocess.run([
-            "bash", "-lci", 
-            textwrap.dedent("""\
-                sudo fuser -v /dev/nvidia* 2>/dev/null | grep -v 'COMMAND' | awk '{print $3}' | sort | uniq | tee > /tmp/nvidia
-                for nvpid in $(cat /tmp/nvidia); do 
-                    sudo kill -9 $nvpid 
-                    sleep 1
-                done
-                while :; do
-                    removed=0
-                    for m in $(lsmod | awk '/^nvidia/ {print $1}'); do
-                        if [ ! -d "/sys/module/$m/holders" ] || [ -z "$(ls -A /sys/module/$m/holders 2>/dev/null)" ]; then
-                            sudo rmmod -f "$m" && removed=1
-                        fi
-                    done
-                    [ "$removed" -eq 0 ] && break
-                done
-            """)
-        ], check=True)
+        subprocess.run("sudo fuser -v /dev/nvidia* 2>/dev/null | awk 'NR>1 {print $3}' | sort -u | xargs -r sudo kill -9", check=True, shell=True)
+        subprocess.run("while mods=$(lsmod | awk '/^nvidia/ {print $1}'); [ -n \"$mods\" ] && sudo modprobe -r $mods 2>/dev/null; do :; done", check=True, shell=True)
         subprocess.run([
             "sudo", 
             "env", 
