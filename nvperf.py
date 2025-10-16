@@ -49,7 +49,7 @@ class CMD_info:
     
     def run(self):
         run_cmd("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total --format=csv")
-        run_cmd("glxinfo -B | grep 'renderer string' || true")
+        run_cmd("set -o pipefail; glxinfo -B | grep 'renderer string'")
         for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
             value = os.environ.get(key)
             print(f"{key}={value}") if value is not None else None 
