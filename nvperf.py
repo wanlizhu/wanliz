@@ -180,11 +180,11 @@ class CMD_install:
         if not os.path.exists(driver):
             raise RuntimeError(f"File doesn't exist: {driver}")
         
-        subprocess.run("""\
+        subprocess.run(r"""\
             for dm in gdm3 gdm sddm lightdm; do 
                 if systemctl is-active --quiet $dm; then 
                     sudo systemctl stop $dm 
-                done 
+                fi 
             done 
         """, check=True, shell=True)
         subprocess.run("sudo fuser -k -TERM /dev/nvidia* 2>/dev/null", check=True, shell=True)
