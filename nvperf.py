@@ -63,7 +63,7 @@ class CMD_startx:
         return "Start a bare X server for graphics profiling"
     
     def run(self):
-        subprocess.run(f"screen -S bareX -c \"sudo X {os.environ['DISPLAY']} -ac +iglx || read -p 'Press [Enter] to exit: '\"", check=True, shell=True)
+        subprocess.run(f"screen -S bareX bash -lci \"sudo X {os.environ['DISPLAY']} -ac +iglx || read -p 'Press [Enter] to exit: '\"", check=True, shell=True)
         while not (os.path.exists("/tmp/.X11-unix/X0") and stat.S_ISSOCK(os.stat("/tmp/.X11-unix/X0").st_mode)):
             time.sleep(0.1)
 
