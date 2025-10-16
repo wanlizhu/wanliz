@@ -41,7 +41,6 @@ def run_cmd(args, cwd=f"{os.getcwd()}", newline=False):
             print("")
     except (subprocess.CalledProcessError, FileNotFoundError, RuntimeError) as e:
         print(type(e).__name__, "-", e)
-        exit(1)
 
 class CMD_info:
     def __str__(self):
