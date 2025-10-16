@@ -48,6 +48,7 @@ class CMD_info:
         return "Get GPU HW and driver info"
     
     def run(self):
+        run_cmd("glxgears")
         run_cmd("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total --format=csv")
         run_cmd("set -o pipefail; glxinfo -B | grep 'renderer string'")
         for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
