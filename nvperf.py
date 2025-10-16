@@ -228,7 +228,7 @@ class CMD_install:
             subprocess.run(f"mkdir -p {output_dir}", check=True, shell=True)
             subprocess.run([
                 "rsync", "-ah", "--progress", 
-                f"wanliz@{host}:" + os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}"), 
+                f"wanliz@{host}:" + os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}") + "/", 
                 output_dir
             ], check=True)
 
