@@ -74,11 +74,15 @@ class CMD_startx:
             print("Unsandbag \t [ SKIPPED ]")
 
         if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e"):
-            subprocess.run("sudo /mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug --lock_loose  set pstateId   P0", check=True, shell=True)
-            subprocess.run("sudo /mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug --lock_strict set gpcclkkHz  2000000", check=True, shell=True)
-            subprocess.run("sudo /mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug --lock_loose  set xbarclkkHz 1800000", check=True, shell=True)
-            subprocess.run("sudo /mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug --force_regime  ffr", check=True, shell=True)
-
+            perfdebug = "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug"
+            if os.path.exists(perfdebug):
+                subprocess.run(f"sudo {perfdebug} --lock_loose  set pstateId   P0", check=True, shell=True)
+                subprocess.run(f"sudo {perfdebug} --lock_strict set gpcclkkHz  2000000", check=True, shell=True)
+                subprocess.run(f"sudo {perfdebug} --lock_loose  set xbarclkkHz 1800000", check=True, shell=True)
+                subprocess.run(f"sudo {perfdebug} --force_regime  ffr", check=True, shell=True)
+            else:
+                print(f"File doesn't exist: {perfdebug}")
+                print("Lock clocks \t [ SKIPPED ]")
 
 class CMD_nvmake:
     def __str__(self):
@@ -169,6 +173,7 @@ class CMD_install:
         subprocess.run("sudo fuser -k -KILL /dev/nvidia* 2>/dev/null || true", check=True, shell=True)
         subprocess.run("while mods=$(lsmod | awk '/^nvidia/ {print $1}'); [ -n \"$mods\" ] && sudo modprobe -r $mods 2>/dev/null; do :; done", check=True, shell=True)
         subprocess.run(f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} -s --no-kernel-module-source --skip-module-load", check=True, shell=True)
+        subprocess.run("nvidia-smi", check=True, shell=True)
 
     def __select_nvidia_driver(self, host):
         branch  = input(f"{BOLD}{CYAN}[1/4] Target branch ({RESET}{DIM}[r580]{RESET}{BOLD}{CYAN}/bugfix_main): {RESET}")
