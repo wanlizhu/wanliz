@@ -10,6 +10,7 @@ import textwrap
 import signal
 import re
 import pathlib
+import shlex
 
 RESET = "\033[0m"
 DIM   = "\033[90m"  
@@ -50,13 +51,18 @@ class CMD_config:
         return "Configure test environment"
     
     def run(self):
+        # Enable no-password sudo
+        subprocess.run(["bash", "-lc", """
+            if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
+                echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
+            fi"""], check=True)
+        print("No-password sudo \t [ ENABLED ]")
+
         # Mount required folders
         if not any(p.mountpoint == "/mnt/linuxqa" for p in psutil.disk_partitions(all=True)):
             subprocess.run("sudo mkdir -p /mnt/linuxqa", check=True, shell=True)
             subprocess.run("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa", check=True, shell=True)
-            print("Mounted /mnt/linuxqa")
-        else: 
-            print("Mounted /mnt/linuxqa \t [ SKIPPED ]")
+        print("/mnt/linuxqa \t [ MOUNTED ]")
 
         # Add known host IPs (hostname -> IP)
         hosts = {
@@ -79,6 +85,49 @@ class CMD_config:
         subprocess.run("sudo install -m 644 /tmp/hosts /etc/hosts", check=True, shell=True)
         print("/etc/hosts \t [ UPDATED ]")
 
+        if not os.path.exists(os.path.expanduser("~/.ssh/id_ed25519")):
+            cipher_prv = "U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo"
+            subprocess.run(["bash", "-lc", f"echo '{cipher_prv}' | openssl enc -d -aes-256-cbc -pbkdf2 -a > $HOME/.ssh/id_ed25519"], check=True)
+            subprocess.run("chmod 600 ~/.ssh/id_ed25519", check=True, shell=True)
+            subprocess.run("echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > $HOME/.ssh/id_ed25519.pub", check=True, shell=True)
+            subprocess.run("chmod 644 ~/.ssh/id_ed25519.pub", check=True, shell=True)
+            print("~/.ssh/id_ed25519.pub \t [ ADDED ]")
+
+        if not os.path.exists(os.path.expanduser("~/.gtl_api_key")):
+            cipher = "U2FsdGVkX18BU0ZpoGynLWZBV16VNV2x85CjdpJfF+JF4HhpClt/vTyr6gs6GAq0lDVWvNk7L7s7eTFcJRhEnU4IpABfxIhfktMypWw85PuJCcDXOyZm396F02KjBRwunVfNkhfuinb5y2L6YR9wYbmrGDn1+DjodSWzt1NgoWotCEyYUz0xAIstEV6lF5zedcGwSzHDdFhj3hh5YxQFANL96BFhK9aSUs4Iqs9nQIT9evjinEh5ZKNq5aJsll91czHS2oOi++7mJ9v29sU/QjaqeSWDlneZj4nPYXhZRCw="
+            subprocess.run(["bash", "-lc", f"echo '{cipher}' | openssl enc -d -aes-256-cbc -pbkdf2 -a > ~/.gtl_api_key"], check=True)
+            subprocess.run("chmod 500 ~/.gtl_api_key", check=True, shell=True)
+            print("~/.gtl_api_key \t [ ADDED ]")
+        
+        if os.path.exists(os.path.expanduser("~/SinglePassCapture")):
+            subprocess.run(["bash", "-lc", """
+                export PIP_BREAK_SYSTEM_PACKAGES=1
+                pip install -i https://sc-hw-artf.nvidia.com/artifactory/api/pypi/hwinf-pi-pypi/simple \
+                    --extra-index-url https://urm.nvidia.com/artifactory/api/pypi/nv-shared-pypi/simple \
+                    --extra-index-url https://pypi.perflab.nvidia.com pi-uploader &>/dev/null
+                pip install -r $HOME/SinglePassCapture/Scripts/requirements.txt \
+                    -r $HOME/SinglePassCapture/PerfInspector/processing/requirements.txt \
+                    -r $HOME/SinglePassCapture/PerfInspector/processing/requirements_perfsim.txt \
+                    -r $HOME/SinglePassCapture/PerfInspector/processing/requirements_with_extra_index.txt
+            """], check=True)
+            print("PI report uploader packages \t [ INSTALLED ]")
+
+
+class CMD_mountwin:
+    def __str__(self):
+        return "Mount windows shared folder on Linux"
+    
+    def run(self):
+        windows_folder = input("Windows shared folder: ").strip().replace("\\", "/")
+        windows_folder = shlex.quote(windows_folder)
+        mount_dir = f"/mnt/{pathlib.Path(windows_folder).name}.cifs"
+        subprocess.run(["bash", "-lc", f"""
+            if ! command -v mount.cifs >/dev/null 2>&1; then
+                sudo apt install -y cifs-utils
+            fi 
+            sudo mkdir -p {mount_dir} &&
+            sudo mount -t cifs {windows_folder} {mount_dir} -o username=wanliz 
+        """], check=True)
 
 
 class CMD_startx:
@@ -87,7 +136,7 @@ class CMD_startx:
     
     def run(self):
         # Start a bare X server in GNU screen
-        subprocess.run(f"screen -S bareX bash -lci \"sudo X {os.environ['DISPLAY']} -ac +iglx || read -p 'Press [Enter] to exit: '\"", check=True, shell=True)
+        subprocess.run(["bash", "-lc", f"screen -S bareX bash -lci \"sudo X {os.environ['DISPLAY']} -ac +iglx || read -p 'Press [Enter] to exit: '\""], check=True)
         while not (os.path.exists("/tmp/.X11-unix/X0") and stat.S_ISSOCK(os.stat("/tmp/.X11-unix/X0").st_mode)):
             time.sleep(0.1)
 
@@ -194,16 +243,16 @@ class CMD_install:
             raise RuntimeError(f"File doesn't exist: {driver}")
         
         # Stop running display manager and kill all processes utilizing nvidia GPU 
-        subprocess.run(r"""
+        subprocess.run(["bash", "-lc", r"""
             for dm in gdm3 gdm sddm lightdm; do 
                 if systemctl is-active --quiet $dm; then 
                     sudo systemctl stop $dm 
                 fi 
             done 
-        """, check=True, shell=True)
+        """], check=True)
         subprocess.run("sudo fuser -k -TERM /dev/nvidia* 2>/dev/null || true", check=True, shell=True)
         subprocess.run("sudo fuser -k -KILL /dev/nvidia* 2>/dev/null || true", check=True, shell=True)
-        subprocess.run("while mods=$(lsmod | awk '/^nvidia/ {print $1}'); [ -n \"$mods\" ] && sudo modprobe -r $mods 2>/dev/null; do :; done", check=True, shell=True)
+        subprocess.run(["bash", "-lc", "while mods=$(lsmod | awk '/^nvidia/ {print $1}'); [ -n \"$mods\" ] && sudo modprobe -r $mods 2>/dev/null; do :; done"], check=True)
         subprocess.run(f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} -s --no-kernel-module-source --skip-module-load", check=True, shell=True)
         subprocess.run("nvidia-smi", check=True, shell=True)
 
@@ -267,6 +316,82 @@ class CMD_install:
         return versions[0] if selected == "" else selected 
 
 
+class CMD_viewperf:
+    def __str__(self):
+        return "Start profiling viewperf 2020 v3"
+    
+    def run(self):
+        viewset = input(f"{BOLD}{CYAN}[1/3] Target viewset ({RESET}{DIM}[maya]{RESET}{BOLD}{CYAN}/catia/creo/energy/medical/snx/sw): {RESET}")
+        viewset = "maya" if viewset == "" else viewset
+        subtest = input(f"{BOLD}{CYAN}[2/3] Target subtest ({RESET}{DIM}[all]{RESET}{BOLD}{CYAN}/<valid_index>): {RESET}")
+        subtest = "" if subtest == "all" else subtest
+        env = input(f"{BOLD}{CYAN}[3/3] Launch in profiling/debug env ({RESET}{DIM}[no]{RESET}{BOLD}{CYAN}/pic-x/gdb): {RESET}")
+        env = "no" if env == "" else env 
+
+        exe = os.path.expanduser('~/viewperf2020v3/viewperf/bin/viewperf')
+        arg = f"viewsets/{viewset}/config/{viewset}.xml {subtest} -resolution 3840x2160" 
+        dir = os.path.expanduser('~/viewperf2020v3')
+        
+        if env == "pic-x":
+            api = input(f"{BOLD}{CYAN}[1/5] Capture graphics API ({RESET}{DIM}[ogl]{RESET}{BOLD}{CYAN}/vk): {RESET}")
+            api = "ogl" if api == "" else api 
+            startframe = input(f"{BOLD}{CYAN}[2/5] Start capturing at frame index ({RESET}{DIM}[100]{RESET}{BOLD}{CYAN}/<valid_index>): {RESET}")
+            startframe = "100" if startframe == "" else startframe
+            frames = input(f"{BOLD}{CYAN}[3/5] Number of frames to capture ({RESET}{DIM}[3]{RESET}{BOLD}{CYAN}/<valid_number>): {RESET}")
+            frames = "3" if frames == "" else frames
+            count = sum(1 for p in pathlib.Path("").glob("viewperf_{viewset}{subtest}_*") if p.is_file())
+            default_name = f"viewperf_{viewset}{subtest}_{count}"
+            name = input(f"{BOLD}{CYAN}[4/5] Output name ({RESET}{DIM}[{default_name}]{RESET}{BOLD}{CYAN}/<valid_name>): {RESET}")
+            name = default_name if name == "" else name 
+            upload = input(f"{BOLD}{CYAN}[5/5] Upload output to GTL for sharing ({RESET}{DIM}[no]{RESET}{BOLD}{CYAN}/yes): {RESET}")
+            upload = "no" if upload == "" else upload
+            subprocess.run([
+                "sudo", 
+                os.path.expanduser("~/SinglePassCapture/pic-x"),
+                f"--api={api}",
+                "--check_clocks=0",
+                f"--startframe={startframe}",
+                f"--frames={frames}",
+                f"--name={name}",
+                f"--exe={exe}",
+                f"--arg={arg}",
+                f"--workdir={dir}"
+            ], check=True)
+            if upload == "yes":
+                script = f"~/SinglePassCapture/PerfInspector/output/{name}/upload_report.sh"
+                subprocess.run(os.path.expanduser(script), check=True, shell=True)
+        elif env == "gdb":
+            subprocess.run(["bash", "-lc", f"""
+                if ! command -v cgdb >/dev/null 2>&1; then
+                    sudo apt install -y cgdb
+                fi 
+                
+                gdbenv=()
+                while IFS='=' read -r k v; do 
+                    gdbenv+=( -ex "set env $k $v" )
+                done < <(env | grep -E '^(__GL_|LD_)')
+
+                cd {dir}
+                cgdb -- \
+                    -ex "set trace-commands on" \
+                    -ex "set pagination off" \
+                    -ex "set confirm off" \
+                    -ex "set debuginfod enabled on" \
+                    -ex "set breakpoint pending on" \
+                    "${{gdbenv[@]}}" \
+                    -ex "file {exe}" \
+                    -ex "set args {arg}" \
+                    -ex "set trace-commands off"
+            """], check=True)
+        else:
+            subprocess.run(f"{exe} {arg}", cwd=dir, check=True, shell=True)
+            pattern = f"~/viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
+            matches = list(pathlib.Path.home().glob(pattern))
+            results = max(matches, key=lambda p: p.stat().st_mtime) if matches else None
+            if results is not None:
+                subprocess.run(f"cat {results}", check=True, shell=True)
+
+
 if __name__ == "__main__":
     cmds = []
     cmds_desc = []
@@ -287,4 +412,3 @@ if __name__ == "__main__":
         cmd.run()
     except Exception as e:
         print(f"{type(e).__name__}: {e}", file=sys.stderr)
-    
