@@ -50,6 +50,7 @@ class CMD_config:
         return "Configure test environment"
     
     def run(self):
+        # Mount required folders
         if not any(p.mountpoint == "/mnt/linuxqa" for p in psutil.disk_partitions(all=True)):
             subprocess.run("sudo mkdir -p /mnt/linuxqa", check=True, shell=True)
             subprocess.run("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa", check=True, shell=True)
@@ -57,22 +58,45 @@ class CMD_config:
         else: 
             print("Mounted /mnt/linuxqa \t [ SKIPPED ]")
 
+        # Add known host IPs (hostname -> IP)
+        hosts = {
+            "office": "172.16.179.143",
+            "proxy": "10.176.11.106",
+            "horizon5": "172.16.178.123",
+            "horizon6": "172.16.177.182",
+            "horizon7": "172.16.177.216",
+        }
+        hosts_out = []
+        for line in pathlib.Path("/etc/hosts").read_text().splitlines():
+            if line.strip().startswith("#"): 
+                continue
+            if any(name in hosts for name in line.split()[1:]):
+                continue 
+            hosts_out.append(line)
+        hosts_out += [f"{ip}\t{name}" for name, ip in hosts.items()]
+        pathlib.Path("/tmp/hosts").write_text("\n".join(hosts_out) + "\n")
+        subprocess.run("sudo install -m 644 /tmp/hosts /etc/hosts", check=True, shell=True)
+
+
 
 class CMD_startx:
     def __str__(self):
         return "Start a bare X server for graphics profiling"
     
     def run(self):
+        # Start a bare X server in GNU screen
         subprocess.run(f"screen -S bareX bash -lci \"sudo X {os.environ['DISPLAY']} -ac +iglx || read -p 'Press [Enter] to exit: '\"", check=True, shell=True)
         while not (os.path.exists("/tmp/.X11-unix/X0") and stat.S_ISSOCK(os.stat("/tmp/.X11-unix/X0").st_mode)):
             time.sleep(0.1)
 
+        # Unsandbag for much higher perf 
         if os.path.exists(os.path.expanduser("~/sandbag-tool")):
             subprocess.run(f"{os.path.expanduser('~/sandbag-tool')} -unsandbag", check=True, shell=True)
         else:
             print("File doesn't exist: ~/sandbag-tool")
             print("Unsandbag \t [ SKIPPED ]")
 
+        # Lock GPU clocks 
         if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e"):
             perfdebug = "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug"
             if os.path.exists(perfdebug):
@@ -91,6 +115,8 @@ class CMD_nvmake:
     def run(self):
         if "P4ROOT" not in os.environ: 
             raise RuntimeError("P4ROOT is not defined")
+        
+        # Collect compiling arguments 
         branch = input(f"{BOLD}{CYAN}[1/6] Target branch ({RESET}{DIM}[r580]{RESET}{BOLD}{CYAN}/bugfix_main): {RESET}")
         branch = "r580" if branch == "" else branch
         branch = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
@@ -108,6 +134,7 @@ class CMD_nvmake:
         clean  = input(f"{BOLD}{CYAN}[6/6] Make a clean build ({RESET}{DIM}[no]{RESET}{BOLD}{CYAN}/yes): {RESET}")
         clean  = "no" if clean == "" else clean 
 
+        # Clean previous builds
         if clean == "yes":
             subprocess.run([
                 f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
@@ -117,6 +144,7 @@ class CMD_nvmake:
                 "nvmake", "sweep"
             ], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
 
+        # Run nvmake through unix-build 
         subprocess.run([x for x in [
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
             "--unshare-namespaces", 
@@ -150,11 +178,12 @@ class CMD_install:
     def run(self):
         driver = input(f"{BOLD}{CYAN}Driver path ({RESET}{DIM}[office]{RESET}{BOLD}{CYAN}/local): {RESET}")
         driver = "office" if driver == "" else driver
+
         if driver == "local":
             branch, config, arch, version = self.__select_nvidia_driver("local")
             driver = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
         elif driver == "office":
-            branch, config, arch, version = self.__select_nvidia_driver("office")
+            branch, config, arch, version = self.__select_nvidia_driver("office") # The entire output folder to be synced to /tmp/office/
             driver = os.path.expanduser(f"/tmp/office/_out/Linux_{arch}_{config}/NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
         else: 
             raise RuntimeError("Invalid argument")
@@ -162,6 +191,7 @@ class CMD_install:
         if not os.path.exists(driver):
             raise RuntimeError(f"File doesn't exist: {driver}")
         
+        # Stop running display manager and kill all processes utilizing nvidia GPU 
         subprocess.run(r"""
             for dm in gdm3 gdm sddm lightdm; do 
                 if systemctl is-active --quiet $dm; then 
@@ -174,6 +204,8 @@ class CMD_install:
         subprocess.run("while mods=$(lsmod | awk '/^nvidia/ {print $1}'); [ -n \"$mods\" ] && sudo modprobe -r $mods 2>/dev/null; do :; done", check=True, shell=True)
         subprocess.run(f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} -s --no-kernel-module-source --skip-module-load", check=True, shell=True)
         subprocess.run("nvidia-smi", check=True, shell=True)
+
+        # Copy tests-Linux-***.tar to ~
         tests = pathlib.Path(driver).parent / f"tests-Linux-{'x86_64' if arch == 'amd64' else arch}.tar"
         if tests.is_file():
             subprocess.run(f"tar -xf {tests} -C {pathlib.Path(driver).parent}", check=True, shell=True)
@@ -199,6 +231,7 @@ class CMD_install:
     def __select_nvidia_driver_version(self, host, branch, config, arch):
         if "P4ROOT" not in os.environ: 
             raise RuntimeError("P4ROOT is not defined")
+        
         if host == "local":
             output_dir = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}")
         else:
@@ -207,6 +240,7 @@ class CMD_install:
             subprocess.run(f"mkdir -p {output_dir}", check=True, shell=True)
             subprocess.run(f"rsync -ah --progress wanliz@{host}:{remote_dir}/ {output_dir}", check=True, shell=True)
 
+        # Collect versions of all driver packages 
         pattern = re.compile(r'^NVIDIA-Linux-(?:x86_64|aarch64)-(?P<ver>\d+\.\d+(?:\.\d+)?)-internal\.run$')
         versions = [
             match.group('ver') for path in pathlib.Path(output_dir).iterdir()
@@ -219,6 +253,7 @@ class CMD_install:
             reverse=True,
         ) # versions[0] is the latest
 
+        # Skip selection if there is only one version available 
         if len(versions) > 1:
             selected = input(f"{BOLD}{CYAN}[4/4] Target driver version ({RESET}{DIM}{versions[0]}{RESET}{BOLD}{CYAN}{'/'.join(versions[1:])}): {RESET}")
         elif len(versions) == 1:
