@@ -65,6 +65,7 @@ class CMD_config:
             "horizon5": "172.16.178.123",
             "horizon6": "172.16.177.182",
             "horizon7": "172.16.177.216",
+            "n1x6": "10.31.40.241",
         }
         hosts_out = []
         for line in pathlib.Path("/etc/hosts").read_text().splitlines():
@@ -76,6 +77,7 @@ class CMD_config:
         hosts_out += [f"{ip}\t{name}" for name, ip in hosts.items()]
         pathlib.Path("/tmp/hosts").write_text("\n".join(hosts_out) + "\n")
         subprocess.run("sudo install -m 644 /tmp/hosts /etc/hosts", check=True, shell=True)
+        print("/etc/hosts \t [ UPDATED ]")
 
 
 
