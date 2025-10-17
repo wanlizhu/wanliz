@@ -385,7 +385,7 @@ class CMD_viewperf:
             """], check=True)
         else:
             subprocess.run(f"{exe} {arg}", cwd=dir, check=True, shell=True)
-            pattern = f"~/viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
+            pattern = f"viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
             matches = list(pathlib.Path.home().glob(pattern))
             results = max(matches, key=lambda p: p.stat().st_mtime) if matches else None
             if results is not None:
