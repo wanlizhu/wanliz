@@ -289,14 +289,14 @@ class CMD_install:
                 fi 
             done 
         """], check=True)
-        subprocess.run("sudo fuser -k -TERM /dev/nvidia* &>/dev/null || true", check=True, shell=True)
-        subprocess.run("sudo fuser -k -KILL /dev/nvidia* &>/dev/null || true", check=True, shell=True)
+        subprocess.run(["bash", "-lc", "sudo fuser -k -TERM /dev/nvidia* &>/dev/null || true"], check=True)
+        subprocess.run(["bash", "-lc", "sudo fuser -k -KILL /dev/nvidia* &>/dev/null || true"], check=True)
         subprocess.run(["bash", "-lc", "while mods=$(lsmod | awk '/^nvidia/ {print $1}'); [ -n \"$mods\" ] && sudo modprobe -r $mods &>/dev/null; do :; done"], check=True)
         automated = horizontal_select("Automated install", ["yes", "no"], 0)
         if automated == "yes":
-            subprocess.run(f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} -s --no-kernel-module-source --skip-module-load", check=True, shell=True)
+            subprocess.run(["bash", "-lc", f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} -s --no-kernel-module-source --skip-module-load"], check=True)
         else:
-            subprocess.run(f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver}", check=True, shell=True)
+            subprocess.run(["bash", "-lc", f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver}"], check=True)
         subprocess.run("nvidia-smi", check=True, shell=True)
 
         # Copy tests-Linux-***.tar to ~
