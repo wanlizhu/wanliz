@@ -45,7 +45,6 @@ def horizontal_select(prompt, options, index):
     DIM   = "\033[90m" 
     CYAN  = "\033[36m" 
     BOLD  = "\033[1m"  
-    buffer = []
     try:
         stdin_fd = sys.stdin.fileno()
         oldattr = termios.tcgetattr(stdin_fd)
@@ -58,8 +57,12 @@ def horizontal_select(prompt, options, index):
             if ch1 in ("\r", "\n"): # Enter
                 sys.stdout.write("\r\n")
                 sys.stdout.flush()
-                if len(buffer) > 0: return "".join(buffer)
-                else: return options[index]
+                if options[index] == "<input>":
+                    termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
+                    stdin_fd = None
+                    return input(": ")
+                else:
+                    return options[index]
             if ch1 == "\x1b": # ESC or escape sequence
                 ch2 = sys.stdin.read(2)
                 if ch2 == "[D": index = max(index - 1, 0)
@@ -68,10 +71,10 @@ def horizontal_select(prompt, options, index):
                     sys.stdout.write("\r\n")
                     sys.stdout.flush() 
                     return None # ESC
-            elif ch1 == "\x7f": # Backspace (no echo)
-                if buffer: buffer.pop()
-            elif ch1.isprintable():
-                buffer.append(ch1)
+            elif ch1 == "\x03": # Ctrl-C
+                sys.stdout.write("\r\n")
+                sys.stdout.flush() 
+                exit(0)
     finally:
         if stdin_fd is not None and oldattr is not None:
             termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
