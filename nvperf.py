@@ -56,7 +56,7 @@ def horizontal_select(prompt, options, index):
             sys.stdout.flush()
             ch1 = sys.stdin.read(1)
             if ch1 in ("\r", "\n"): # Enter
-                sys.stdout.write("\n")
+                sys.stdout.write("\r\n")
                 sys.stdout.flush()
                 if len(buffer) > 0: return "".join(buffer)
                 else: return options[index]
@@ -65,7 +65,7 @@ def horizontal_select(prompt, options, index):
                 if ch2 == "[D": index = max(index - 1, 0)
                 elif ch2 == "[C": index = min(index + 1, len(options) - 1)
                 else:
-                    sys.stdout.write("\n")
+                    sys.stdout.write("\r\n")
                     sys.stdout.flush() 
                     return None # ESC
             elif ch1 == "\x7f": # Backspace (no echo)
