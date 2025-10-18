@@ -11,6 +11,8 @@ import signal
 import re
 import pathlib
 import shlex
+import tty 
+import termios
 
 RESET = "\033[0m"
 DIM   = "\033[90m"  
@@ -33,6 +35,44 @@ if not os.environ.get("DISPLAY"):    os.environ["DISPLAY"] = ":0"
 if not os.environ.get("XAUTHORITY"): os.environ["XAUTHORITY"] = os.path.expanduser("~/.Xauthority") 
 
 signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
+
+
+def horizontal_select(prompt, options, index):
+    if len(options) == 0 or index is None:
+        return None 
+    
+    RESET = "\033[0m"  
+    DIM   = "\033[90m" 
+    CYAN  = "\033[36m" 
+    BOLD  = "\033[1m"  
+    oldattr = termios.tcgetattr(sys.stdin.fileno())
+    tty.setraw(sys.stdin.fileno())
+    buffer = []
+    out = None 
+
+    while index >= 0 and index < len(options):
+        options_str = "/".join(f"{RESET}{DIM}[{option}]{RESET}{BOLD}{CYAN}" if i == index else option for i, option in enumerate(options))
+        sys.stdout.write("\r\033[2K" + f"{BOLD}{CYAN}{prompt} ({options_str}): {RESET}")
+        sys.stdout.flush()
+        ch1 = sys.stdin.read(1)
+        if ch1 in ("\r", "\n"): # Enter
+            if len(buffer) > 0: out = "".join(buffer)
+            else: out = options[index]
+            break 
+        if ch1 == "\x1b": # ESC or escape sequence
+            ch2 = sys.stdin.read(2)
+            if ch2 == "[D": index = max(index - 1, 0)
+            elif ch2 == "[C": index = min(index + 1, len(options) - 1)
+            else: break # ESC
+        elif ch1 == "\x7f": # Backspace (no echo)
+            if buffer: buffer.pop()
+        elif ch1.isprintable():
+            buffer.append(ch1)
+    
+    termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, oldattr)
+    return out 
+
+
 
 
 class CMD_info:
