@@ -208,22 +208,15 @@ class CMD_nvmake:
             raise RuntimeError("P4ROOT is not defined")
         
         # Collect compiling arguments 
-        branch = input(f"{BOLD}{CYAN}[1/6] Target branch ({RESET}{DIM}[r580]{RESET}{BOLD}{CYAN}/bugfix_main): {RESET}")
-        branch = "r580" if branch == "" else branch
+        branch = horizontal_select("[1/6] Target branch", ["r580", "bugfix_main"], 0)
         branch = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
         branch = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
-        config = input(f"{BOLD}{CYAN}[2/6] Target config ({RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}/debug/release): {RESET}")
-        config = "develop" if config == "" else config 
-        arch   = input(f"{BOLD}{CYAN}[3/6] Target architecture ({RESET}{DIM}[amd64]{RESET}{BOLD}{CYAN}/aarch64)  : {RESET}")
-        arch   = "amd64" if arch == "" else arch 
-        module = input(f"{BOLD}{CYAN}[4/6] Target module ({RESET}{DIM}[drivers]{RESET}{BOLD}{CYAN}/opengl/sass): {RESET}")
-        module = "drivers" if module == "" else module 
-        regen  = input(f"{BOLD}{CYAN}[4a/6] Regen opengl code ({RESET}{DIM}[yes]{RESET}{BOLD}{CYAN}/no): {RESET}") if module == "opengl" else "no"
-        regen  = "yes" if regen == "" else regen 
-        jobs   = input(f"{BOLD}{CYAN}[5/6] Number of compiling threads ({RESET}{DIM}[{os.cpu_count()}]{RESET}{BOLD}{CYAN}/1): {RESET}")
-        jobs   = str(os.cpu_count()) if jobs == "" else jobs 
-        clean  = input(f"{BOLD}{CYAN}[6/6] Make a clean build ({RESET}{DIM}[no]{RESET}{BOLD}{CYAN}/yes): {RESET}")
-        clean  = "no" if clean == "" else clean 
+        config = horizontal_select("[2/6] Target config", ["develop", "debug", "release"], 0)
+        arch   = horizontal_select("[3/6] Target architecture", ["amd64", "aarch64"], 0)
+        module = horizontal_select("[4/6] Target module", ["drivers", "opengl"], 0)
+        regen  = horizontal_select("[4a/6] Regen opengl code", ["yes", "no"], 1) if module == "opengl" else "no"
+        jobs   = horizontal_select("[5/6] Number of compiling threads", [str(os.cpu_count()), "1"], 0)
+        clean  = horizontal_select("[6/6] Make a clean build", ["yes", "no"], 1)
 
         # Clean previous builds
         if clean == "yes":
@@ -267,9 +260,7 @@ class CMD_install:
         return "Install nvidia driver or other packages"
     
     def run(self):
-        driver = input(f"{BOLD}{CYAN}Driver path ({RESET}{DIM}[office]{RESET}{BOLD}{CYAN}/local): {RESET}")
-        driver = "office" if driver == "" else driver
-
+        driver = horizontal_select("Driver path", ["office", "local"], 0)
         if driver == "local":
             branch, config, arch, version = self.__select_nvidia_driver("local")
             driver = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
@@ -293,8 +284,8 @@ class CMD_install:
         subprocess.run("sudo fuser -k -TERM /dev/nvidia* &>/dev/null || true", check=True, shell=True)
         subprocess.run("sudo fuser -k -KILL /dev/nvidia* &>/dev/null || true", check=True, shell=True)
         subprocess.run(["bash", "-lc", "while mods=$(lsmod | awk '/^nvidia/ {print $1}'); [ -n \"$mods\" ] && sudo modprobe -r $mods &>/dev/null; do :; done"], check=True)
-        automated = input(f"{BOLD}{CYAN}Automated install ({RESET}{DIM}[yes]{RESET}{BOLD}{CYAN}/no): {RESET}")
-        if automated in ("yes", ""):
+        automated = horizontal_select("Automated install", ["yes", "no"], 0)
+        if automated == "yes":
             subprocess.run(f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} -s --no-kernel-module-source --skip-module-load", check=True, shell=True)
         else:
             subprocess.run(f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver}", check=True, shell=True)
@@ -308,18 +299,11 @@ class CMD_install:
 
 
     def __select_nvidia_driver(self, host):
-        branch  = input(f"{BOLD}{CYAN}[1/4] Target branch ({RESET}{DIM}[r580]{RESET}{BOLD}{CYAN}/bugfix_main): {RESET}")
-        branch  = "r580" if branch == "" else branch
+        branch  = horizontal_select("[1/4] Target branch", ["r580", "bugfix_main"], 0)
         branch  = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
         branch  = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
-        config  = input(f"{BOLD}{CYAN}[2/4] Target config ({RESET}{DIM}[develop]{RESET}{BOLD}{CYAN}/debug/release): {RESET}")
-        config  = "develop" if config == "" else config 
-        if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e"):
-            arch    = input(f"{BOLD}{CYAN}[3/4] Target architecture ({RESET}{DIM}[aarch64]{RESET}{BOLD}{CYAN}/amd64): {RESET}")
-            arch    = "aarch64" if arch == "" else arch 
-        else:
-            arch    = input(f"{BOLD}{CYAN}[3/4] Target architecture ({RESET}{DIM}[amd64]{RESET}{BOLD}{CYAN}/aarch64): {RESET}")
-            arch    = "amd64" if arch == "" else arch 
+        config  = horizontal_select("[2/4] Target config", ["develop", "debug", "release"], 0)
+        arch    = horizontal_select("[3/4] Target architecture", ["amd64", "aarch64"], 1 if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e") else 0)
         version = self.__select_nvidia_driver_version(host, branch, config, arch)
         return branch, config, arch, version 
     
@@ -350,7 +334,7 @@ class CMD_install:
 
         # Skip selection if there is only one version available 
         if len(versions) > 1:
-            selected = input(f"{BOLD}{CYAN}[4/4] Target driver version ({RESET}{DIM}{versions[0]}{RESET}{BOLD}{CYAN}{'/'.join(versions[1:])}): {RESET}")
+            selected = horizontal_select("[4/4] Target driver version", versions, 0)
         elif len(versions) == 1:
             selected = versions[0]
             print(f"[4/4] Target driver version {selected} [ONLY]")
@@ -365,30 +349,22 @@ class CMD_viewperf:
         return "Start profiling viewperf 2020 v3"
     
     def run(self):
-        viewset = input(f"{BOLD}{CYAN}[1/3] Target viewset ({RESET}{DIM}[maya]{RESET}{BOLD}{CYAN}/catia/creo/energy/medical/snx/sw): {RESET}")
-        viewset = "maya" if viewset == "" else viewset
-        subtest = input(f"{BOLD}{CYAN}[2/3] Target subtest ({RESET}{DIM}[all]{RESET}{BOLD}{CYAN}/<valid_index>): {RESET}")
-        subtest = "" if subtest == "all" else subtest
-        env = input(f"{BOLD}{CYAN}[3/3] Launch in profiling/debug env ({RESET}{DIM}[no]{RESET}{BOLD}{CYAN}/pic-x/gdb): {RESET}")
-        env = "no" if env == "" else env 
-
+        viewset = horizontal_select("[1/3] Target viewset", ["catia", "creo", "energy", "maya", "medical", "snx", "sw"], 3)
+        subtest = input(f"{BOLD}{CYAN}[2/3] Target subtest (optional): {RESET}")
+        env = horizontal_select("[3/3] Launch in profiling/debug env", ["no", "pic-x", "gdb"], 0)
+    
         exe = os.path.expanduser('~/viewperf2020v3/viewperf/bin/viewperf')
         arg = f"viewsets/{viewset}/config/{viewset}.xml {subtest} -resolution 3840x2160" 
         dir = os.path.expanduser('~/viewperf2020v3')
         
         if env == "pic-x":
-            api = input(f"{BOLD}{CYAN}[1/5] Capture graphics API ({RESET}{DIM}[ogl]{RESET}{BOLD}{CYAN}/vk): {RESET}")
-            api = "ogl" if api == "" else api 
-            startframe = input(f"{BOLD}{CYAN}[2/5] Start capturing at frame index ({RESET}{DIM}[100]{RESET}{BOLD}{CYAN}/<valid_index>): {RESET}")
-            startframe = "100" if startframe == "" else startframe
-            frames = input(f"{BOLD}{CYAN}[3/5] Number of frames to capture ({RESET}{DIM}[3]{RESET}{BOLD}{CYAN}/<valid_number>): {RESET}")
-            frames = "3" if frames == "" else frames
+            api = horizontal_select("[1/5] Capture graphics API", ["ogl", "vk"], 0)
+            startframe = horizontal_select("[2/5] Start capturing at frame index", ["100", "<input>"], 0)
+            frames = horizontal_select("[3/5] Number of frames to capture", ["3", "<input>"], 0)
             count = sum(1 for p in pathlib.Path("").glob("viewperf_{viewset}{subtest}_*") if p.is_file())
             default_name = f"viewperf_{viewset}{subtest}_{count}"
-            name = input(f"{BOLD}{CYAN}[4/5] Output name ({RESET}{DIM}[{default_name}]{RESET}{BOLD}{CYAN}/<valid_name>): {RESET}")
-            name = default_name if name == "" else name 
-            upload = input(f"{BOLD}{CYAN}[5/5] Upload output to GTL for sharing ({RESET}{DIM}[no]{RESET}{BOLD}{CYAN}/yes): {RESET}")
-            upload = "no" if upload == "" else upload
+            name = horizontal_select("[4/5] Output name", [default_name, "<input>"], 0)
+            upload = horizontal_select("[5/5] Upload output to GTL for sharing", ["yes", "no"], 1)
             subprocess.run([
                 "sudo", 
                 os.path.expanduser("~/SinglePassCapture/pic-x"),
