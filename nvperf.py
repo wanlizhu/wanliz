@@ -45,34 +45,36 @@ def horizontal_select(prompt, options, index):
     DIM   = "\033[90m" 
     CYAN  = "\033[36m" 
     BOLD  = "\033[1m"  
-    oldattr = termios.tcgetattr(sys.stdin.fileno())
-    tty.setraw(sys.stdin.fileno())
     buffer = []
-    out = None 
-
-    while index >= 0 and index < len(options):
-        options_str = "/".join(f"{RESET}{DIM}[{option}]{RESET}{BOLD}{CYAN}" if i == index else option for i, option in enumerate(options))
-        sys.stdout.write("\r\033[2K" + f"{BOLD}{CYAN}{prompt} ({options_str}): {RESET}")
-        sys.stdout.flush()
-        ch1 = sys.stdin.read(1)
-        if ch1 in ("\r", "\n"): # Enter
-            if len(buffer) > 0: out = "".join(buffer)
-            else: out = options[index]
-            break 
-        if ch1 == "\x1b": # ESC or escape sequence
-            ch2 = sys.stdin.read(2)
-            if ch2 == "[D": index = max(index - 1, 0)
-            elif ch2 == "[C": index = min(index + 1, len(options) - 1)
-            else: break # ESC
-        elif ch1 == "\x7f": # Backspace (no echo)
-            if buffer: buffer.pop()
-        elif ch1.isprintable():
-            buffer.append(ch1)
-    
-    termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, oldattr)
-    return out 
-
-
+    try:
+        stdin_fd = sys.stdin.fileno()
+        oldattr = termios.tcgetattr(stdin_fd)
+        tty.setraw(stdin_fd)
+        while index >= 0 and index < len(options):
+            options_str = "/".join(f"{RESET}{DIM}[{option}]{RESET}{BOLD}{CYAN}" if i == index else option for i, option in enumerate(options))
+            sys.stdout.write("\r\033[2K" + f"{BOLD}{CYAN}{prompt} ({options_str}): {RESET}")
+            sys.stdout.flush()
+            ch1 = sys.stdin.read(1)
+            if ch1 in ("\r", "\n"): # Enter
+                sys.stdout.write("\n")
+                sys.stdout.flush()
+                if len(buffer) > 0: return "".join(buffer)
+                else: return options[index]
+            if ch1 == "\x1b": # ESC or escape sequence
+                ch2 = sys.stdin.read(2)
+                if ch2 == "[D": index = max(index - 1, 0)
+                elif ch2 == "[C": index = min(index + 1, len(options) - 1)
+                else:
+                    sys.stdout.write("\n")
+                    sys.stdout.flush() 
+                    return None # ESC
+            elif ch1 == "\x7f": # Backspace (no echo)
+                if buffer: buffer.pop()
+            elif ch1.isprintable():
+                buffer.append(ch1)
+    finally:
+        if stdin_fd is not None and oldattr is not None:
+            termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
 
 
 class CMD_info:
