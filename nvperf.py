@@ -13,6 +13,7 @@ import pathlib
 import shlex
 import tty 
 import termios
+import select 
 
 RESET = "\033[0m"
 DIM   = "\033[90m"  
@@ -64,7 +65,9 @@ def horizontal_select(prompt, options, index):
                 else:
                     return options[index]
             if ch1 == "\x1b": # ESC or escape sequence
-                ch2 = sys.stdin.read(2)
+                # Peek: if no next byte immediately -> plain ESC
+                readables, _, _ = select.select([sys.stdin], [], [], 0.05)
+                ch2 = sys.stdin.read(2) if readables else None 
                 if ch2 == "[D": index = max(index - 1, 0)
                 elif ch2 == "[C": index = min(index + 1, len(options) - 1)
                 else:
@@ -223,15 +226,6 @@ class CMD_nvmake:
         jobs   = horizontal_select("[5/6] Number of compiling threads", [str(os.cpu_count()), "1"], 0)
         clean  = horizontal_select("[6/6] Make a clean build", ["yes", "no"], 1)
 
-        print(f"branch={branch}")
-        print(f"config={config}")
-        print(f"arch={arch}")
-        print(f"module={module}")
-        print(f"regen={regen}")
-        print(f"jobs={jobs}")
-        print(f"clean={clean}")
-        exit(0)
-
         # Clean previous builds
         if clean == "yes":
             subprocess.run([
@@ -284,12 +278,6 @@ class CMD_install:
         else: 
             raise RuntimeError("Invalid argument")
         
-        print(f"branch={branch}")
-        print(f"config={config}")
-        print(f"arch={arch}")
-        print(f"version={version}")
-        exit(0)
-
         if not os.path.exists(driver):
             raise RuntimeError(f"File doesn't exist: {driver}")
         
@@ -385,11 +373,6 @@ class CMD_viewperf:
             default_name = f"viewperf_{viewset}{subtest}_{count}"
             name = horizontal_select("[4/5] Output name", [default_name, "<input>"], 0)
             upload = horizontal_select("[5/5] Upload output to GTL for sharing", ["yes", "no"], 1)
-            print(f"api={api}")
-            print(f"startframe={startframe}")
-            print(f"name={name}")
-            print(f"upload={upload}")
-            exit(0)
             subprocess.run([
                 "sudo", 
                 os.path.expanduser("~/SinglePassCapture/pic-x"),
