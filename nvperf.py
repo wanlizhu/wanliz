@@ -42,8 +42,10 @@ signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 def horizontal_select(prompt, options, index):
     global ARGPOS
     if ARGPOS > 0 and ARGPOS < len(sys.argv):
+        value = sys.argv[ARGPOS]
+        print(f"{prompt} : << {value}")
         ARGPOS += 1
-        return sys.argv[ARGPOS - 1]
+        return value 
     if options is None or index is None:
         return input(prompt)
     if len(options) <= index:
