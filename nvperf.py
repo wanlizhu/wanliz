@@ -65,15 +65,13 @@ def horizontal_select(prompt, options, index):
                 else:
                     return options[index]
             if ch1 == "\x1b": # ESC or escape sequence
-                # Peek: if no next byte immediately -> plain ESC
-                readables, _, _ = select.select([sys.stdin], [], [], 0.05)
-                ch2 = sys.stdin.read(2) if readables else None 
-                if ch2 == "[D": index = max(index - 1, 0)
-                elif ch2 == "[C": index = min(index + 1, len(options) - 1)
-                else:
+                esc_tail = ''.join(iter(lambda: (select.select([sys.stdin],[],[],0.02)[0] and sys.stdin.read(1)) or '', ''))
+                if not esc_tail: 
                     sys.stdout.write("\r\n")
                     sys.stdout.flush() 
-                    return None # ESC
+                    return None
+                elif esc_tail.endswith("D"): index = max(index - 1, 0)
+                elif esc_tail.endswith("C"): index = min(index + 1, len(options) - 1)
             elif ch1 == "\x03": # Ctrl-C
                 sys.stdout.write("\r\n")
                 sys.stdout.flush() 
