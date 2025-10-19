@@ -264,16 +264,17 @@ class CMD_rmmod:
         return "Remove loaded kernel modules of nvidia driver"
     
     def run(self):
-        subprocess.run(["bash", "-lc", r"""
-            for dm in gdm3 gdm sddm lightdm; do 
-                if systemctl is-active --quiet $dm; then 
-                    sudo systemctl stop $dm 
-                fi 
-            done 
-        """], check=True)
+        subprocess.run(["bash", "-lc", "sudo systemctl stop gdm gdm3 sddm lightdm xdm &>/dev/null || true"], check=True)
         subprocess.run(["bash", "-lc", "sudo fuser -k -TERM /dev/nvidia* &>/dev/null || true"], check=True)
         subprocess.run(["bash", "-lc", "sudo fuser -k -KILL /dev/nvidia* &>/dev/null || true"], check=True)
-        subprocess.run(["bash", "-lc", "while mods=$(lsmod | awk '/^nvidia/ {print $1}'); [ -n \"$mods\" ] && sudo modprobe -r $mods &>/dev/null; do :; done"], check=True)
+        subprocess.run(["bash", "-lc", r"""
+            for m in nvidia_drm video drm_kms_helper nvidia_modeset nvidia_uvm i2c_nvidia_gpu nvidia; do
+            if lsmod | awk -v m="$m" '$1==m{exit 0} END{exit 1}'; then
+                sudo modprobe -r "$m" || { echo "Failed to remove $m"; exit 1; }
+            fi
+            done
+        """], check=True)
+        subprocess.run(["bash", "-lc", "lsmod | grep -i '^nvidia' || echo 'All nvidia modules are removed'"], check=True)
 
     
 class CMD_install:
