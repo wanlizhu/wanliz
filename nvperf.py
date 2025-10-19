@@ -83,7 +83,7 @@ class CMD_info:
         return "Get GPU HW and driver info"
     
     def run(self):
-        subprocess.run(["bash", "-lc", "nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total,clocks.gr"], check=True)
+        subprocess.run(["bash", "-lc", "nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total,clocks.gr | column -s, -t"], check=True)
         subprocess.run(["bash", "-lc", "nvidia-smi -q | grep -i 'GSP Firmware Version'"], check=True)
         for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
             value = os.environ.get(key)
@@ -259,6 +259,23 @@ class CMD_nvmake:
         ] if x is not None and x != ""], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
         
 
+class CMD_rmmod:
+    def __str__(self):
+        return "Remove loaded kernel modules of nvidia driver"
+    
+    def run(self):
+        subprocess.run(["bash", "-lc", r"""
+            for dm in gdm3 gdm sddm lightdm; do 
+                if systemctl is-active --quiet $dm; then 
+                    sudo systemctl stop $dm 
+                fi 
+            done 
+        """], check=True)
+        subprocess.run(["bash", "-lc", "sudo fuser -k -TERM /dev/nvidia* &>/dev/null || true"], check=True)
+        subprocess.run(["bash", "-lc", "sudo fuser -k -KILL /dev/nvidia* &>/dev/null || true"], check=True)
+        subprocess.run(["bash", "-lc", "while mods=$(lsmod | awk '/^nvidia/ {print $1}'); [ -n \"$mods\" ] && sudo modprobe -r $mods &>/dev/null; do :; done"], check=True)
+
+    
 class CMD_install:
     def __str__(self):
         return "Install nvidia driver or other packages"
@@ -277,21 +294,12 @@ class CMD_install:
         if not os.path.exists(driver):
             raise RuntimeError(f"File doesn't exist: {driver}")
         
-        # Stop running display manager and kill all processes utilizing nvidia GPU 
-        subprocess.run(["bash", "-lc", r"""
-            for dm in gdm3 gdm sddm lightdm; do 
-                if systemctl is-active --quiet $dm; then 
-                    sudo systemctl stop $dm 
-                fi 
-            done 
-        """], check=True)
-        subprocess.run(["bash", "-lc", "sudo fuser -k -TERM /dev/nvidia* &>/dev/null || true"], check=True)
-        subprocess.run(["bash", "-lc", "sudo fuser -k -KILL /dev/nvidia* &>/dev/null || true"], check=True)
-        subprocess.run(["bash", "-lc", "while mods=$(lsmod | awk '/^nvidia/ {print $1}'); [ -n \"$mods\" ] && sudo modprobe -r $mods &>/dev/null; do :; done"], check=True)
         automated = horizontal_select("Automated install", ["yes", "no"], 0)
         if automated == "yes":
+            CMD_rmmod().run()
             subprocess.run(["bash", "-lc", f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} -s --no-kernel-module-source --skip-module-load"], check=True)
         else:
+            CMD_rmmod().run()
             subprocess.run(["bash", "-lc", f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver}"], check=True)
         subprocess.run("nvidia-smi", check=True, shell=True)
 
