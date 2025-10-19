@@ -16,7 +16,8 @@ import termios
 import select 
 
 RESET = "\033[0m"
-DIM   = "\033[90m"  
+DIM   = "\033[90m"
+RED   = "\033[31m"  
 CYAN  = "\033[36m"
 BOLD  = "\033[1m"
 ARGPOS = 1
@@ -43,12 +44,13 @@ def horizontal_select(prompt, options, index):
     global ARGPOS
     RESET = "\033[0m"  
     DIM   = "\033[90m" 
+    RED   = "\033[31m"
     CYAN  = "\033[36m" 
     BOLD  = "\033[1m"  
 
     if ARGPOS > 0 and ARGPOS < len(sys.argv):
         value = sys.argv[ARGPOS]
-        print("\r\033[2K" + f"{BOLD}{CYAN}{prompt} : {RESET}<< {value}")
+        print("\r\033[2K" + f"{BOLD}{CYAN}{prompt} : {RESET}<< {RED}{value}{RESET}")
         ARGPOS += 1
         return value 
     if options is None or index is None:
