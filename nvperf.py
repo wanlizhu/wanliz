@@ -269,9 +269,9 @@ class CMD_rmmod:
         subprocess.run(["bash", "-lc", "sudo fuser -k -KILL /dev/nvidia* &>/dev/null || true"], check=True)
         subprocess.run(["bash", "-lc", r"""
             for m in nvidia_drm video drm_kms_helper nvidia_modeset nvidia_uvm i2c_nvidia_gpu nvidia; do
-            if lsmod | awk -v m="$m" '$1==m{exit 0} END{exit 1}'; then
-                sudo modprobe -r "$m" || { echo "Failed to remove $m"; exit 1; }
-            fi
+                if lsmod | awk -v m="$m" '$1==m{exit 0} END{exit 1}' &>/dev/null; then
+                    sudo modprobe -r "$m" || { echo "Failed to remove $m"; exit 1; }
+                fi
             done
         """], check=True)
         subprocess.run(["bash", "-lc", "lsmod | grep -i '^nvidia' || echo 'All nvidia modules are removed'"], check=True)
