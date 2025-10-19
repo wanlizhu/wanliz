@@ -65,10 +65,9 @@ def horizontal_select(prompt, options, index):
                 else:
                     return options[index]
             if ch1 == "\x1b": # ESC or escape sequence
-                tail = sys.stdin.read(1) 
-                print(select.select([stdin_fd],[],[],1))
-                if tail.endswith("D"): index = (len(options) if index == 0 else index) - 1
-                elif tail.endswith("C"): index = (-1 if index == (len(options) - 1) else index) + 1
+                tail = sys.stdin.read(2) 
+                if tail == "[D": index = (len(options) if index == 0 else index) - 1
+                elif tail == "[C": index = (-1 if index == (len(options) - 1) else index) + 1
             elif ch1 == "\x03": # Ctrl-C
                 sys.stdout.write("\r\n")
                 sys.stdout.flush() 
