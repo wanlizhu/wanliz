@@ -41,20 +41,21 @@ signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
 def horizontal_select(prompt, options, index):
     global ARGPOS
+    RESET = "\033[0m"  
+    DIM   = "\033[90m" 
+    CYAN  = "\033[36m" 
+    BOLD  = "\033[1m"  
+
     if ARGPOS > 0 and ARGPOS < len(sys.argv):
         value = sys.argv[ARGPOS]
-        print(f"{prompt} : << {value}")
+        print("\r\033[2K" + f"{BOLD}{CYAN}{prompt} : {RESET}<< {value}")
         ARGPOS += 1
         return value 
     if options is None or index is None:
         return input(prompt)
     if len(options) <= index:
         return None 
-    
-    RESET = "\033[0m"  
-    DIM   = "\033[90m" 
-    CYAN  = "\033[36m" 
-    BOLD  = "\033[1m"  
+
     try:
         stdin_fd = sys.stdin.fileno()
         oldattr = termios.tcgetattr(stdin_fd)
@@ -373,7 +374,7 @@ class CMD_viewperf:
     
     def run(self):
         viewset = horizontal_select("[1/3] Target viewset", ["catia", "creo", "energy", "maya", "medical", "snx", "sw"], 3)
-        subtest = horizontal_select(f"{BOLD}{CYAN}[2/3] Target subtest (optional): {RESET}", None, None)
+        subtest = horizontal_select(f"[2/3] Target subtest (optional)", None, None)
         env = horizontal_select("[3/3] Launch in profiling/debug env", ["no", "pic-x", "gdb"], 0)
     
         exe = os.path.expanduser('~/viewperf2020v3/viewperf/bin/viewperf')
@@ -444,7 +445,7 @@ if __name__ == "__main__":
             cmds_desc.append(cmds[-1] + "\t:" +  str(cls()))
     
     print('\n'.join(cmds_desc))
-    cmd = horizontal_select(f"{BOLD}{CYAN}Enter the cmd to run: {RESET}", None, None)
+    cmd = horizontal_select(f"Enter the cmd to run", None, None)
     if globals().get(f"CMD_{cmd}") is None:
         raise RuntimeError(f"No command class for {cmd!r}")
 
