@@ -274,7 +274,7 @@ class CMD_rmmod:
                 fi
             done
         """], check=True)
-        subprocess.run(["bash", "-lc", "lsmod | grep -i '^nvidia' || echo 'All nvidia modules are removed'"], check=True)
+        subprocess.run(["bash", "-lc", "lsmod | grep -i '^nvidia' &>/dev/null || echo 'All nvidia modules are removed'"], check=True)
 
     
 class CMD_install:
