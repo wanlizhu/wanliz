@@ -179,7 +179,7 @@ class CMD_startx:
     def run(self):
         # Start a bare X server in GNU screen
         subprocess.run(["bash", "-lc", f"screen -S bareX bash -lci \"sudo X {os.environ['DISPLAY']} -ac +iglx || read -p 'Press [Enter] to exit: '\""], check=True)
-        while not (os.path.exists("/tmp/.X11-unix/X0") and stat.S_ISSOCK(os.stat("/tmp/.X11-unix/X0").st_mode)):
+        while not os.path.exists("/tmp/.X11-unix/X0"):
             time.sleep(0.1)
 
         # Unsandbag for much higher perf 
