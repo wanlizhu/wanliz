@@ -69,9 +69,10 @@ def horizontal_select(prompt, options, index):
                 if not esc_tail: 
                     sys.stdout.write("\r\n")
                     sys.stdout.flush() 
+                    print("xxx")
                     return None
-                elif esc_tail.endswith("D"): index = max(index - 1, 0)
-                elif esc_tail.endswith("C"): index = min(index + 1, len(options) - 1)
+                elif esc_tail.endswith("D"): index = (len(options) if index == 0 else index) - 1
+                elif esc_tail.endswith("C"): index = (-1 if index == (len(options) - 1) else index) + 1
             elif ch1 == "\x03": # Ctrl-C
                 sys.stdout.write("\r\n")
                 sys.stdout.flush() 
