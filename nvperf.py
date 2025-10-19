@@ -19,6 +19,7 @@ RESET = "\033[0m"
 DIM   = "\033[90m"  
 CYAN  = "\033[36m"
 BOLD  = "\033[1m"
+ARGPOS = 1
 os.environ.update({
     "__GL_SYNC_TO_VBLANK": "0",
     "vblank_mode": "0",
@@ -39,7 +40,12 @@ signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
 
 def horizontal_select(prompt, options, index):
-    if len(options) == 0 or index is None:
+    if ARGPOS > 0 and ARGPOS < len(sys.argv):
+        ARGPOS += 1
+        return sys.argv[ARGPOS - 1]
+    if options is None or index is None:
+        return input(prompt)
+    if len(options) <= index:
         return None 
     
     RESET = "\033[0m"  
@@ -162,7 +168,7 @@ class CMD_mountwin:
         return "Mount windows shared folder on Linux"
     
     def run(self):
-        windows_folder = input("Windows shared folder: ").strip().replace("\\", "/")
+        windows_folder = horizontal_select("Windows shared folder: ", None, None).strip().replace("\\", "/")
         windows_folder = shlex.quote(windows_folder)
         mount_dir = f"/mnt/{pathlib.Path(windows_folder).name}.cifs"
         subprocess.run(["bash", "-lc", f"""
@@ -364,7 +370,7 @@ class CMD_viewperf:
     
     def run(self):
         viewset = horizontal_select("[1/3] Target viewset", ["catia", "creo", "energy", "maya", "medical", "snx", "sw"], 3)
-        subtest = input(f"{BOLD}{CYAN}[2/3] Target subtest (optional): {RESET}")
+        subtest = horizontal_select(f"{BOLD}{CYAN}[2/3] Target subtest (optional): {RESET}", None, None)
         env = horizontal_select("[3/3] Launch in profiling/debug env", ["no", "pic-x", "gdb"], 0)
     
         exe = os.path.expanduser('~/viewperf2020v3/viewperf/bin/viewperf')
@@ -434,13 +440,11 @@ if __name__ == "__main__":
             cmds.append(name.split("_")[1])
             cmds_desc.append(cmds[-1] + "\t:" +  str(cls()))
     
-    if len(sys.argv) > 1 and sys.argv[1] in cmds:
-        cmd = sys.argv[1]
-    else:
-        print('\n'.join(cmds_desc))
-        cmd = input(f"{BOLD}{CYAN}Enter the cmd to run: {RESET}")
-        if globals().get(f"CMD_{cmd}") is None:
-            raise RuntimeError(f"No command class for {cmd!r}")
+    print('\n'.join(cmds_desc))
+    cmd = horizontal_select(f"{BOLD}{CYAN}Enter the cmd to run: {RESET}", None, None)
+    if globals().get(f"CMD_{cmd}") is None:
+        raise RuntimeError(f"No command class for {cmd!r}")
+
     try:
         cmd = globals().get(f"CMD_{cmd}")()
         cmd.run()
