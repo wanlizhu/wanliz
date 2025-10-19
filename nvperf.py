@@ -268,8 +268,9 @@ class CMD_rmmod:
         subprocess.run(["bash", "-lc", "sudo fuser -k -TERM /dev/nvidia* &>/dev/null || true"], check=True)
         subprocess.run(["bash", "-lc", "sudo fuser -k -KILL /dev/nvidia* &>/dev/null || true"], check=True)
         subprocess.run(["bash", "-lc", r"""
-            for m in nvidia_drm video drm_kms_helper nvidia_modeset nvidia_uvm i2c_nvidia_gpu nvidia; do
-                if lsmod | awk -v m="$m" '$1==m{exit 0} END{exit 1}' &>/dev/null; then
+            for m in nvidia_drm nvidia_modeset nvidia_uvm nvidia; do
+                if lsmod | grep -q "^${m}\b"; then
+                    echo "Removing $m..."
                     sudo modprobe -r "$m" || { echo "Failed to remove $m"; exit 1; }
                 fi
             done
