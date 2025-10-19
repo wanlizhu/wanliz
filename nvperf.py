@@ -40,6 +40,7 @@ signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
 
 def horizontal_select(prompt, options, index):
+    global ARGPOS
     if ARGPOS > 0 and ARGPOS < len(sys.argv):
         ARGPOS += 1
         return sys.argv[ARGPOS - 1]
