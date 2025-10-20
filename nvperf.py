@@ -54,7 +54,7 @@ def horizontal_select(prompt, options, index):
         ARGPOS += 1
         return value 
     if options is None or index is None:
-        return input(prompt)
+        return input(f"{BOLD}{CYAN}{prompt} : {RESET}")
     if len(options) <= index:
         return None 
 
