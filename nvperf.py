@@ -284,6 +284,7 @@ class CMD_rmmod:
                 if lsmod | grep -q "^${m}\b"; then
                     echo "Removing $m..."
                     sudo modprobe -r "$m" || { echo "Failed to remove $m"; exit 1; }
+                    sleep 0.2
                 fi
             done
         """], check=True)
