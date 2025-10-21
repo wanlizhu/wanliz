@@ -471,8 +471,8 @@ class CMD_stats:
     def __get_thread_count(self):
         print("Get the number of threads utilized")
         subprocess.run(["bash", "-lc", rf"""
-            cd {self.dir} &&
-            {self.exe} {self.arg} &
+            cd ~/viewperf2020v3 &&
+            ~/viewperf2020v3/viewperf/bin/viewperf viewsets/{self.viewset}/config/{self.viewset}.xml -resolution 3840x2160 &
             pid=$!
             peak=0
             while kill -0 $pid 2>/dev/null; do 
