@@ -127,9 +127,9 @@ if frame_time_n1x[0] < 0 or frame_time_emu[0] < 0:
     print(f"        Emu FPS: {1000.0 / frame_duration_emu:.2f}")
 
 if not set(metric_names_n1x).issubset(reader_n1x.getMetricNames()):
-    raise RuntimeError("Missing metric data on N1x")
+    raise RuntimeError(f"Missing metric data on N1x: {list(set(metric_names_n1x) - set(reader_n1x.getMetricNames()))}")
 if not set(metric_names_emu).issubset(reader_emu.getMetricNames()):
-    raise RuntimeError("Missing metric data on Emu")
+    raise RuntimeError(f"Missing metric data on Emu: {list(set(metric_names_emu) - set(reader_emu.getMetricNames()))}")
 
 # Total N1x slowdown time caused by CHI
 n1x_bucket_count = 0
