@@ -424,6 +424,7 @@ class CPU_freq_limiter:
                 subprocess.run(["bash", "-lc", "sudo mkdir -p /sys/fs/cgroup/cpu_limiter"], check=True)
             subprocess.run(["bash", "-lc", f"echo '{int(10 * scale)} 10'"], check=True)
 
+
     def reset(self):
         if self.use_scaling_governor:
             subprocess.run(["bash", "-lc", rf"""
