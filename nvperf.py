@@ -389,7 +389,7 @@ class CMD_install:
 
 class CPU_freq_limiter:
     def __init__(self, cores):
-        self.cores = [str(x) for x in self.cores] 
+        self.cores = [str(x) for x in cores] 
 
     def scale_max_freq(self, scale):
         subprocess.run(["bash", "-lc", rf"""
