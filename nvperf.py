@@ -505,6 +505,7 @@ class CMD_stats:
                     done 
                 """], check=True)
                 output = subprocess.run([
+                    "taskset", "-c", ",".join(map(str, range(1, self.thread_count + 1))),
                     os.path.expanduser("~/viewperf2020v3/viewperf/bin/viewperf"),
                     f"viewsets/{self.viewset}/config/{self.viewset}.xml",
                     "-resolution", 
