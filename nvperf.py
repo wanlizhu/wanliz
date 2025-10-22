@@ -482,6 +482,7 @@ class CMD_viewperf:
                     -ex "set trace-commands off"
             """], check=True)
         elif env == "stats":
+            limiter = None 
             try:
                 #subprocess.run(["bash", "-lc", rf"""
                 #    cd ~/viewperf2020v3 &&
