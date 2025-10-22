@@ -498,7 +498,7 @@ class CMD_viewperf:
                 #"""], check=True)
                 #thread_count = int(pathlib.Path("/tmp/peak").read_text().strip())
                 thread_count = 1
-                cores = list(range(1, thread_count + 1))
+                cores = list(map(str, range(1, thread_count + 1)))
                 limiter = CPU_freq_limiter(cores)
 
                 for scale in [x / 10 for x in range(10, 2, -1)]:
@@ -515,7 +515,7 @@ class CMD_viewperf:
                     root = ElementTree.parse(self.results).getroot()
                     print(f"Composite score: {root.find('Composite').get('Score')} @ {scale:.1f}x cpu freq")
             finally:
-                limiter.reset()
+                if limiter is not None: limiter.reset()
         else:
             subprocess.run(f"{exe} {arg}", cwd=dir, check=True, shell=True)
             pattern = f"viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
