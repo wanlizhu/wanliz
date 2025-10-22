@@ -390,6 +390,7 @@ class CMD_install:
 class CPU_freq_limiter:
     def __init__(self, cores):
         self.cores = [str(x) for x in cores] 
+        self.use_scaling_governor = True
 
     def scale_max_freq(self, scale):
         subprocess.run(["bash", "-lc", rf"""
@@ -406,20 +407,38 @@ class CPU_freq_limiter:
                 echo $scaled_freq | sudo tee $cpufreq/scaling_min_freq >/dev/null 
             done 
             sleep 1
-        """], check=True)
-
-    def reset(self):
-        subprocess.run(["bash", "-lc", rf"""
+            sudo rm -f /tmp/$cpufreq/failed
             for core in {' '.join(self.cores)}; do 
                 cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
-                if [[ -d /tmp/$cpufreq ]]; then 
-                    sudo cp -f  /tmp/$cpufreq/scaling_governor $cpufreq/scaling_governor 
-                    sudo cp -f  /tmp/$cpufreq/scaling_max_freq $cpufreq/scaling_max_freq 
-                    sudo cp -f  /tmp/$cpufreq/scaling_min_freq $cpufreq/scaling_min_freq 
-                    sudo rm -rf /tmp/$cpufreq
+                max=$(cat $cpufreq/cpuinfo_max_freq)
+                scaled_freq=$(LC_ALL=C awk -v r="{scale}" -v m="$max" 'BEGIN{{printf "%.0f", r*m}}')
+                if [[ $(cat $cpufreq/scaling_cur_freq) -gt $(cat $cpufreq/scaling_max_freq) ]]; then 
+                    echo 1 > /tmp/$cpufreq/failed
+                    exit 1
                 fi 
             done 
         """], check=True)
+        if any([os.path.exists(f"/tmp/sys/devices/system/cpu/cpu{core}/cpufreq/failed") for core in self.cores]):
+            self.use_scaling_governor = False # To use CPU quota instead
+            if not os.path.exists("/sys/fs/cgroup/cpu_limiter"):
+                subprocess.run(["bash", "-lc", "sudo mkdir -p /sys/fs/cgroup/cpu_limiter"], check=True)
+            subprocess.run(["bash", "-lc", f"echo '{int(10 * scale)} 10'"], check=True)
+
+    def reset(self):
+        if self.use_scaling_governor:
+            subprocess.run(["bash", "-lc", rf"""
+                for core in {' '.join(self.cores)}; do 
+                    cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
+                    if [[ -d /tmp/$cpufreq ]]; then 
+                        sudo cp -f  /tmp/$cpufreq/scaling_governor $cpufreq/scaling_governor 
+                        sudo cp -f  /tmp/$cpufreq/scaling_max_freq $cpufreq/scaling_max_freq 
+                        sudo cp -f  /tmp/$cpufreq/scaling_min_freq $cpufreq/scaling_min_freq 
+                        sudo rm -rf /tmp/$cpufreq
+                    fi 
+                done 
+            """], check=True)
+        else:
+            subprocess.run(["bash", "-lc", "sudo rm -rf /sys/fs/cgroup/cpu_limiter"], check=True)
 
 
 class CMD_viewperf:
@@ -501,21 +520,28 @@ class CMD_viewperf:
                 thread_count = 1
                 cores = list(map(str, range(1, thread_count + 1)))
                 limiter = CPU_freq_limiter(cores)
+                home = os.path.expanduser("~")
 
                 for scale in [x / 10 for x in range(10, 1, -1)]:
                     limiter.scale_max_freq(scale)
-                    home = os.path.expanduser("~")
-                    subprocess.run([
-                        "taskset", "-c", ",".join(cores),
-                        f"{home}/viewperf2020v3/viewperf/bin/viewperf",
-                        f"viewsets/{viewset}/config/{viewset}.xml",
-                        "-resolution", "3840x2160" 
-                    ], cwd=f"{home}/viewperf2020v3", check=True, capture_output=True)
+                    if limiter.use_scaling_governor:
+                        subprocess.run([
+                            "taskset", "-c", ",".join(cores),
+                            f"{home}/viewperf2020v3/viewperf/bin/viewperf",
+                            f"viewsets/{viewset}/config/{viewset}.xml",
+                            "-resolution", "3840x2160" 
+                        ], cwd=f"{home}/viewperf2020v3", check=True, capture_output=True)
+                    else:
+                        subprocess.run(["bash", "-lc", rf"""
+                            echo $$ > /sys/fs/cgroup/cpu_limiter/cgroup.procs
+                            exec {home}/viewperf2020v3/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160 
+                        """], cwd=f"{home}/viewperf2020v3", check=True, capture_output=True)
+
                     pattern = f"viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
                     matches = list(pathlib.Path.home().glob(pattern))
                     results = max(matches, key=lambda p: p.stat().st_mtime) if matches else None
                     root = ElementTree.parse(results).getroot()
-                    print(f"Composite score: {root.find('Composite').get('Score')} @ {scale:.1f}x cpu freq")
+                    print(f"Composite score: {root.find('Composite').get('Score')} @ {scale:.1f}x cpu {'freq' if limiter.use_scaling_governor else 'quota'}")
             finally:
                 if limiter is not None: limiter.reset()
         else:
