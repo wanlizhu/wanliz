@@ -408,7 +408,7 @@ class CPU_freq_limiter:
             sleep 1
         """], check=True)
 
-    def reset(self, scale):
+    def reset(self):
         subprocess.run(["bash", "-lc", rf"""
             for core in $(seq 1 {self.thread_count}); do 
                 cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
@@ -483,20 +483,21 @@ class CMD_viewperf:
             """], check=True)
         elif env == "stats":
             try:
-                subprocess.run(["bash", "-lc", rf"""
-                    cd ~/viewperf2020v3 &&
-                    ~/viewperf2020v3/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160 &
-                    pid=$!
-                    peak=0
-                    while kill -0 $pid 2>/dev/null; do 
-                        num=$(( $(ls /proc/$pid/task 2>/dev/null | wc -l) )) 
-                        (( num>peak )) && peak=$num    
-                        sleep 1
-                    done
-                    echo "$peak threads utilized"
-                    echo $peak >/tmp/peak
-                """], check=True)
-                thread_count = int(pathlib.Path("/tmp/peak").read_text().strip())
+                #subprocess.run(["bash", "-lc", rf"""
+                #    cd ~/viewperf2020v3 &&
+                #    ~/viewperf2020v3/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160 &
+                #    pid=$!
+                #    peak=0
+                #    while kill -0 $pid 2>/dev/null; do 
+                #        num=$(( $(ls /proc/$pid/task 2>/dev/null | wc -l) )) 
+                #        (( num>peak )) && peak=$num    
+                #        sleep 1
+                #    done
+                #    echo "$peak threads utilized"
+                #    echo $peak >/tmp/peak
+                #"""], check=True)
+                #thread_count = int(pathlib.Path("/tmp/peak").read_text().strip())
+                thread_count = 1
                 cores = list(range(1, thread_count + 1))
                 limiter = CPU_freq_limiter(cores)
 
