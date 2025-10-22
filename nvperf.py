@@ -390,36 +390,39 @@ class CMD_install:
 class CPU_freq_limiter:
     def __init__(self, cores):
         self.cores = [str(x) for x in cores] 
-        self.use_scaling_governor = True
+        self.use_scaling_governor = False 
 
     def scale_max_freq(self, scale):
-        subprocess.run(["bash", "-lc", rf"""
-            for core in {' '.join(self.cores)}; do 
-                cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
-                max=$(cat $cpufreq/cpuinfo_max_freq)
-                scaled_freq=$(LC_ALL=C awk -v r="{scale}" -v m="$max" 'BEGIN{{printf "%.0f", r*m}}')
-                mkdir -p /tmp/$cpufreq
-                sudo cp -f $cpufreq/scaling_governor /tmp/$cpufreq/scaling_governor
-                sudo cp -f $cpufreq/scaling_max_freq /tmp/$cpufreq/scaling_max_freq
-                sudo cp -f $cpufreq/scaling_min_freq /tmp/$cpufreq/scaling_min_freq
-                echo powersave   | sudo tee $cpufreq/scaling_governor >/dev/null 
-                echo $scaled_freq | sudo tee $cpufreq/scaling_max_freq >/dev/null 
-                echo $scaled_freq | sudo tee $cpufreq/scaling_min_freq >/dev/null 
-            done 
-            sleep 1
-            sudo rm -f /tmp/$cpufreq/failed
-            for core in {' '.join(self.cores)}; do 
-                cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
-                max=$(cat $cpufreq/cpuinfo_max_freq)
-                scaled_freq=$(LC_ALL=C awk -v r="{scale}" -v m="$max" 'BEGIN{{printf "%.0f", r*m}}')
-                if [[ $(cat $cpufreq/scaling_cur_freq) -gt $(cat $cpufreq/scaling_max_freq) ]]; then 
-                    echo 1 > /tmp/$cpufreq/failed
-                    exit 1
-                fi 
-            done 
-        """], check=True)
-        if any([os.path.exists(f"/tmp/sys/devices/system/cpu/cpu{core}/cpufreq/failed") for core in self.cores]):
-            self.use_scaling_governor = False # To use CPU quota instead
+        if self.use_scaling_governor:
+            subprocess.run(["bash", "-lc", rf"""
+                for core in {' '.join(self.cores)}; do 
+                    cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
+                    max=$(cat $cpufreq/cpuinfo_max_freq)
+                    scaled_freq=$(LC_ALL=C awk -v r="{scale}" -v m="$max" 'BEGIN{{printf "%.0f", r*m}}')
+                    mkdir -p /tmp/$cpufreq
+                    sudo cp -f $cpufreq/scaling_governor /tmp/$cpufreq/scaling_governor
+                    sudo cp -f $cpufreq/scaling_max_freq /tmp/$cpufreq/scaling_max_freq
+                    sudo cp -f $cpufreq/scaling_min_freq /tmp/$cpufreq/scaling_min_freq
+                    echo powersave   | sudo tee $cpufreq/scaling_governor >/dev/null 
+                    echo $scaled_freq | sudo tee $cpufreq/scaling_max_freq >/dev/null 
+                    echo $scaled_freq | sudo tee $cpufreq/scaling_min_freq >/dev/null 
+                done 
+                sleep 1
+                sudo rm -f /tmp/$cpufreq/failed
+                for core in {' '.join(self.cores)}; do 
+                    cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
+                    max=$(cat $cpufreq/cpuinfo_max_freq)
+                    scaled_freq=$(LC_ALL=C awk -v r="{scale}" -v m="$max" 'BEGIN{{printf "%.0f", r*m}}')
+                    if [[ $(cat $cpufreq/scaling_cur_freq) -gt $(cat $cpufreq/scaling_max_freq) ]]; then 
+                        echo 1 > /tmp/$cpufreq/failed
+                        exit 1
+                    fi 
+                done 
+            """], check=True)
+            if any([os.path.exists(f"/tmp/sys/devices/system/cpu/cpu{core}/cpufreq/failed") for core in self.cores]):
+                self.use_scaling_governor = False # To use CPU quota instead
+
+        if not self.use_scaling_governor:        
             if not os.path.exists("/sys/fs/cgroup/cpu_limiter"):
                 subprocess.run(["bash", "-lc", "sudo mkdir -p /sys/fs/cgroup/cpu_limiter"], check=True)
             subprocess.run(["bash", "-lc", f"echo '{int(10 * scale)} 10'"], check=True)
