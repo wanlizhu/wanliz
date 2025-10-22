@@ -387,6 +387,41 @@ class CMD_install:
         return versions[0] if selected == "" else selected 
 
 
+class CPU_freq_limiter:
+    def __init__(self, cores):
+        self.cores = cores 
+
+    def scale_max_freq(self, scale):
+        subprocess.run(["bash", "-lc", rf"""
+            for core in {' '.join(self.cores)}; do 
+                cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
+                max=$(cat $cpufreq/cpuinfo_max_freq)
+                scaled_freq=$(LC_ALL=C awk -v r="{scale}" -v m="$max" 'BEGIN{{printf "%.0f", r*m}}')
+                mkdir -p /tmp/$cpufreq
+                sudo cp -f $cpufreq/scaling_governor /tmp/$cpufreq/scaling_governor
+                sudo cp -f $cpufreq/scaling_max_freq /tmp/$cpufreq/scaling_max_freq
+                sudo cp -f $cpufreq/scaling_min_freq /tmp/$cpufreq/scaling_min_freq
+                echo powersave   | sudo tee $cpufreq/scaling_governor >/dev/null 
+                echo $scaled_freq | sudo tee $cpufreq/scaling_max_freq >/dev/null 
+                echo $scaled_freq | sudo tee $cpufreq/scaling_min_freq >/dev/null 
+            done 
+            sleep 1
+        """], check=True)
+
+    def reset(self, scale):
+        subprocess.run(["bash", "-lc", rf"""
+            for core in $(seq 1 {self.thread_count}); do 
+                cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
+                if [[ -d /tmp/$cpufreq ]]; then 
+                    sudo cp -f  /tmp/$cpufreq/scaling_governor $cpufreq/scaling_governor 
+                    sudo cp -f  /tmp/$cpufreq/scaling_max_freq $cpufreq/scaling_max_freq 
+                    sudo cp -f  /tmp/$cpufreq/scaling_min_freq $cpufreq/scaling_min_freq 
+                    sudo rm -rf /tmp/$cpufreq
+                fi 
+            done 
+        """], check=True)
+
+
 class CMD_viewperf:
     def __str__(self):
         return "Start profiling viewperf 2020 v3"
@@ -394,7 +429,7 @@ class CMD_viewperf:
     def run(self):
         viewset = horizontal_select("[1/3] Target viewset", ["catia", "creo", "energy", "maya", "medical", "snx", "sw"], 3)
         subtest = horizontal_select(f"[2/3] Target subtest (optional)", None, None)
-        env = horizontal_select("[3/3] Launch in profiling/debug env", ["no", "pic-x", "gdb"], 0)
+        env = horizontal_select("[3/3] Launch in profiling/debug env", ["no", "pic-x", "gdb", "stats"], 0)
     
         exe = os.path.expanduser('~/viewperf2020v3/viewperf/bin/viewperf')
         arg = f"viewsets/{viewset}/config/{viewset}.xml {subtest} -resolution 3840x2160" 
@@ -446,6 +481,40 @@ class CMD_viewperf:
                     -ex "set args {arg}" \
                     -ex "set trace-commands off"
             """], check=True)
+        elif env == "stats":
+            try:
+                subprocess.run(["bash", "-lc", rf"""
+                    cd ~/viewperf2020v3 &&
+                    ~/viewperf2020v3/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160 &
+                    pid=$!
+                    peak=0
+                    while kill -0 $pid 2>/dev/null; do 
+                        num=$(( $(ls /proc/$pid/task 2>/dev/null | wc -l) )) 
+                        (( num>peak )) && peak=$num    
+                        sleep 1
+                    done
+                    echo "$peak threads utilized"
+                    echo $peak >/tmp/peak
+                """], check=True)
+                thread_count = int(pathlib.Path("/tmp/peak").read_text().strip())
+                cores = list(range(1, thread_count + 1))
+                limiter = CPU_freq_limiter(cores)
+
+                for scale in [x / 10 for x in range(10, 2, -1)]:
+                    limiter.scale_max_freq(scale)
+                    home = os.path.expanduser("~")
+                    output = subprocess.run([
+                        "taskset", "-c", ",".join(cores),
+                        f"{home}/viewperf2020v3/viewperf/bin/viewperf",
+                        f"viewsets/{viewset}/config/{viewset}.xml",
+                        "-resolution", "3840x2160" 
+                    ], cwd=f"{home}/viewperf2020v3", check=True, capture_output=True, encoding='utf-8')
+                    if output.returncode != 0:
+                        raise RuntimeError(output.stderr)
+                    root = ElementTree.parse(self.results).getroot()
+                    print(f"Composite score: {root.find('Composite').get('Score')} @ {scale:.1f}x cpu freq")
+            finally:
+                limiter.reset()
         else:
             subprocess.run(f"{exe} {arg}", cwd=dir, check=True, shell=True)
             pattern = f"viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
@@ -456,80 +525,6 @@ class CMD_viewperf:
                 score = root.find("Composite").get("Score")
                 print(f"Composite score: {score}")
 
-
-class CMD_stats:
-    def __str__(self):
-        return "Show statistics of graphics app to check if it's GPU or CPU limited"
-    
-    def run(self):
-        self.viewset = "maya"
-        matches = list(pathlib.Path.home().glob(f"viewperf2020v3/results/{'solidworks' if self.viewset == 'sw' else self.viewset}-*/results.xml"))
-        self.results = max(matches, key=lambda p: p.stat().st_mtime) if matches else None
-        self.__get_thread_count()
-        self.__test_cpu_limiter()
-
-    def __get_thread_count(self):
-        print("Get the number of threads utilized")
-        subprocess.run(["bash", "-lc", rf"""
-            cd ~/viewperf2020v3 &&
-            ~/viewperf2020v3/viewperf/bin/viewperf viewsets/{self.viewset}/config/{self.viewset}.xml -resolution 3840x2160 &
-            pid=$!
-            peak=0
-            while kill -0 $pid 2>/dev/null; do 
-                num=$(( $(ls /proc/$pid/task 2>/dev/null | wc -l) )) 
-                (( num>peak )) && peak=$num    
-                sleep 1
-            done
-            echo "$peak threads utilized"
-            echo $peak >/tmp/peak
-        """], check=True)
-        self.thread_count = int(pathlib.Path("/tmp/peak").read_text().strip())
-        if self.thread_count is None or self.thread_count == 0:
-            raise RuntimeError("Failed to get the number of threads utilized")
-        
-    def __test_cpu_limiter(self):
-        for scale in [x / 10 for x in range(10, 4, -1)]:
-            try:
-                subprocess.run(["bash", "-lc", rf"""
-                    for core in $(seq 1 {self.thread_count}); do 
-                        cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
-                        max=$(cat $cpufreq/cpuinfo_max_freq)
-                        scaled_freq=$(LC_ALL=C awk -v r="{scale}" -v m="$max" 'BEGIN{{printf "%.0f", r*m}}')
-                        mkdir -p /tmp/$cpufreq
-                        sudo cp -f $cpufreq/scaling_governor /tmp/$cpufreq/scaling_governor
-                        sudo cp -f $cpufreq/scaling_max_freq /tmp/$cpufreq/scaling_max_freq
-                        sudo cp -f $cpufreq/scaling_min_freq /tmp/$cpufreq/scaling_min_freq
-                        echo powersave   | sudo tee $cpufreq/scaling_governor >/dev/null 
-                        echo $scaled_freq | sudo tee $cpufreq/scaling_max_freq >/dev/null 
-                        echo $scaled_freq | sudo tee $cpufreq/scaling_min_freq >/dev/null 
-                    done 
-                """], check=True)
-                output = subprocess.run([
-                    "taskset", "-c", ",".join(map(str, range(1, self.thread_count + 1))),
-                    os.path.expanduser("~/viewperf2020v3/viewperf/bin/viewperf"),
-                    f"viewsets/{self.viewset}/config/{self.viewset}.xml",
-                    "-resolution", 
-                    "3840x2160" 
-                ], cwd=os.path.expanduser("~/viewperf2020v3"), check=True, capture_output=True)
-                if output.returncode == 0:
-                    root = ElementTree.parse(self.results).getroot()
-                    score = root.find("Composite").get("Score")
-                    print(f"Composite score: {score} @ {scale:.1f} max cpu freq")
-                else:
-                    print(output.stderr.decode("utf-8"))
-            finally:
-                subprocess.run(["bash", "-lc", rf"""
-                    for core in $(seq 1 {self.thread_count}); do 
-                        cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
-                        if [[ -d /tmp/$cpufreq ]]; then 
-                            sudo cp -f  /tmp/$cpufreq/scaling_governor $cpufreq/scaling_governor 
-                            sudo cp -f  /tmp/$cpufreq/scaling_max_freq $cpufreq/scaling_max_freq 
-                            sudo cp -f  /tmp/$cpufreq/scaling_min_freq $cpufreq/scaling_min_freq 
-                            sudo rm -rf /tmp/$cpufreq
-                        fi 
-                    done 
-                """], check=True)
-    
 
 if __name__ == "__main__":
     cmds = []
