@@ -511,7 +511,10 @@ class CMD_viewperf:
                         f"viewsets/{viewset}/config/{viewset}.xml",
                         "-resolution", "3840x2160" 
                     ], cwd=f"{home}/viewperf2020v3", check=True, capture_output=True)
-                    root = ElementTree.parse(self.results).getroot()
+                    pattern = f"viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
+                    matches = list(pathlib.Path.home().glob(pattern))
+                    results = max(matches, key=lambda p: p.stat().st_mtime) if matches else None
+                    root = ElementTree.parse(results).getroot()
                     print(f"Composite score: {root.find('Composite').get('Score')} @ {scale:.1f}x cpu freq")
             finally:
                 if limiter is not None: limiter.reset()
@@ -520,10 +523,9 @@ class CMD_viewperf:
             pattern = f"viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
             matches = list(pathlib.Path.home().glob(pattern))
             results = max(matches, key=lambda p: p.stat().st_mtime) if matches else None
-            if results is not None:
-                root = ElementTree.parse(results).getroot()
-                score = root.find("Composite").get("Score")
-                print(f"Composite score: {score}")
+            root = ElementTree.parse(results).getroot()
+            score = root.find("Composite").get("Score")
+            print(f"Composite score: {score}")
 
 
 if __name__ == "__main__":
