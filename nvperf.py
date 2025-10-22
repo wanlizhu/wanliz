@@ -425,7 +425,7 @@ class CPU_freq_limiter:
         if not self.use_scaling_governor:        
             if not os.path.exists("/sys/fs/cgroup/cpu_limiter"):
                 subprocess.run(["bash", "-lc", "sudo mkdir -p /sys/fs/cgroup/cpu_limiter"], check=True)
-            subprocess.run(["bash", "-lc", f"echo '{int(10 * scale)} 10'"], check=True)
+            subprocess.run(["bash", "-lc", f"echo '{int(10000 * scale)} 10000' | sudo tee /sys/fs/cgroup/cpu_limiter/cpu.max >/dev/null"], check=True)
 
 
     def reset(self):
@@ -442,7 +442,7 @@ class CPU_freq_limiter:
                 done 
             """], check=True)
         else:
-            subprocess.run(["bash", "-lc", "sudo rm -rf /sys/fs/cgroup/cpu_limiter"], check=True)
+            subprocess.run(["bash", "-lc", "echo max | sudo tee /sys/fs/cgroup/cpu_limiter/cpu.max >/dev/null"], check=True)
 
 
 class CMD_viewperf:
