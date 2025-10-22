@@ -502,7 +502,7 @@ class CMD_viewperf:
                 cores = list(map(str, range(1, thread_count + 1)))
                 limiter = CPU_freq_limiter(cores)
 
-                for scale in [x / 10 for x in range(10, 2, -1)]:
+                for scale in [x / 10 for x in range(10, 1, -1)]:
                     limiter.scale_max_freq(scale)
                     home = os.path.expanduser("~")
                     subprocess.run([
