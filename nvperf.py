@@ -410,7 +410,7 @@ class CPU_freq_limiter:
 
     def reset(self):
         subprocess.run(["bash", "-lc", rf"""
-            for core in $(seq 1 {self.thread_count}); do 
+            for core in {' '.join(self.cores)}; do 
                 cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
                 if [[ -d /tmp/$cpufreq ]]; then 
                     sudo cp -f  /tmp/$cpufreq/scaling_governor $cpufreq/scaling_governor 
