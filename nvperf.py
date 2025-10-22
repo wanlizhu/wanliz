@@ -504,14 +504,12 @@ class CMD_viewperf:
                 for scale in [x / 10 for x in range(10, 2, -1)]:
                     limiter.scale_max_freq(scale)
                     home = os.path.expanduser("~")
-                    output = subprocess.run([
+                    subprocess.run([
                         "taskset", "-c", ",".join(cores),
                         f"{home}/viewperf2020v3/viewperf/bin/viewperf",
                         f"viewsets/{viewset}/config/{viewset}.xml",
                         "-resolution", "3840x2160" 
-                    ], cwd=f"{home}/viewperf2020v3", check=True, capture_output=True, encoding='utf-8')
-                    if output.returncode != 0:
-                        raise RuntimeError(output.stderr)
+                    ], cwd=f"{home}/viewperf2020v3", check=True, capture_output=True)
                     root = ElementTree.parse(self.results).getroot()
                     print(f"Composite score: {root.find('Composite').get('Score')} @ {scale:.1f}x cpu freq")
             finally:
