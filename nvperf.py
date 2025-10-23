@@ -385,64 +385,135 @@ class CMD_install:
             raise RuntimeError("No version found")
 
         return versions[0] if selected == "" else selected 
+    
+
+class CMD_download:
+    def __str__(self):
+        return "Download packages or resources"
+    
+    def run(self):
+        src = horizontal_select("Download", [
+            "Nsight graphics",
+            "Nsight systems", 
+        ], 0)
+        if src == "Nsight graphics": self.__download_nsight_graphics()
+        elif src == "Nsight systems": self.__download_nsight_systems() 
+
+    def __download_nsight_graphics(self):
+        pass
+
+    def __download_nsight_systems(self): 
+        pass  
+
+
+class CMD_share:
+    def __str__(self):
+        return "Share a Linux folder via both SMB and NFS simultaneously"
+    
+    def run(self):
+        path = horizontal_select("Select or input folder to share", [os.path.expanduser("~"), "<input>"], 0)
+        path = pathlib.Path(path).resolve()
+        if not (path.exists() and path.is_dir()):
+            raise RuntimeError(f"Invalid path: {path}")
+        self.__share_via_nfs(path)
+        self.__share_via_smb(path)
+
+    def __share_via_smb(self, path: str):
+        output = subprocess.run(["bash", "-lc", "testparm -s"], text=True, check=False, capture_output=True)
+        if output.returncode != 0 and 'not found' in output.stderr:
+            subprocess.run(["bash", "-lc", "sudo apt install -y samba-common-bin"], check=True)
+            output = subprocess.run(["bash", "-lc", "testparm -s"], text=True, check=True, capture_output=True)
+
+        current = None 
+        shared_paths = {}
+        for line in output.stdout.splitlines():
+            matched = re.match(r"\[(.+?)\]$", line.strip())
+            if matched: current = matched.group(1)
+            elif current and line.strip().lower().startswith("path ="):
+                shared_paths[current] = os.path.realpath(line.strip().split("=", 1)[1].strip())
+        if any(path == x for x in shared_paths.values()):
+            print(f"Share {path} via SMB \t [ SHARED ]")
+            return 
+        
+        shared_name = re.sub(r"[^A-Za-z0-9._-]","_", path.name) or "share"
+        subprocess.run(["bash", "-lc", rf"""
+            echo '\n[{shared_name}]\n' | sudo tee /etc/samba/smb.conf >/dev/null
+            echo '   path = {path}\n' | sudo tee /etc/samba/smb.conf >/dev/null
+            echo '   public = yes\n' | sudo tee /etc/samba/smb.conf >/dev/null
+            echo '   guest ok = yes\n' | sudo tee /etc/samba/smb.conf >/dev/null
+            echo '   writable = yes\n' | sudo tee /etc/samba/smb.conf >/dev/null
+            echo '   create mask = 0777\n' | sudo tee /etc/samba/smb.conf >/dev/null
+            echo '   directory mask = 0777\n' | sudo tee /etc/samba/smb.conf >/dev/null
+            sudo testparm -s || echo '/etc/samba/smb.conf is invalid'
+            sudo systemctl enable --now smbd
+            sudo systemctl restart smbd
+        """], check=True)
+        print(f"Share {path} via SMB \t [ OK ]")
+
+    def __share_via_nfs(self, path: str):
+        output = subprocess.run(["bash", "-lc", "sudo exportfs -v"], text=True, check=False, capture_output=True)
+        if output.returncode != 0 and 'not found' in output.stderr:
+            subprocess.run(["bash", "-lc", "sudo apt install -y nfs-kernel-server"], check=True)
+            output = subprocess.run(["bash", "-lc", "sudo exportfs -v"], text=True, check=True, capture_output=True)
+
+        for line in output.stdout.splitlines():
+            if line.strip().startswith(path + " "):
+                print(f"Share {path} via NFS \t [ SHARED ]")
+                return
+        
+        subprocess.run(["bash", "-lc", rf"""
+            echo '{path} *(rw,sync,insecure,no_subtree_check,no_root_squash)' | sudo tee /etc/exports >/dev/null 
+            sudo exportfs -ra 
+            sudo systemctl enable --now nfs-kernel-server
+            sudo systemctl restart nfs-kernel-server
+        """], check=True)
+        print(f"Share {path} via NFS \t [ OK ]")
 
 
 class CPU_freq_limiter:
     def __init__(self, cores):
         self.cores = [str(x) for x in cores] 
-        self.use_scaling_governor = False 
 
     def scale_max_freq(self, scale):
-        if self.use_scaling_governor:
-            subprocess.run(["bash", "-lc", rf"""
-                for core in {' '.join(self.cores)}; do 
-                    cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
-                    max=$(cat $cpufreq/cpuinfo_max_freq)
-                    scaled_freq=$(LC_ALL=C awk -v r="{scale}" -v m="$max" 'BEGIN{{printf "%.0f", r*m}}')
-                    mkdir -p /tmp/$cpufreq
-                    sudo cp -f $cpufreq/scaling_governor /tmp/$cpufreq/scaling_governor
-                    sudo cp -f $cpufreq/scaling_max_freq /tmp/$cpufreq/scaling_max_freq
-                    sudo cp -f $cpufreq/scaling_min_freq /tmp/$cpufreq/scaling_min_freq
-                    echo powersave   | sudo tee $cpufreq/scaling_governor >/dev/null 
-                    echo $scaled_freq | sudo tee $cpufreq/scaling_max_freq >/dev/null 
-                    echo $scaled_freq | sudo tee $cpufreq/scaling_min_freq >/dev/null 
-                done 
-                sleep 1
-                sudo rm -f /tmp/$cpufreq/failed
-                for core in {' '.join(self.cores)}; do 
-                    cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
-                    max=$(cat $cpufreq/cpuinfo_max_freq)
-                    scaled_freq=$(LC_ALL=C awk -v r="{scale}" -v m="$max" 'BEGIN{{printf "%.0f", r*m}}')
-                    if [[ $(cat $cpufreq/scaling_cur_freq) -gt $(cat $cpufreq/scaling_max_freq) ]]; then 
-                        echo 1 > /tmp/$cpufreq/failed
-                        exit 1
-                    fi 
-                done 
-            """], check=True)
-            if any([os.path.exists(f"/tmp/sys/devices/system/cpu/cpu{core}/cpufreq/failed") for core in self.cores]):
-                self.use_scaling_governor = False # To use CPU quota instead
-
-        if not self.use_scaling_governor:        
-            if not os.path.exists("/sys/fs/cgroup/cpu_limiter"):
-                subprocess.run(["bash", "-lc", "sudo mkdir -p /sys/fs/cgroup/cpu_limiter"], check=True)
-            subprocess.run(["bash", "-lc", f"echo '{int(10000 * scale)} 10000' | sudo tee /sys/fs/cgroup/cpu_limiter/cpu.max >/dev/null"], check=True)
-
+        subprocess.run(["bash", "-lc", rf"""
+            for core in {' '.join(self.cores)}; do 
+                cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
+                max=$(cat $cpufreq/cpuinfo_max_freq)
+                scaled_freq=$(LC_ALL=C awk -v r="{scale}" -v m="$max" 'BEGIN{{printf "%.0f", r*m}}')
+                mkdir -p /tmp/$cpufreq
+                sudo cp -f $cpufreq/scaling_governor /tmp/$cpufreq/scaling_governor
+                sudo cp -f $cpufreq/scaling_max_freq /tmp/$cpufreq/scaling_max_freq
+                sudo cp -f $cpufreq/scaling_min_freq /tmp/$cpufreq/scaling_min_freq
+                echo powersave   | sudo tee $cpufreq/scaling_governor >/dev/null 
+                echo $scaled_freq | sudo tee $cpufreq/scaling_max_freq >/dev/null 
+                echo $scaled_freq | sudo tee $cpufreq/scaling_min_freq >/dev/null 
+            done 
+            sleep 1
+            sudo rm -f /tmp/$cpufreq/failed
+            for core in {' '.join(self.cores)}; do 
+                cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
+                max=$(cat $cpufreq/cpuinfo_max_freq)
+                scaled_freq=$(LC_ALL=C awk -v r="{scale}" -v m="$max" 'BEGIN{{printf "%.0f", r*m}}')
+                if [[ $(cat $cpufreq/scaling_cur_freq) -gt $(cat $cpufreq/scaling_max_freq) ]]; then 
+                    echo 1 > /tmp/$cpufreq/failed
+                    exit 1
+                fi 
+            done 
+        """], check=True)
+        
 
     def reset(self):
-        if self.use_scaling_governor:
-            subprocess.run(["bash", "-lc", rf"""
-                for core in {' '.join(self.cores)}; do 
-                    cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
-                    if [[ -d /tmp/$cpufreq ]]; then 
-                        sudo cp -f  /tmp/$cpufreq/scaling_governor $cpufreq/scaling_governor 
-                        sudo cp -f  /tmp/$cpufreq/scaling_max_freq $cpufreq/scaling_max_freq 
-                        sudo cp -f  /tmp/$cpufreq/scaling_min_freq $cpufreq/scaling_min_freq 
-                        sudo rm -rf /tmp/$cpufreq
-                    fi 
-                done 
-            """], check=True)
-        else:
-            subprocess.run(["bash", "-lc", "echo max | sudo tee /sys/fs/cgroup/cpu_limiter/cpu.max >/dev/null"], check=True)
+        subprocess.run(["bash", "-lc", rf"""
+            for core in {' '.join(self.cores)}; do 
+                cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
+                if [[ -d /tmp/$cpufreq ]]; then 
+                    sudo cp -f  /tmp/$cpufreq/scaling_governor $cpufreq/scaling_governor 
+                    sudo cp -f  /tmp/$cpufreq/scaling_max_freq $cpufreq/scaling_max_freq 
+                    sudo cp -f  /tmp/$cpufreq/scaling_min_freq $cpufreq/scaling_min_freq 
+                    sudo rm -rf /tmp/$cpufreq
+                fi 
+            done 
+        """], check=True)
 
 
 class CMD_viewperf:
@@ -452,7 +523,7 @@ class CMD_viewperf:
     def run(self):
         viewset = horizontal_select("[1/3] Target viewset", ["catia", "creo", "energy", "maya", "medical", "snx", "sw"], 3)
         subtest = horizontal_select(f"[2/3] Target subtest (optional)", None, None)
-        env = horizontal_select("[3/3] Launch in profiling/debug env", ["no", "pic-x", "gdb", "stats"], 0)
+        env = horizontal_select("[3/3] Launch in profiling/debug env", ["no", "pic-x", "ngfx", "nsys", "gdb", "stats"], 0)
     
         exe = os.path.expanduser('~/viewperf2020v3/viewperf/bin/viewperf')
         arg = f"viewsets/{viewset}/config/{viewset}.xml {subtest} -resolution 3840x2160" 
@@ -481,6 +552,10 @@ class CMD_viewperf:
             if upload == "yes":
                 script = f"~/SinglePassCapture/PerfInspector/output/{name}/upload_report.sh"
                 subprocess.run(os.path.expanduser(script), check=True, shell=True)
+        elif env == "ngfx":
+            pass
+        elif env == "nsys":
+            pass 
         elif env == "gdb":
             subprocess.run(["bash", "-lc", f"""
                 if ! command -v cgdb >/dev/null 2>&1; then
@@ -528,24 +603,18 @@ class CMD_viewperf:
 
                 for scale in [x / 10 for x in range(10, 1, -1)]:
                     limiter.scale_max_freq(scale)
-                    if limiter.use_scaling_governor:
-                        subprocess.run([
-                            "taskset", "-c", ",".join(cores),
-                            f"{home}/viewperf2020v3/viewperf/bin/viewperf",
-                            f"viewsets/{viewset}/config/{viewset}.xml",
-                            "-resolution", "3840x2160" 
-                        ], cwd=f"{home}/viewperf2020v3", check=True, capture_output=True)
-                    else:
-                        subprocess.run(["bash", "-lc", rf"""
-                            echo $$ > /sys/fs/cgroup/cpu_limiter/cgroup.procs
-                            exec {home}/viewperf2020v3/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160 
-                        """], cwd=f"{home}/viewperf2020v3", check=True, capture_output=True)
+                    subprocess.run([
+                        "taskset", "-c", ",".join(cores),
+                        f"{home}/viewperf2020v3/viewperf/bin/viewperf",
+                        f"viewsets/{viewset}/config/{viewset}.xml",
+                        "-resolution", "3840x2160" 
+                    ], cwd=f"{home}/viewperf2020v3", check=True, capture_output=True)
 
                     pattern = f"viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
                     matches = list(pathlib.Path.home().glob(pattern))
                     results = max(matches, key=lambda p: p.stat().st_mtime) if matches else None
                     root = ElementTree.parse(results).getroot()
-                    print(f"Composite score: {root.find('Composite').get('Score')} @ {scale:.1f}x cpu {'freq' if limiter.use_scaling_governor else 'quota'}")
+                    print(f"Composite score: {root.find('Composite').get('Score')} @ {scale:.1f}x cpu freq")
             finally:
                 if limiter is not None: limiter.reset()
         else:
@@ -566,6 +635,7 @@ if __name__ == "__main__":
             cmds.append(name.split("_")[1])
             cmds_desc.append(cmds[-1] + "\t:" +  str(cls()))
     
+    print(f"{RED}[use left/right arrow key to select from options]{RESET}\n")
     print('\n'.join(cmds_desc))
     cmd = horizontal_select(f"Enter the cmd to run", None, None)
     if globals().get(f"CMD_{cmd}") is None:
