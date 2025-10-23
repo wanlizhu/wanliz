@@ -415,10 +415,10 @@ class CMD_share:
         path = pathlib.Path(path).resolve()
         if not (path.exists() and path.is_dir()):
             raise RuntimeError(f"Invalid path: {path}")
-        self.__share_via_nfs(str(path))
-        self.__share_via_smb(str(path))
+        self.__share_via_nfs(path)
+        self.__share_via_smb(path)
 
-    def __share_via_smb(self, path: str):
+    def __share_via_smb(self, path: pathlib.Path):
         output = subprocess.run(["bash", "-lc", "testparm -s"], text=True, check=False, capture_output=True)
         if output.returncode != 0 and 'not found' in output.stderr:
             subprocess.run(["bash", "-lc", "sudo apt install -y samba-common-bin"], check=True)
@@ -450,14 +450,14 @@ class CMD_share:
         """], check=True)
         print(f"Share {path} via SMB \t [ OK ]")
 
-    def __share_via_nfs(self, path: str):
+    def __share_via_nfs(self, path: pathlib.Path):
         output = subprocess.run(["bash", "-lc", "sudo exportfs -v"], text=True, check=False, capture_output=True)
         if output.returncode != 0 and 'not found' in output.stderr:
             subprocess.run(["bash", "-lc", "sudo apt install -y nfs-kernel-server"], check=True)
             output = subprocess.run(["bash", "-lc", "sudo exportfs -v"], text=True, check=True, capture_output=True)
 
         for line in output.stdout.splitlines():
-            if line.strip().startswith(path + " "):
+            if line.strip().startswith(str(path) + " "):
                 print(f"Share {path} via NFS \t [ SHARED ]")
                 return
         
