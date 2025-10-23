@@ -11,12 +11,14 @@ import signal
 import re
 import pathlib
 import shlex
-import tty 
-import termios
 import select 
 import platform
+import getpass 
 from xml.etree import ElementTree 
-
+if platform.system() == "Linux": 
+    import termios
+    import tty 
+    
 RESET = "\033[0m"
 DIM   = "\033[90m"
 RED   = "\033[31m"  
@@ -186,6 +188,68 @@ class CMD_config:
         """], check=False)
 
 
+class CMD_share:
+    def __str__(self):
+        return "Share a Linux folder via both SMB and NFS simultaneously"
+    
+    def run(self):
+        path = horizontal_select("Select or input folder to share", [os.path.expanduser("~"), "<input>"], 0)
+        path = pathlib.Path(path).resolve()
+        if not (path.exists() and path.is_dir()):
+            raise RuntimeError(f"Invalid path: {path}")
+        self.__share_via_nfs(path)
+        self.__share_via_smb(path)
+
+    def __share_via_smb(self, path: pathlib.Path):
+        output = subprocess.run(["bash", "-lc", "testparm -s"], text=True, check=False, capture_output=True)
+        if output.returncode != 0 and 'not found' in output.stderr:
+            subprocess.run(["bash", "-lc", "sudo apt install -y samba-common-bin samba"], check=True)
+            output = subprocess.run(["bash", "-lc", "testparm -s"], text=True, check=True, capture_output=True)
+
+        for line in output.stdout.splitlines():
+            if str(path) in line:
+                print(f"Share {path} via SMB \t [ SHARED ]")
+                return 
+        
+        shared_name = re.sub(r"[^A-Za-z0-9._-]","_", path.name) or "share"
+        subprocess.run(["bash", "-lc", rf"""
+            echo '' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '[{shared_name}]' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   path = {path}' | sudo tee  -a /etc/samba/smb.conf >/dev/null
+            echo '   public = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   guest ok = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   map to guest = Bad User' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   map to guest = Bad Password' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   force user = {getpass.getuser()}' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   writable = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   create mask = 0777' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   directory mask = 0777' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            sudo testparm -s || echo '/etc/samba/smb.conf is invalid'
+            sudo systemctl enable --now smbd
+            sudo systemctl restart smbd
+        """], check=True)
+        print(f"Share {path} via SMB \t [ OK ]")
+
+    def __share_via_nfs(self, path: pathlib.Path):
+        output = subprocess.run(["bash", "-lc", "sudo exportfs -v"], text=True, check=False, capture_output=True)
+        if output.returncode != 0 and 'not found' in output.stderr:
+            subprocess.run(["bash", "-lc", "sudo apt install -y nfs-kernel-server"], check=True)
+            output = subprocess.run(["bash", "-lc", "sudo exportfs -v"], text=True, check=True, capture_output=True)
+
+        for line in output.stdout.splitlines():
+            if line.strip().startswith(str(path) + " "):
+                print(f"Share {path} via NFS \t [ SHARED ]")
+                return
+        
+        subprocess.run(["bash", "-lc", rf"""
+            echo '{path} *(rw,sync,insecure,no_subtree_check,no_root_squash)' | sudo tee -a /etc/exports >/dev/null 
+            sudo exportfs -ra 
+            sudo systemctl enable --now nfs-kernel-server
+            sudo systemctl restart nfs-kernel-server
+        """], check=True)
+        print(f"Share {path} via NFS \t [ OK ]")
+
+
 class CMD_mount:
     def __str__(self):
         return "Mount windows shared folder on Linux or the other way around"
@@ -196,7 +260,7 @@ class CMD_mount:
             linux_folder = linux_folder.rstrip("\\")
             unc_path = linux_folder if linux_folder.startswith("\\\\") else ("\\\\" + linux_folder.lstrip("\\")) 
             user = input("User: ")
-            subprocess.run(f'cmd /k net use Z: "{unc_path}" /user:{user} /persistent:yes *', check=True, shell=True)
+            subprocess.run(f'cmd /k net use Z: "{unc_path}" /persistent:yes {str("/user:" + user + " *") if user else ""}', check=True, shell=True)
         elif platform.system() == "Linux":
             windows_folder = horizontal_select("Windows shared folder: ", None, None).strip().replace("\\", "/")
             windows_folder = shlex.quote(windows_folder)
@@ -207,7 +271,7 @@ class CMD_mount:
                     sudo apt install -y cifs-utils
                 fi 
                 sudo mkdir -p {mount_dir} &&
-                sudo mount -t cifs {windows_folder} {mount_dir} -o username={user}
+                sudo mount -t cifs {windows_folder} {mount_dir} {str("-o username=" + user) if user else ""}
             """], check=True)
 
 
@@ -239,6 +303,7 @@ class CMD_startx:
             else:
                 print(f"File doesn't exist: {perfdebug}")
                 print("Lock clocks \t [ SKIPPED ]")
+
 
 class CMD_nvmake:
     def __str__(self):
@@ -413,65 +478,6 @@ class CMD_download:
 
     def __download_nsight_systems(self): 
         pass  
-
-
-class CMD_share:
-    def __str__(self):
-        return "Share a Linux folder via both SMB and NFS simultaneously"
-    
-    def run(self):
-        path = horizontal_select("Select or input folder to share", [os.path.expanduser("~"), "<input>"], 0)
-        path = pathlib.Path(path).resolve()
-        if not (path.exists() and path.is_dir()):
-            raise RuntimeError(f"Invalid path: {path}")
-        self.__share_via_nfs(path)
-        self.__share_via_smb(path)
-
-    def __share_via_smb(self, path: pathlib.Path):
-        output = subprocess.run(["bash", "-lc", "testparm -s"], text=True, check=False, capture_output=True)
-        if output.returncode != 0 and 'not found' in output.stderr:
-            subprocess.run(["bash", "-lc", "sudo apt install -y samba-common-bin samba"], check=True)
-            output = subprocess.run(["bash", "-lc", "testparm -s"], text=True, check=True, capture_output=True)
-
-        for line in output.stdout.splitlines():
-            if str(path) in line:
-                print(f"Share {path} via SMB \t [ SHARED ]")
-                return 
-        
-        shared_name = re.sub(r"[^A-Za-z0-9._-]","_", path.name) or "share"
-        subprocess.run(["bash", "-lc", rf"""
-            echo '' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '[{shared_name}]' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   path = {path}' | sudo tee  -a /etc/samba/smb.conf >/dev/null
-            echo '   public = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   guest ok = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   writable = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   create mask = 0777' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   directory mask = 0777' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            sudo testparm -s || echo '/etc/samba/smb.conf is invalid'
-            sudo systemctl enable --now smbd
-            sudo systemctl restart smbd
-        """], check=True)
-        print(f"Share {path} via SMB \t [ OK ]")
-
-    def __share_via_nfs(self, path: pathlib.Path):
-        output = subprocess.run(["bash", "-lc", "sudo exportfs -v"], text=True, check=False, capture_output=True)
-        if output.returncode != 0 and 'not found' in output.stderr:
-            subprocess.run(["bash", "-lc", "sudo apt install -y nfs-kernel-server"], check=True)
-            output = subprocess.run(["bash", "-lc", "sudo exportfs -v"], text=True, check=True, capture_output=True)
-
-        for line in output.stdout.splitlines():
-            if line.strip().startswith(str(path) + " "):
-                print(f"Share {path} via NFS \t [ SHARED ]")
-                return
-        
-        subprocess.run(["bash", "-lc", rf"""
-            echo '{path} *(rw,sync,insecure,no_subtree_check,no_root_squash)' | sudo tee -a /etc/exports >/dev/null 
-            sudo exportfs -ra 
-            sudo systemctl enable --now nfs-kernel-server
-            sudo systemctl restart nfs-kernel-server
-        """], check=True)
-        print(f"Share {path} via NFS \t [ OK ]")
 
 
 class CPU_freq_limiter:
