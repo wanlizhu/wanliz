@@ -421,7 +421,7 @@ class CMD_share:
     def __share_via_smb(self, path: pathlib.Path):
         output = subprocess.run(["bash", "-lc", "testparm -s"], text=True, check=False, capture_output=True)
         if output.returncode != 0 and 'not found' in output.stderr:
-            subprocess.run(["bash", "-lc", "sudo apt install -y samba-common-bin"], check=True)
+            subprocess.run(["bash", "-lc", "sudo apt install -y samba-common-bin samba"], check=True)
             output = subprocess.run(["bash", "-lc", "testparm -s"], text=True, check=True, capture_output=True)
 
         current = None 
