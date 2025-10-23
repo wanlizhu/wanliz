@@ -424,16 +424,10 @@ class CMD_share:
             subprocess.run(["bash", "-lc", "sudo apt install -y samba-common-bin samba"], check=True)
             output = subprocess.run(["bash", "-lc", "testparm -s"], text=True, check=True, capture_output=True)
 
-        current = None 
-        shared_paths = {}
         for line in output.stdout.splitlines():
-            matched = re.match(r"\[(.+?)\]$", line.strip())
-            if matched: current = matched.group(1)
-            elif current and line.strip().lower().startswith("path ="):
-                shared_paths[current] = os.path.realpath(line.strip().split("=", 1)[1].strip())
-        if any(path == x for x in shared_paths.values()):
-            print(f"Share {path} via SMB \t [ SHARED ]")
-            return 
+            if str(path) in line:
+                print(f"Share {path} via SMB \t [ SHARED ]")
+                return 
         
         shared_name = re.sub(r"[^A-Za-z0-9._-]","_", path.name) or "share"
         subprocess.run(["bash", "-lc", rf"""
