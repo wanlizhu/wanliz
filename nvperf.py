@@ -213,13 +213,17 @@ class CMD_share:
         
         shared_name = re.sub(r"[^A-Za-z0-9._-]","_", path.name) or "share"
         subprocess.run(["bash", "-lc", rf"""
+            if ! grep -q '^\[global\][[:space:]]*$' /etc/samba/smb.conf; then 
+                echo '' | sudo tee -a /etc/samba/smb.conf >/dev/null
+                echo '[global]' | sudo tee -a /etc/samba/smb.conf >/dev/null
+                echo '   map to guest = Bad User' | sudo tee -a /etc/samba/smb.conf >/dev/null
+                echo '   map to guest = Bad Password' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            fi 
             echo '' | sudo tee -a /etc/samba/smb.conf >/dev/null
             echo '[{shared_name}]' | sudo tee -a /etc/samba/smb.conf >/dev/null
             echo '   path = {path}' | sudo tee  -a /etc/samba/smb.conf >/dev/null
             echo '   public = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
             echo '   guest ok = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   map to guest = Bad User' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   map to guest = Bad Password' | sudo tee -a /etc/samba/smb.conf >/dev/null
             echo '   force user = {getpass.getuser()}' | sudo tee -a /etc/samba/smb.conf >/dev/null
             echo '   writable = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
             echo '   create mask = 0777' | sudo tee -a /etc/samba/smb.conf >/dev/null
