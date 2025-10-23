@@ -14,6 +14,7 @@ import shlex
 import tty 
 import termios
 import select 
+import platform
 from xml.etree import ElementTree 
 
 RESET = "\033[0m"
@@ -185,21 +186,29 @@ class CMD_config:
         """], check=False)
 
 
-class CMD_mountwin:
+class CMD_mount:
     def __str__(self):
-        return "Mount windows shared folder on Linux"
+        return "Mount windows shared folder on Linux or the other way around"
     
     def run(self):
-        windows_folder = horizontal_select("Windows shared folder: ", None, None).strip().replace("\\", "/")
-        windows_folder = shlex.quote(windows_folder)
-        mount_dir = f"/mnt/{pathlib.Path(windows_folder).name}.cifs"
-        subprocess.run(["bash", "-lc", f"""
-            if ! command -v mount.cifs >/dev/null 2>&1; then
-                sudo apt install -y cifs-utils
-            fi 
-            sudo mkdir -p {mount_dir} &&
-            sudo mount -t cifs {windows_folder} {mount_dir} -o username=wanliz 
-        """], check=True)
+        if platform.system() == "Windows":
+            linux_folder = horizontal_select("Linux shared folder: ", None, None).strip().replace("/", "\\")
+            linux_folder = linux_folder.rstrip("\\")
+            unc_path = linux_folder if linux_folder.startswith("\\\\") else ("\\\\" + linux_folder.lstrip("\\")) 
+            user = input("User: ")
+            subprocess.run(f'cmd /k net use Z: "{unc_path}" /user:{user} /persistent:yes *', check=True, shell=True)
+        elif platform.system() == "Linux":
+            windows_folder = horizontal_select("Windows shared folder: ", None, None).strip().replace("\\", "/")
+            windows_folder = shlex.quote(windows_folder)
+            mount_dir = f"/mnt/{pathlib.Path(windows_folder).name}.cifs"
+            user = input("User: ")
+            subprocess.run(["bash", "-lc", f"""
+                if ! command -v mount.cifs >/dev/null 2>&1; then
+                    sudo apt install -y cifs-utils
+                fi 
+                sudo mkdir -p {mount_dir} &&
+                sudo mount -t cifs {windows_folder} {mount_dir} -o username={user}
+            """], check=True)
 
 
 class CMD_startx:
