@@ -415,8 +415,8 @@ class CMD_share:
         path = pathlib.Path(path).resolve()
         if not (path.exists() and path.is_dir()):
             raise RuntimeError(f"Invalid path: {path}")
-        self.__share_via_nfs(path)
-        self.__share_via_smb(path)
+        self.__share_via_nfs(str(path))
+        self.__share_via_smb(str(path))
 
     def __share_via_smb(self, path: str):
         output = subprocess.run(["bash", "-lc", "testparm -s"], text=True, check=False, capture_output=True)
