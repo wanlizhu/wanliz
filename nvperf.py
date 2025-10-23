@@ -437,13 +437,13 @@ class CMD_share:
         
         shared_name = re.sub(r"[^A-Za-z0-9._-]","_", path.name) or "share"
         subprocess.run(["bash", "-lc", rf"""
-            echo '\n[{shared_name}]\n' | sudo tee /etc/samba/smb.conf >/dev/null
-            echo '   path = {path}\n' | sudo tee /etc/samba/smb.conf >/dev/null
-            echo '   public = yes\n' | sudo tee /etc/samba/smb.conf >/dev/null
-            echo '   guest ok = yes\n' | sudo tee /etc/samba/smb.conf >/dev/null
-            echo '   writable = yes\n' | sudo tee /etc/samba/smb.conf >/dev/null
-            echo '   create mask = 0777\n' | sudo tee /etc/samba/smb.conf >/dev/null
-            echo '   directory mask = 0777\n' | sudo tee /etc/samba/smb.conf >/dev/null
+            echo '\n[{shared_name}]\n' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   path = {path}\n' | sudo tee  -a /etc/samba/smb.conf >/dev/null
+            echo '   public = yes\n' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   guest ok = yes\n' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   writable = yes\n' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   create mask = 0777\n' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   directory mask = 0777\n' | sudo tee -a /etc/samba/smb.conf >/dev/null
             sudo testparm -s || echo '/etc/samba/smb.conf is invalid'
             sudo systemctl enable --now smbd
             sudo systemctl restart smbd
@@ -462,7 +462,7 @@ class CMD_share:
                 return
         
         subprocess.run(["bash", "-lc", rf"""
-            echo '{path} *(rw,sync,insecure,no_subtree_check,no_root_squash)' | sudo tee /etc/exports >/dev/null 
+            echo '{path} *(rw,sync,insecure,no_subtree_check,no_root_squash)' | sudo tee -a /etc/exports >/dev/null 
             sudo exportfs -ra 
             sudo systemctl enable --now nfs-kernel-server
             sudo systemctl restart nfs-kernel-server
