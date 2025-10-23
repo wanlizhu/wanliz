@@ -3,6 +3,7 @@ import os
 import sys
 import stat 
 import time 
+import datetime
 import inspect
 import subprocess
 import psutil
@@ -14,6 +15,10 @@ import shlex
 import select 
 import platform
 import getpass 
+import requests
+from contextlib import suppress
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse
 from xml.etree import ElementTree 
 if platform.system() == "Linux": 
     import termios
@@ -265,13 +270,13 @@ class CMD_mount:
             linux_folder = horizontal_select("Linux shared folder", None, None).strip().replace("/", "\\")
             linux_folder = linux_folder.rstrip("\\")
             unc_path = linux_folder if linux_folder.startswith("\\\\") else ("\\\\" + linux_folder.lstrip("\\")) 
-            user = input("User")
+            user = input("User: ")
             subprocess.run(f'cmd /k net use Z: "{unc_path}" /persistent:yes {str("/user:" + user + " *") if user else ""}', check=True, shell=True)
         elif platform.system() == "Linux":
             windows_folder = horizontal_select("Windows shared folder", None, None).strip().replace("\\", "/")
             windows_folder = shlex.quote(windows_folder)
             mount_dir = f"/mnt/{pathlib.Path(windows_folder).name}.cifs"
-            user = input("User")
+            user = input("User: ")
             subprocess.run(["bash", "-lc", f"""
                 if ! command -v mount.cifs >/dev/null 2>&1; then
                     sudo apt install -y cifs-utils
@@ -483,7 +488,60 @@ class CMD_download:
         pass
 
     def __download_nsight_systems(self): 
-        pass  
+        nsys_url = "https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk"
+        folder1 = self.__html_get_latest_item(nsys_url)
+        folder2 = self.__html_get_latest_item(nsys_url + "/" + folder1)
+        arch = platform.machine().lower()
+        arch = "x86_64" if arch in ("x86_64","amd64","x64") else ("arm64" if arch in ("aarch64","arm64") else arch)
+        file = self.__html_item_if_name_contains(nsys_url + "/" + folder1 + "/" + folder2, ["nsight_systems", f"linux-{arch}", ".tar.gz"])
+        print(nsys_url + "/" + folder1 + "/" + folder2 + "/" + file)
+
+    def __html_item_if_name_contains(self, url, substrs):
+        session = requests.Session()
+        soup = BeautifulSoup(session.get(url, timeout=30).text, "html.parser")
+
+        for a in soup.find_all("a"):
+            href = a.get("href")
+            if not href or href == "../":
+                continue
+            name = href.rstrip("/").split("/")[-1]
+            for substr in substrs:
+                if substr not in name:
+                    continue 
+            return name 
+        return None 
+            
+
+    def __html_item_with_latest_timestamp(self, url):
+        session = requests.Session()
+        soup = BeautifulSoup(session.get(url, timeout=30).text, "html.parser")
+        candidates = []
+
+        for a in soup.find_all("a"):
+            href = a.get("href")
+            if not href or href == "../":
+                continue
+            row = a.find_parent("tr") or a.parent
+            text = " ".join((row.get_text(" ", strip=True) if row else "").split())
+            matched = re.search(r"\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(?::\d{2})?", text) \
+                or re.search(r"\d{2}-[A-Za-z]{3}-\d{4}\s+\d{2}:\d{2}", text)
+            if not matched:
+                continue 
+
+            for format in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%d-%b-%Y %H:%M"):
+                with suppress(ValueError):
+                    timestamp = datetime.datetime.strptime(matched.group(0), format)
+                    break
+            else: continue 
+
+            name = href.rstrip("/").split("/")[-1]
+            candidates.append((timestamp, name))
+
+        if not candidates:
+            raise RuntimeError("No timestamps found")
+        
+        candidates.sort(key=lambda x: x[0])
+        return candidates[-1][1]
 
 
 class CPU_freq_limiter:
