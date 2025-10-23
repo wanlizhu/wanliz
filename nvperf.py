@@ -213,10 +213,12 @@ class CMD_share:
         
         shared_name = re.sub(r"[^A-Za-z0-9._-]","_", path.name) or "share"
         subprocess.run(["bash", "-lc", rf"""
+            if ! pdbedit -L -u {getpass.getuser()} >/dev/null 2>&1; then
+                sudo smbpasswd -a {getpass.getuser()}
+            fi 
             if ! grep -q '^\[global\][[:space:]]*$' /etc/samba/smb.conf; then 
                 echo '' | sudo tee -a /etc/samba/smb.conf >/dev/null
                 echo '[global]' | sudo tee -a /etc/samba/smb.conf >/dev/null
-                echo '   map to guest = Bad User' | sudo tee -a /etc/samba/smb.conf >/dev/null
                 echo '   map to guest = Bad Password' | sudo tee -a /etc/samba/smb.conf >/dev/null
             fi 
             echo '' | sudo tee -a /etc/samba/smb.conf >/dev/null
@@ -260,16 +262,16 @@ class CMD_mount:
     
     def run(self):
         if platform.system() == "Windows":
-            linux_folder = horizontal_select("Linux shared folder: ", None, None).strip().replace("/", "\\")
+            linux_folder = horizontal_select("Linux shared folder", None, None).strip().replace("/", "\\")
             linux_folder = linux_folder.rstrip("\\")
             unc_path = linux_folder if linux_folder.startswith("\\\\") else ("\\\\" + linux_folder.lstrip("\\")) 
-            user = input("User: ")
+            user = input("User")
             subprocess.run(f'cmd /k net use Z: "{unc_path}" /persistent:yes {str("/user:" + user + " *") if user else ""}', check=True, shell=True)
         elif platform.system() == "Linux":
-            windows_folder = horizontal_select("Windows shared folder: ", None, None).strip().replace("\\", "/")
+            windows_folder = horizontal_select("Windows shared folder", None, None).strip().replace("\\", "/")
             windows_folder = shlex.quote(windows_folder)
             mount_dir = f"/mnt/{pathlib.Path(windows_folder).name}.cifs"
-            user = input("User: ")
+            user = input("User")
             subprocess.run(["bash", "-lc", f"""
                 if ! command -v mount.cifs >/dev/null 2>&1; then
                     sudo apt install -y cifs-utils
@@ -649,7 +651,7 @@ if __name__ == "__main__":
             cmds.append(name.split("_")[1])
             cmds_desc.append(cmds[-1] + "\t:" +  str(cls()))
     
-    print(f"{RED}[use left/right arrow key to select from options]{RESET}\n")
+    print(f"{RED}[use left/right arrow key to select from options]{RESET}")
     print('\n'.join(cmds_desc))
     cmd = horizontal_select(f"Enter the cmd to run", None, None)
     if globals().get(f"CMD_{cmd}") is None:
