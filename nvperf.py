@@ -437,13 +437,14 @@ class CMD_share:
         
         shared_name = re.sub(r"[^A-Za-z0-9._-]","_", path.name) or "share"
         subprocess.run(["bash", "-lc", rf"""
-            echo '\n[{shared_name}]\n' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   path = {path}\n' | sudo tee  -a /etc/samba/smb.conf >/dev/null
-            echo '   public = yes\n' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   guest ok = yes\n' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   writable = yes\n' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   create mask = 0777\n' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   directory mask = 0777\n' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '[{shared_name}]' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   path = {path}' | sudo tee  -a /etc/samba/smb.conf >/dev/null
+            echo '   public = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   guest ok = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   writable = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   create mask = 0777' | sudo tee -a /etc/samba/smb.conf >/dev/null
+            echo '   directory mask = 0777' | sudo tee -a /etc/samba/smb.conf >/dev/null
             sudo testparm -s || echo '/etc/samba/smb.conf is invalid'
             sudo systemctl enable --now smbd
             sudo systemctl restart smbd
