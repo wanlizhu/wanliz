@@ -489,8 +489,8 @@ class CMD_download:
 
     def __download_nsight_systems(self): 
         nsys_url = "https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk"
-        folder1 = self.__html_get_latest_item(nsys_url)
-        folder2 = self.__html_get_latest_item(nsys_url + "/" + folder1)
+        folder1 = self.__html_item_with_latest_timestamp(nsys_url)
+        folder2 = self.__html_item_with_latest_timestamp(nsys_url + "/" + folder1)
         arch = platform.machine().lower()
         arch = "x86_64" if arch in ("x86_64","amd64","x64") else ("arm64" if arch in ("aarch64","arm64") else arch)
         file = self.__html_item_if_name_contains(nsys_url + "/" + folder1 + "/" + folder2, ["nsight_systems", f"linux-{arch}", ".tar.gz"])
