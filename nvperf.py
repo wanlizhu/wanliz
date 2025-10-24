@@ -593,7 +593,7 @@ class Nsight_graphics_gputrace:
     def __get_arch(self):
         arch_list =  [l.strip() for l in re.search(r'Available architectures:\n((?:\s{2,}.+\n)+)', self.help_all).group(1).splitlines()]
         arch_list = arch_list[:next((i for i, x in enumerate(arch_list) if x == '' or x.startswith("-")), len(arch_list))] 
-        self.arch = horizontal_select("", arch_list, 0)
+        self.arch = horizontal_select("Select architecture", arch_list, 0)
 
     def __get_metricset(self):
         indent_base = -1
