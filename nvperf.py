@@ -493,12 +493,9 @@ class CMD_download:
 
 
 class CPU_freq_limiter:
-    def __init__(self, cores):
-        self.cores = [str(x) for x in cores] 
-
     def scale_max_freq(self, scale):
         subprocess.run(["bash", "-lc", rf"""
-            for core in {' '.join(self.cores)}; do 
+            for core in `seq 0 $(( $(nproc) - 1 ))`; do 
                 cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
                 max=$(cat $cpufreq/cpuinfo_max_freq)
                 scaled_freq=$(LC_ALL=C awk -v r="{scale}" -v m="$max" 'BEGIN{{printf "%.0f", r*m}}')
@@ -510,23 +507,11 @@ class CPU_freq_limiter:
                 echo $scaled_freq | sudo tee $cpufreq/scaling_max_freq >/dev/null 
                 echo $scaled_freq | sudo tee $cpufreq/scaling_min_freq >/dev/null 
             done 
-            sleep 1
-            sudo rm -f /tmp/$cpufreq/failed
-            for core in {' '.join(self.cores)}; do 
-                cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
-                max=$(cat $cpufreq/cpuinfo_max_freq)
-                scaled_freq=$(LC_ALL=C awk -v r="{scale}" -v m="$max" 'BEGIN{{printf "%.0f", r*m}}')
-                if [[ $(cat $cpufreq/scaling_cur_freq) -gt $(cat $cpufreq/scaling_max_freq) ]]; then 
-                    echo 1 > /tmp/$cpufreq/failed
-                    exit 1
-                fi 
-            done 
         """], check=True)
         
-
     def reset(self):
         subprocess.run(["bash", "-lc", rf"""
-            for core in {' '.join(self.cores)}; do 
+            for core in `seq 0 $(( $(nproc) - 1 ))`; do 
                 cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
                 if [[ -d /tmp/$cpufreq ]]; then 
                     sudo cp -f  /tmp/$cpufreq/scaling_governor $cpufreq/scaling_governor 
@@ -716,29 +701,12 @@ class CMD_viewperf:
         elif env == "stats":
             limiter = None 
             try:
-                #subprocess.run(["bash", "-lc", rf"""
-                #    cd ~/viewperf2020v3 &&
-                #    ~/viewperf2020v3/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160 &
-                #    pid=$!
-                #    peak=0
-                #    while kill -0 $pid 2>/dev/null; do 
-                #        num=$(( $(ls /proc/$pid/task 2>/dev/null | wc -l) )) 
-                #        (( num>peak )) && peak=$num    
-                #        sleep 1
-                #    done
-                #    echo "$peak threads utilized"
-                #    echo $peak >/tmp/peak
-                #"""], check=True)
-                #thread_count = int(pathlib.Path("/tmp/peak").read_text().strip())
-                thread_count = 1
-                cores = list(map(str, range(1, thread_count + 1)))
-                limiter = CPU_freq_limiter(cores)
+                limiter = CPU_freq_limiter()
                 home = os.path.expanduser("~")
 
-                for scale in [x / 10 for x in range(10, 1, -1)]:
+                for scale in [x / 10 for x in range(5, 11, 1)]:
                     limiter.scale_max_freq(scale)
                     subprocess.run([
-                        "taskset", "-c", ",".join(cores),
                         f"{home}/viewperf2020v3/viewperf/bin/viewperf",
                         f"viewsets/{viewset}/config/{viewset}.xml",
                         "-resolution", "3840x2160" 
