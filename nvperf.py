@@ -587,7 +587,7 @@ class Nsight_graphics_gputrace:
             self.ngfx = shutil.which('ngfx')
         if not os.path.exists(self.ngfx):
             raise RuntimeError("Failed to find ngfx")
-        self.help_all = subprocess.run(["bash", "-lc", "{ngfx_exe} --help-all"], check=True, capture_output=True, text=True).stdout
+        self.help_all = subprocess.run(["bash", "-lc", f"{self.ngfx} --help-all"], check=True, capture_output=True, text=True).stdout
 
     def __get_arch(self):
         arch_list =  [l.strip() for l in re.search(r'Available architectures:\n((?:\s{2,}.+\n)+)', self.help_all).group(1).splitlines()]
