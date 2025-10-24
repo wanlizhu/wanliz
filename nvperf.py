@@ -542,6 +542,7 @@ class CPU_freq_limiter:
 class Nsight_graphics_gputrace:
     def __init__(self, exe, args, workdir, env):
         subprocess.run(["bash", "-lc", rf"""
+            echo "Checking package dependencies of Nsight graphics..."
             for pkg in libxcb-dri2-0 libxcb-shape0 libxcb-xinerama0 libxcb-xfixes0 libxcb-render0 libxcb-shm0 libxcb1 libx11-xcb1 libxrender1 \
                 libxkbcommon0 libxkbcommon-x11-0 libxext6 libxi6 libglib2.0-0 libglib2.0-0t64 libegl1 libopengl0 \
                 libxcb-util1 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinput0; do 
@@ -665,7 +666,7 @@ class CMD_viewperf:
         elif env == "ngfx":
             gputrace = Nsight_graphics_gputrace(
                 exe="$HOME/viewperf2020v3/viewperf/bin/viewperf",
-                args="viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160",
+                args=f"viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160",
                 workdir="$HOME/viewperf2020v3",
                 env=[f"DISPLAY={os.environ['DISPLAY']}", "__GL_SYNC_TO_VBLANK=0", "__GL_DEBUG_BYPASS_ASSERT=c"] \
             )
