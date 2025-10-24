@@ -542,10 +542,11 @@ class CPU_freq_limiter:
 class Nsight_graphics_gputrace:
     def __init__(self, exe, args, workdir, env):
         subprocess.run(["bash", "-lc", rf"""
+            echo "Checking package dependencies"
             for pkg in libxcb-dri2-0 libxcb-shape0 libxcb-xinerama0 libxcb-xfixes0 libxcb-render0 libxcb-shm0 libxcb1 libx11-xcb1 libxrender1 \
-                libxkbcommon0 libxkbcommon-x11-0 libxext6 libxi6 libglib2.0-0 libegl1 libopengl0 \
+                libxkbcommon0 libxkbcommon-x11-0 libxext6 libxi6 libglib2.0-0 libglib2.0-0t64 libegl1 libopengl0 \
                 libxcb-util1 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinput0; do 
-                dpkg -s $pkg &>/dev/null || sudo apt install -y $pkg
+                dpkg -s $pkg &>/dev/null || sudo apt install -y $pkg &>/dev/null
             done 
         """], check=True)
         self.exe = exe 
@@ -587,7 +588,7 @@ class Nsight_graphics_gputrace:
             self.ngfx = shutil.which('ngfx')
         if not os.path.exists(self.ngfx):
             raise RuntimeError("Failed to find ngfx")
-        self.help_all = subprocess.run(["bash", "-lc", f"{self.ngfx} --help-all"], check=True, capture_output=True, text=True).stdout
+        self.help_all = subprocess.run(["bash", "-lc", f"{self.ngfx} --help-all"], check=False, capture_output=True, text=True).stdout
 
     def __get_arch(self):
         arch_list =  [l.strip() for l in re.search(r'Available architectures:\n((?:\s{2,}.+\n)+)', self.help_all).group(1).splitlines()]
