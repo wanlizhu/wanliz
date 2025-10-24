@@ -19,7 +19,6 @@ import requests
 import webbrowser
 import shutil
 from contextlib import suppress
-from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from xml.etree import ElementTree 
 if platform.system() == "Linux": 
