@@ -565,7 +565,7 @@ class Nsight_graphics_gputrace:
             f'--exe="{self.exe}"',
             f'--args="{self.args}"' if self.args else "",
             f'--dir="{self.workdir}"' if self.workdir else "",
-            f'--env="{','.join(self.env)}"' if self.env else "",
+            f'--env="{'; '.join(self.env)}"' if self.env else "",
             '--activity="GPU Trace Profiler"',
             f'--start-after-frames={startframe}',
             f'--limit-to-frames={frames}',
