@@ -494,16 +494,15 @@ class CMD_download:
 
 class CPU_freq_limiter:
     def scale_max_freq(self, scale):
+        self.reset()
         subprocess.run(["bash", "-lc", rf"""
             for core in `seq 0 $(( $(nproc) - 1 ))`; do 
                 cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
+                sudo rm -rf /tmp/$cpufreq
+                sudo cp -rf $cpufreq /tmp/ 
                 max=$(cat $cpufreq/cpuinfo_max_freq)
                 scaled_freq=$(LC_ALL=C awk -v r="{scale}" -v m="$max" 'BEGIN{{printf "%.0f", r*m}}')
-                mkdir -p /tmp/$cpufreq
-                sudo cp -f $cpufreq/scaling_governor /tmp/$cpufreq/scaling_governor
-                sudo cp -f $cpufreq/scaling_max_freq /tmp/$cpufreq/scaling_max_freq
-                sudo cp -f $cpufreq/scaling_min_freq /tmp/$cpufreq/scaling_min_freq
-                echo powersave   | sudo tee $cpufreq/scaling_governor >/dev/null 
+                echo powersave    | sudo tee $cpufreq/scaling_governor >/dev/null 
                 echo $scaled_freq | sudo tee $cpufreq/scaling_max_freq >/dev/null 
                 echo $scaled_freq | sudo tee $cpufreq/scaling_min_freq >/dev/null 
             done 
@@ -514,13 +513,18 @@ class CPU_freq_limiter:
             for core in `seq 0 $(( $(nproc) - 1 ))`; do 
                 cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
                 if [[ -d /tmp/$cpufreq ]]; then 
-                    sudo cp -f  /tmp/$cpufreq/scaling_governor $cpufreq/scaling_governor 
-                    sudo cp -f  /tmp/$cpufreq/scaling_max_freq $cpufreq/scaling_max_freq 
-                    sudo cp -f  /tmp/$cpufreq/scaling_min_freq $cpufreq/scaling_min_freq 
-                    sudo rm -rf /tmp/$cpufreq
+                    sudo cp -rf /tmp/$cpufreq $cpufreq/../
                 fi 
             done 
         """], check=True)
+
+
+class GPU_freq_limiter:
+    def scale_max_freq(self, scale):
+        pass 
+
+    def reset(self):
+        pass 
 
 
 class Nsight_graphics_gputrace:
@@ -708,7 +712,7 @@ class CMD_viewperf:
                     limiter.scale_max_freq(scale)
                     subprocess.run([
                         f"{home}/viewperf2020v3/viewperf/bin/viewperf",
-                        f"viewsets/{viewset}/config/{viewset}.xml",
+                        f"viewsets/{viewset}/config/{viewset}.xml", "1",
                         "-resolution", "3840x2160" 
                     ], cwd=f"{home}/viewperf2020v3", check=True, capture_output=True)
 
@@ -717,6 +721,7 @@ class CMD_viewperf:
                     results = max(matches, key=lambda p: p.stat().st_mtime) if matches else None
                     root = ElementTree.parse(results).getroot()
                     print(f"Composite score: {root.find('Composite').get('Score')} @ {scale:.1f}x cpu freq")
+                    limiter.reset()
             finally:
                 if limiter is not None: limiter.reset()
         else:
