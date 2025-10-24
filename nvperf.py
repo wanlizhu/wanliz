@@ -557,7 +557,8 @@ class Nsight_graphics_gputrace:
         self.__get_arch()
         self.__get_metricset()
 
-    def capture(self, startframe=100, frames=3, time_all_actions=False): 
+    def capture(self, startframe=100, frames=3): 
+        time_all_actions = horizontal_select("Time all API calls separately", ["yes", "no"], 1)
         subprocess.run(["bash", "-lc", ' '.join([line for line in [
             'sudo', self.ngfx,
             '--output-di=$HOME',
@@ -574,7 +575,7 @@ class Nsight_graphics_gputrace:
             f'--metric-set-name="{self.metricset}"',
             '--multi-pass-metrics',
             '--real-time-shader-profiler',
-            '--time-every-action' if time_all_actions else ""
+            '--time-every-action' if time_all_actions == "yes" else ""
         ] if len(line) > 0])], check=True) 
 
     def __get_ngfx_path(self):
@@ -670,7 +671,7 @@ class CMD_viewperf:
                 workdir="$HOME/viewperf2020v3",
                 env=[f"DISPLAY={os.environ['DISPLAY']}", "__GL_SYNC_TO_VBLANK=0", "__GL_DEBUG_BYPASS_ASSERT=c"] \
             )
-            gputrace.capture(startframe=100, frames=3, time_all_actions=True)
+            gputrace.capture(startframe=100, frames=3)
         elif env == "nsys":
             subprocess.run(["bash", "-lc", rf"""
                 echo "Nsight system exe: $(which nsys)"
