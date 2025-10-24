@@ -16,6 +16,8 @@ import select
 import platform
 import getpass 
 import requests
+import webbrowser
+import shutil
 from contextlib import suppress
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
@@ -485,63 +487,10 @@ class CMD_download:
         elif src == "Nsight systems": self.__download_nsight_systems() 
 
     def __download_nsight_graphics(self):
-        pass
+        webbrowser.open("https://ngfx/builds-nightly/Grfx")
 
     def __download_nsight_systems(self): 
-        nsys_url = "https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk"
-        folder1 = self.__html_item_with_latest_timestamp(nsys_url)
-        folder2 = self.__html_item_with_latest_timestamp(nsys_url + "/" + folder1)
-        arch = platform.machine().lower()
-        arch = "x86_64" if arch in ("x86_64","amd64","x64") else ("arm64" if arch in ("aarch64","arm64") else arch)
-        file = self.__html_item_if_name_contains(nsys_url + "/" + folder1 + "/" + folder2, ["nsight_systems", f"linux-{arch}", ".tar.gz"])
-        print(nsys_url + "/" + folder1 + "/" + folder2 + "/" + file)
-
-    def __html_item_if_name_contains(self, url, substrs):
-        session = requests.Session()
-        soup = BeautifulSoup(session.get(url, timeout=30).text, "html.parser")
-
-        for a in soup.find_all("a"):
-            href = a.get("href")
-            if not href or href == "../":
-                continue
-            name = href.rstrip("/").split("/")[-1]
-            for substr in substrs:
-                if substr not in name:
-                    continue 
-            return name 
-        return None 
-            
-
-    def __html_item_with_latest_timestamp(self, url):
-        session = requests.Session()
-        soup = BeautifulSoup(session.get(url, timeout=30).text, "html.parser")
-        candidates = []
-
-        for a in soup.find_all("a"):
-            href = a.get("href")
-            if not href or href == "../":
-                continue
-            row = a.find_parent("tr") or a.parent
-            text = " ".join((row.get_text(" ", strip=True) if row else "").split())
-            matched = re.search(r"\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(?::\d{2})?", text) \
-                or re.search(r"\d{2}-[A-Za-z]{3}-\d{4}\s+\d{2}:\d{2}", text)
-            if not matched:
-                continue 
-
-            for format in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%d-%b-%Y %H:%M"):
-                with suppress(ValueError):
-                    timestamp = datetime.datetime.strptime(matched.group(0), format)
-                    break
-            else: continue 
-
-            name = href.rstrip("/").split("/")[-1]
-            candidates.append((timestamp, name))
-
-        if not candidates:
-            raise RuntimeError("No timestamps found")
-        
-        candidates.sort(key=lambda x: x[0])
-        return candidates[-1][1]
+        webbrowser.open("https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk")
 
 
 class CPU_freq_limiter:
@@ -590,25 +539,112 @@ class CPU_freq_limiter:
         """], check=True)
 
 
+class Nsight_graphics_gputrace:
+    def __init__(self, exe, args, workdir, env):
+        subprocess.run(["bash", "-lc", rf"""
+            for pkg in libxcb-dri2-0 libxcb-shape0 libxcb-xinerama0 libxcb-xfixes0 libxcb-render0 libxcb-shm0 libxcb1 libx11-xcb1 libxrender1 \
+                libxkbcommon0 libxkbcommon-x11-0 libxext6 libxi6 libglib2.0-0 libegl1 libopengl0 \
+                libxcb-util1 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinput0; do 
+                dpkg -s $pkg &>/dev/null || sudo apt install -y $pkg
+            done 
+        """], check=True)
+        self.exe = exe 
+        self.args = args 
+        self.workdir = workdir 
+        self.env = env 
+        self.__get_ngfx_path()
+        self.__get_arch()
+        self.__get_metricset()
+
+    def capture(self, startframe=100, frames=3, time_all_actions=False): 
+        subprocess.run(["bash", "-lc", ' '.join([line for line in [
+            'sudo', self.ngfx,
+            '--output-di=$HOME',
+            '--platform="Linux ($(uname -m))"',
+            '--exe="{self.exe}"',
+            '--args="{self.args}"' if self.args else "",
+            '--dir="{self.workdir}"' if self.workdir else "",
+            '--env="{\',\'.join(self.env)}"' if self.env else "",
+            '--activity="GPU Trace Profiler"',
+            f'--start-after-frames={startframe}',
+            f'--limit-to-frames={frames}',
+            '--auto-export',
+            f'--architecture="{self.arch}"', 
+            f'--metric-set-name="{self.metricset}"',
+            '--multi-pass-metrics',
+            '--real-time-shader-profiler',
+            '--time-every-action' if time_all_actions else ""
+        ] if len(line) > 0])], check=True) 
+
+    def __get_ngfx_path(self):
+        if platform.machine() == 'aarch64':
+            self.ngfx = f'{os.path.expanduser('~')}/nvidia-nomad-internal-EmbeddedLinux.l4t/host/linux-v4l_l4t-nomad-t210-a64/ngfx'
+        elif os.path.isdir(f'{os.path.expanduser('~')}/nvidia-nomad-internal-Linux.linux'):
+            self.ngfx = f'{os.path.expanduser('~')}/nvidia-nomad-internal-Linux.linux/host/linux-desktop-nomad-x64/ngfx'
+        elif os.path.isdir(f'{os.path.expanduser('~')}/nvidia-nomad-internal-EmbeddedLinux.linux'):
+            self.ngfx = f'{os.path.expanduser('~')}/nvidia-nomad-internal-EmbeddedLinux.linux/host/linux-desktop-nomad-x64/ngfx'
+        else:
+            self.ngfx = shutil.which('ngfx')
+        if not os.path.exists(self.ngfx):
+            raise RuntimeError("Failed to find ngfx")
+        self.help_all = subprocess.run(["bash", "-lc", "{ngfx_exe} --help-all"], check=True, capture_output=True, text=True).stdout
+
+    def __get_arch(self):
+        arch_list =  [l.strip() for l in re.search(r'Available architectures:\n((?:\s{2,}.+\n)+)', self.help_all).group(1).splitlines()]
+        arch_list = arch_list[:next((i for i, x in enumerate(arch_list) if x == '' or x.startswith("-")), len(arch_list))] 
+        self.arch = horizontal_select("", arch_list, 0)
+
+    def __get_metricset(self):
+        indent_base = -1
+        indent_arch = -1
+        arch_name = None 
+        metricset_map = {}
+        for line in [line.rstrip() for line in self.help_all.splitlines()]:
+            if indent_base < 0:
+                if "--metric-set-id" in line:
+                    indent_base = line.find("Index")
+                continue 
+            if len(line) == 0 or line.startswith("-"):
+                break 
+
+            indent_line = len(line) - len(line.lstrip())
+            if indent_line <= indent_base:
+                continue 
+            if indent_arch < 0 or indent_line == indent_arch:
+                indent_arch = indent_line
+                arch_name = line.strip()
+                metricset_map[arch_name] = []
+                continue 
+            if indent_line > indent_arch and arch_name:
+                metricset_map[arch_name].append(line.split('-', 1)[1].strip())
+                continue 
+        if len(metricset_map) == 0 or not metricset_map.get(self.arch):
+            raise RuntimeError(f"Failed to find metric sets for {self.arch}")
+        if len(metricset_map[self.arch]) == 1:
+            self.metricset = metricset_map[self.arch][0]
+            print(f"Metric set: {self.metricset}")
+        else:
+            self.metricset = horizontal_select("Select metric set", metricset_map[self.arch], 0)
+            
+
 class CMD_viewperf:
     def __str__(self):
         return "Start profiling viewperf 2020 v3"
     
     def run(self):
         viewset = horizontal_select("[1/3] Target viewset", ["catia", "creo", "energy", "maya", "medical", "snx", "sw"], 3)
-        subtest = horizontal_select(f"[2/3] Target subtest (optional)", None, None)
         env = horizontal_select("[3/3] Launch in profiling/debug env", ["no", "pic-x", "ngfx", "nsys", "gdb", "stats"], 0)
     
         exe = os.path.expanduser('~/viewperf2020v3/viewperf/bin/viewperf')
-        arg = f"viewsets/{viewset}/config/{viewset}.xml {subtest} -resolution 3840x2160" 
+        arg = f"viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160" 
         dir = os.path.expanduser('~/viewperf2020v3')
         
         if env == "pic-x":
             api = horizontal_select("[1/5] Capture graphics API", ["ogl", "vk"], 0)
             startframe = horizontal_select("[2/5] Start capturing at frame index", ["100", "<input>"], 0)
             frames = horizontal_select("[3/5] Number of frames to capture", ["3", "<input>"], 0)
-            count = sum(1 for p in pathlib.Path("").glob("viewperf_{viewset}{subtest}_*") if p.is_file())
-            default_name = f"viewperf_{viewset}{subtest}_{count}"
+            count = sum(1 for p in pathlib.Path("").glob("viewperf_{viewset}_*") if p.is_file())
+            default_name = f"viewperf_{viewset}_{count}"
             name = horizontal_select("[4/5] Output name", [default_name, "<input>"], 0)
             upload = horizontal_select("[5/5] Upload output to GTL for sharing", ["yes", "no"], 1)
             subprocess.run([
@@ -627,9 +663,32 @@ class CMD_viewperf:
                 script = f"~/SinglePassCapture/PerfInspector/output/{name}/upload_report.sh"
                 subprocess.run(os.path.expanduser(script), check=True, shell=True)
         elif env == "ngfx":
-            pass
+            gputrace = Nsight_graphics_gputrace(
+                exe="$HOME/viewperf2020v3/viewperf/bin/viewperf",
+                args="viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160",
+                workdir="$HOME/viewperf2020v3",
+                env=[f"DISPLAY={os.environ['DISPLAY']}", "__GL_SYNC_TO_VBLANK=0", "__GL_DEBUG_BYPASS_ASSERT=c"] \
+            )
+            gputrace.capture(startframe=100, frames=3, time_all_actions=True)
         elif env == "nsys":
-            pass 
+            subprocess.run(["bash", "-lc", rf"""
+                echo "Nsight system exe: $(which nsys)"
+                sudo "$(which nsys)" profile \
+                    --run-as={getpass.getuser()} \
+                    --sample='system-wide' \
+                    --event-sample='system-wide' \
+                    --stats=true \
+                    --trace='cuda,nvtx,osrt,opengl' \
+                    --opengl-gpu-workload=true \
+                    --start-frame-index=100 \
+                    --duration-frames=60  \
+                    --gpu-metrics-devices=all  \
+                    --gpuctxsw=true \
+                    --output="viewperf_medical__%h__$(date '+%y%m%d-%H%M')" \
+                    --force-overwrite=true \
+                    --env-var='DISPLAY={os.environ['DISPLAY']},__GL_SYNC_TO_VBLANK=0,__GL_DEBUG_BYPASS_ASSERT=c' \
+                    $HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160
+            """], cwd=os.path.expanduser("~"), check=True) 
         elif env == "gdb":
             subprocess.run(["bash", "-lc", f"""
                 if ! command -v cgdb >/dev/null 2>&1; then

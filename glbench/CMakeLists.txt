@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10.0 FATAL_ERROR)
 
-project(nvperf-test)
+project(glbench)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(WIN32)
@@ -29,20 +29,20 @@ file(GLOB_RECURSE GLAD_SOURCE glad/*.c glad/*.cpp glad/*.h)
 file(GLOB_RECURSE WINDOW_SOURCE window/*.c window/*.cpp window/*.h)
 file(GLOB_RECURSE MSAA_SOURCE msaa/*.c msaa/*.cpp msaa/*.h)
 file(GLOB_RECURSE MSAA_SHADER msaa/*.glsl)
-add_executable(nvperf-test-msaa ${GLAD_SOURCE} ${WINDOW_SOURCE} ${MSAA_SOURCE} ${MSAA_SHADER})
-target_include_directories(nvperf-test-msaa PUBLIC 
+add_executable(glbench-msaa ${GLAD_SOURCE} ${WINDOW_SOURCE} ${MSAA_SOURCE} ${MSAA_SHADER})
+target_include_directories(glbench-msaa PUBLIC 
     ${CMAKE_CURRENT_LIST_DIR}
     ${CMAKE_CURRENT_LIST_DIR}/window 
 )
-target_link_libraries(nvperf-test-msaa PUBLIC 
+target_link_libraries(glbench-msaa PUBLIC 
     OpenGL::GL Vulkan::Vulkan 
     Threads::Threads glfw
     $<$<PLATFORM_ID:Linux>:X11>
 )
-add_custom_command(TARGET nvperf-test-msaa POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E create_symlink "${CMAKE_CURRENT_LIST_DIR}/msaa/shader.vert.glsl" "$<TARGET_FILE_DIR:nvperf-test-msaa>/shader.vert.glsl"
-    COMMAND ${CMAKE_COMMAND} -E create_symlink "${CMAKE_CURRENT_LIST_DIR}/msaa/shader.frag.glsl" "$<TARGET_FILE_DIR:nvperf-test-msaa>/shader.frag.glsl"
+add_custom_command(TARGET glbench-msaa POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E create_symlink "${CMAKE_CURRENT_LIST_DIR}/msaa/shader.vert.glsl" "$<TARGET_FILE_DIR:glbench-msaa>/shader.vert.glsl"
+    COMMAND ${CMAKE_COMMAND} -E create_symlink "${CMAKE_CURRENT_LIST_DIR}/msaa/shader.frag.glsl" "$<TARGET_FILE_DIR:glbench-msaa>/shader.frag.glsl"
 )
 if(WIN32)
-    set_target_properties(nvperf-test-msaa PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:nvperf-test-msaa>")
+    set_target_properties(glbench-msaa PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:glbench-msaa>")
 endif()
