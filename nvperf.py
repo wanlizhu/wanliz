@@ -618,8 +618,8 @@ class CMD_viewperf:
         return "Start profiling viewperf 2020 v3"
     
     def run(self):
-        viewset = horizontal_select("[1/3] Target viewset", ["catia", "creo", "energy", "maya", "medical", "snx", "sw"], 3)
-        env = horizontal_select("[3/3] Launch in profiling/debug env", ["no", "pic-x", "ngfx", "nsys", "gdb", "stats"], 0)
+        viewset = horizontal_select("[1/2] Target viewset", ["catia", "creo", "energy", "maya", "medical", "snx", "sw"], 3)
+        env = horizontal_select("[2/2] Launch in profiling/debug env", ["no", "pic-x", "ngfx", "nsys", "gdb", "stats"], 0)
     
         exe = os.path.expanduser('~/viewperf2020v3/viewperf/bin/viewperf')
         arg = f"viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160" 
