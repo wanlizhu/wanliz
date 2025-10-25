@@ -636,7 +636,7 @@ class CMD_viewperf:
             return root.find("Composite").get("Score")
     
     def run(self):
-        subtest_nums = { "catia": 8, "creo": 13, "energy": 6, "maya": 10, "medical": 10, "snx": 10, "sw": 10 }
+        subtest_nums = { "catia": "8", "creo": "13", "energy": "6", "maya": "10", "medical": "10", "snx": "10", "sw": "10" }
         viewset = horizontal_select("[1/3] Target viewset", ["catia", "creo", "energy", "maya", "medical", "snx", "sw"], 3)
         subtest = horizontal_select("[2/3] Target subtest", ["all"] + list(range(1, subtest_nums[viewset] + 1)), 0)
         subtest = "" if subtest == "all" else subtest
