@@ -716,8 +716,8 @@ class CMD_viewperf:
             """], check=True)
         elif env == "stats":
             choice = horizontal_select("[1/2] Emulate perf limiter of", ["CPU", "GPU"], 1)
-            lowest = horizontal_select("[2/2] Emulation lower bound", ["50%", "25%", "10%"], 0)
-            lowest = 0.5 if lowest == "50%" else (0.25 if lowest == "25%" else 0.1)
+            lowest = horizontal_select("[2/2] Emulation lower bound", ["50%", "33%", "10%"], 0)
+            lowest = 5 if lowest == "50%" else (3 if lowest == "33%" else 1)
             limiter = None 
             try:
                 limiter = CPU_freq_limiter() if choice == "CPU" else GPU_freq_limiter()
