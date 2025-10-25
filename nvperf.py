@@ -528,7 +528,7 @@ class GPU_freq_limiter:
 
 
 class Nsight_graphics_gputrace:
-    def __init__(self, exe, args, workdir, env):
+    def __init__(self, exe, args, workdir, env=None):
         subprocess.run(["bash", "-lc", rf"""
             echo "Checking package dependencies of Nsight graphics..."
             for pkg in libxcb-dri2-0 libxcb-shape0 libxcb-xinerama0 libxcb-xfixes0 libxcb-render0 libxcb-shm0 libxcb1 libx11-xcb1 libxrender1 \
@@ -621,12 +621,29 @@ class CMD_viewperf:
     def __str__(self):
         return "Start profiling viewperf 2020 v3"
     
+    def __get_result_fps(self, viewset, subtest):
+        pattern = f"viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
+        matches = list(pathlib.Path.home().glob(pattern))
+        if not matches:
+            raise RuntimeError(f"Failed to find results of {viewset}")
+
+        results_xml = max(matches, key=lambda p: p.stat().st_mtime) 
+        root = ElementTree.parse(results_xml).getroot()
+
+        if subtest:
+            return root.find(f".//Test[@Index='{subtest}']").get("FPS")
+        else:
+            return root.find("Composite").get("Score")
+    
     def run(self):
-        viewset = horizontal_select("[1/2] Target viewset", ["catia", "creo", "energy", "maya", "medical", "snx", "sw"], 3)
-        env = horizontal_select("[2/2] Launch in profiling/debug env", ["no", "pic-x", "ngfx", "nsys", "gdb", "stats"], 0)
+        subtest_nums = { "catia": 8, "creo": 13, "energy": 6, "maya": 10, "medical": 10, "snx": 10, "sw": 10 }
+        viewset = horizontal_select("[1/3] Target viewset", ["catia", "creo", "energy", "maya", "medical", "snx", "sw"], 3)
+        subtest = horizontal_select("[2/3] Target subtest", ["all"] + list(range(1, subtest_nums[viewset] + 1)), 0)
+        subtest = "" if subtest == "all" else subtest
+        env = horizontal_select("[3/3] Launch in profiling/debug env", ["no", "pic-x", "ngfx", "nsys", "gdb", "stats"], 0)
     
         exe = os.path.expanduser('~/viewperf2020v3/viewperf/bin/viewperf')
-        arg = f"viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160" 
+        arg = f"viewsets/{viewset}/config/{viewset}.xml {subtest} -resolution 3840x2160" 
         dir = os.path.expanduser('~/viewperf2020v3')
         
         if env == "pic-x":
@@ -653,15 +670,11 @@ class CMD_viewperf:
                 script = f"~/SinglePassCapture/PerfInspector/output/{name}/upload_report.sh"
                 subprocess.run(os.path.expanduser(script), check=True, shell=True)
         elif env == "ngfx":
-            gputrace = Nsight_graphics_gputrace(
-                exe="$HOME/viewperf2020v3/viewperf/bin/viewperf",
-                args=f"viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160",
-                workdir="$HOME/viewperf2020v3",
-                env=[f"DISPLAY={os.environ['DISPLAY']}", "__GL_SYNC_TO_VBLANK=0", "__GL_DEBUG_BYPASS_ASSERT=c"] \
-            )
+            gputrace = Nsight_graphics_gputrace(exe, arg, dir)
             gputrace.capture(startframe=100, frames=3)
         elif env == "nsys":
             subprocess.run(["bash", "-lc", rf"""
+                cd {dir}
                 echo "Nsight system exe: $(which nsys)"
                 sudo "$(which nsys)" profile \
                     --run-as={getpass.getuser()} \
@@ -676,8 +689,7 @@ class CMD_viewperf:
                     --gpuctxsw=true \
                     --output="viewperf_medical__%h__$(date '+%y%m%d-%H%M')" \
                     --force-overwrite=true \
-                    --env-var='DISPLAY={os.environ['DISPLAY']},__GL_SYNC_TO_VBLANK=0,__GL_DEBUG_BYPASS_ASSERT=c' \
-                    $HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160
+                    {exe} {arg}
             """], cwd=os.path.expanduser("~"), check=True) 
         elif env == "gdb":
             subprocess.run(["bash", "-lc", f"""
@@ -706,32 +718,16 @@ class CMD_viewperf:
             limiter = None 
             try:
                 limiter = CPU_freq_limiter()
-                home = os.path.expanduser("~")
-
                 for scale in [x / 10 for x in range(5, 11, 1)]:
                     limiter.scale_max_freq(scale)
-                    subprocess.run([
-                        f"{home}/viewperf2020v3/viewperf/bin/viewperf",
-                        f"viewsets/{viewset}/config/{viewset}.xml", "1",
-                        "-resolution", "3840x2160" 
-                    ], cwd=f"{home}/viewperf2020v3", check=True, capture_output=True)
-
-                    pattern = f"viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
-                    matches = list(pathlib.Path.home().glob(pattern))
-                    results = max(matches, key=lambda p: p.stat().st_mtime) if matches else None
-                    root = ElementTree.parse(results).getroot()
-                    print(f"Composite score: {root.find('Composite').get('Score')} @ {scale:.1f}x cpu freq")
+                    subprocess.run(["bash", "-lc", f"{exe} {arg}"], cwd=dir, check=True)
+                    print(f"{viewset}{subtest}: {self.__get_result_fps(viewset, subtest)} @ {scale:.1f}x cpu freq")
                     limiter.reset()
             finally:
                 if limiter is not None: limiter.reset()
         else:
-            subprocess.run(f"{exe} {arg}", cwd=dir, check=True, shell=True)
-            pattern = f"viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
-            matches = list(pathlib.Path.home().glob(pattern))
-            results = max(matches, key=lambda p: p.stat().st_mtime) if matches else None
-            root = ElementTree.parse(results).getroot()
-            score = root.find("Composite").get("Score")
-            print(f"Composite score: {score}")
+            subprocess.run(["bash", "-lc", f"{exe} {arg}"], cwd=dir, check=True)
+            print(f"{viewset}{subtest}: {self.__get_result_fps(viewset, subtest)}")
 
 
 if __name__ == "__main__":
