@@ -715,8 +715,8 @@ class CMD_viewperf:
                     -ex "set trace-commands off"
             """], check=True)
         elif env == "stats":
-            choice = horizontal_select("Emulate perf limiter of", ["CPU", "GPU"], 1)
-            lowest = horizontal_select("Emulation lower bound", ["50%", "25%", "10%"], 0)
+            choice = horizontal_select("[1/2] Emulate perf limiter of", ["CPU", "GPU"], 1)
+            lowest = horizontal_select("[2/2] Emulation lower bound", ["50%", "25%", "10%"], 0)
             lowest = 0.5 if lowest == "50%" else (0.25 if lowest == "25%" else 0.1)
             limiter = None 
             try:
