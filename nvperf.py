@@ -715,10 +715,13 @@ class CMD_viewperf:
                     -ex "set trace-commands off"
             """], check=True)
         elif env == "stats":
+            choice = horizontal_select("Emulate perf limiter of", ["CPU", "GPU"], 1)
+            lowest = horizontal_select("Emulation lower bound", ["50%", "25%", "10%"], 0)
+            lowest = 0.5 if lowest == "50%" else (0.25 if lowest == "25%" else 0.1)
             limiter = None 
             try:
-                limiter = CPU_freq_limiter()
-                for scale in [x / 10 for x in range(5, 11, 1)]:
+                limiter = CPU_freq_limiter() if choice == "CPU" else GPU_freq_limiter()
+                for scale in [x / 10 for x in range(lowest, 11, 1)]:
                     limiter.scale_max_freq(scale)
                     subprocess.run(["bash", "-lc", f"{exe} {arg}"], cwd=dir, check=True, capture_output=True)
                     print(f"{viewset}{subtest}: {self.__get_result_fps(viewset, subtest)} @ {scale:.1f}x cpu freq")
