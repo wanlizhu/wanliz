@@ -492,6 +492,25 @@ class CMD_download:
         webbrowser.open("https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk")
 
 
+class CMD_cpu:
+    def __str__(self):
+        return "Configure CPU on host device"
+    
+    def run(self):
+        cmd = horizontal_select("Action", ["max freq"], 0)
+        if cmd == "max freq":
+            subprocess.run(["bash", "-lc", rf"""
+                for core in `seq 0 $(( $(nproc) - 1 ))`; do 
+                    cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
+                    sudo rm -rf /tmp/$cpufreq
+                    max=$(cat $cpufreq/cpuinfo_max_freq)
+                    echo performance  | sudo tee $cpufreq/scaling_governor >/dev/null 
+                    echo $max | sudo tee $cpufreq/scaling_max_freq >/dev/null 
+                    echo $max | sudo tee $cpufreq/scaling_min_freq >/dev/null 
+                done 
+            """], check=True)
+
+
 class CPU_freq_limiter:
     def scale_max_freq(self, scale):
         self.reset()
