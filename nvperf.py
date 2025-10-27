@@ -48,7 +48,6 @@ os.environ.update({
 })
 if not os.environ.get("DISPLAY"):    os.environ["DISPLAY"] = ":0"  
 if not os.environ.get("XAUTHORITY"): os.environ["XAUTHORITY"] = os.path.expanduser("~/.Xauthority") 
-
 signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
 
@@ -301,22 +300,24 @@ class CMD_startx:
 
         # Unsandbag for much higher perf 
         if os.path.exists(os.path.expanduser("~/sandbag-tool")):
-            subprocess.run(f"{os.path.expanduser('~/sandbag-tool')} -unsandbag", check=True, shell=True)
+            subprocess.run(["bash", "-lc", f"{os.path.expanduser('~/sandbag-tool')} -unsandbag"], check=True)
         else:
             print("File doesn't exist: ~/sandbag-tool")
-            print("Unsandbag \t [ SKIPPED ]")
+            print("Unsandbag \t [ FAILED ]")
 
         # Lock GPU clocks 
         if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e"):
             perfdebug = "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug"
             if os.path.exists(perfdebug):
-                subprocess.run(f"sudo {perfdebug} --lock_loose  set pstateId   P0", check=True, shell=True)
-                subprocess.run(f"sudo {perfdebug} --lock_strict set gpcclkkHz  2000000", check=True, shell=True)
-                subprocess.run(f"sudo {perfdebug} --lock_loose  set xbarclkkHz 1800000", check=True, shell=True)
-                subprocess.run(f"sudo {perfdebug} --force_regime  ffr", check=True, shell=True)
+                subprocess.run(["bash", "-lc", f"sudo {perfdebug} --lock_loose  set pstateId   P0"], check=True)
+                subprocess.run(["bash", "-lc", f"sudo {perfdebug} --lock_strict set gpcclkkHz  2000000"], check=True)
+                subprocess.run(["bash", "-lc", f"sudo {perfdebug} --lock_loose  set xbarclkkHz 1800000"], check=True)
+                subprocess.run(["bash", "-lc", f"sudo {perfdebug} --force_regime  ffr"], check=True)
             else:
                 print(f"File doesn't exist: {perfdebug}")
-                print("Lock clocks \t [ SKIPPED ]")
+                print("Lock clocks \t [ FAILED ]")
+        else:
+            print(f"No need to lock GPU clocks on {os.uname().machine.lower()}")
 
 
 class CMD_nvmake:
