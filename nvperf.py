@@ -691,7 +691,7 @@ class CMD_viewperf:
         viewsets = ["catia", "creo", "energy", "maya", "medical", "snx", "sw"] if self.viewset == "all" else [self.viewset]
         subtest = None if self.viewset == "all" else self.subtest
         rounds = int(horizontal_select("Number of rounds", ["1", "3", "30"], 0))
-        table = ",".join(["viewset", "Average FPS", "StdDev"])
+        table = ",".join(["Viewset", "Average FPS", "StdDev"])
         for viewset in viewsets:
             samples = []
             for i in range(1, rounds + 1):
@@ -701,7 +701,7 @@ class CMD_viewperf:
                                         capture_output=True)
                 fps = float(self.__get_result_fps(viewset, subtest) if output.returncode == 0 else 0)
                 samples.append(fps)
-                print(f"{viewset}{subtest if subtest else ''} @ {i:02d} run: \t{fps: 7.2f} FPS")
+                print(f"{viewset}{subtest if subtest else ''} @ {i:02d} run: \t{fps: 3.2f} FPS")
             if rounds > 1:
                 table += "\n" + ",".join([viewset, f"{mean(samples):.2f}", f"{stdev(samples):.3f}"])
             else:
