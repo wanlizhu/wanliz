@@ -882,10 +882,12 @@ class CMD_viewperf:
 
 
 if __name__ == "__main__":
-    if all([platform.system() == "Windows", "--admin" in sys.argv, ctypes.windll.shell32.IsUserAnAdmin() == 0]):
-        cmdline = subprocess.list2cmdline([os.path.abspath(sys.argv[0])] + [arg for arg in sys.argv[1:] if arg != "--admin"])
-        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmdline, None, 1)
-        sys.exit(0)
+    if platform.system() == "Windows":
+        if "--admin" in sys.argv:
+            if ctypes.windll.shell32.IsUserAnAdmin() == 0:
+                cmdline = subprocess.list2cmdline([os.path.abspath(sys.argv[0])] + [arg for arg in sys.argv[1:] if arg != "--admin"])
+                ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmdline, None, 1)
+                sys.exit(0)
 
     cmds = []
     cmds_desc = []
