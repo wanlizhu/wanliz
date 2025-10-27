@@ -691,7 +691,7 @@ class CMD_viewperf:
         viewsets = ["catia", "creo", "energy", "maya", "medical", "snx", "sw"] if self.viewset == "all" else [self.viewset]
         subtest = None if self.viewset == "all" else self.subtest
         rounds = int(horizontal_select("Number of rounds", ["1", "3", "30"], 0))
-        table = ",".join(["Viewset", "Average FPS", "StdDev"])
+        table = ",".join(["Viewset", "Average FPS", "StdDev", "Min", "Max"])
         for viewset in viewsets:
             samples = []
             for i in range(1, rounds + 1):
@@ -703,9 +703,9 @@ class CMD_viewperf:
                 samples.append(fps)
                 print(f"{viewset}{subtest if subtest else ''} @ {i:02d} run: {fps: 3.2f} FPS")
             if rounds > 1:
-                table += "\n" + ",".join([viewset, f"{mean(samples):.2f}", f"{stdev(samples):.3f}"])
+                table += "\n" + ",".join([viewset, f"{mean(samples):.2f}", f"{stdev(samples):.3f}", f"{min(samples):.2f}", f"{max(samples):.2f}"])
             else:
-                table += "\n" + ",".join([viewset, f"{samples[0]:.2f}", "0"])
+                table += "\n" + ",".join([viewset, f"{samples[0]:.2f}", "0", f"{samples[0]:.2f}", f"{samples[0]:.2f}"])
         print("")
         subprocess.run(["bash", "-lc", "column -t -s ,"], input=table + "\n", text=True, check=True)
         
