@@ -690,7 +690,7 @@ class CMD_viewperf:
         for viewset in viewsets:
             samples = []
             for i in range(1, rounds + 1):
-                output = subprocess.run(["bash", "-lc", f"$HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160"], 
+                output = subprocess.run(["bash", "-lc", f"$HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml {subtest if subtest else ''} -resolution 3840x2160"], 
                                         cwd=os.path.expanduser('~/viewperf2020v3'), 
                                         check=False, 
                                         capture_output=True)
