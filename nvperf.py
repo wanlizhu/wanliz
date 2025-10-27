@@ -706,8 +706,11 @@ class CMD_viewperf:
             else:
                 table += "\n" + ",".join([viewset, f"{samples[0]:.2f}", "0", f"{samples[0]:.2f}", f"{samples[0]:.2f}"])
         print("")
-        subprocess.run(["bash", "-lc", "column -t -s ,"], input=table + "\n", text=True, check=True)
-        
+        output = subprocess.run(["bash", "-lc", "column -t -s ,"], input=table + "\n", text=True, check=True, capture_output=True)
+        print(output.stdout if output.returncode == 0 else output.stderr)
+        with open(os.path.expanduser(f"~/viewperf_stats_{datetime.now().strftime('%Y_%m%d_%H%M')}.txt"), "w", encoding="utf-8") as file:
+            file.write(output.stdout)
+
     def __run_in_picx(self):
         api = horizontal_select("[1/5] Capture graphics API", ["ogl", "vk"], 0)
         startframe = horizontal_select("[2/5] Start capturing at frame index", ["100", "<input>"], 0)
@@ -751,7 +754,7 @@ class CMD_viewperf:
                 --duration-frames=60  \
                 --gpu-metrics-devices=all  \
                 --gpuctxsw=true \
-                --output="viewperf_medical__%h__$(date '+%y%m%d-%H%M')" \
+                --output="viewperf_medical__%h__$(date '+%Y_%m%d_%H%M')" \
                 --force-overwrite=true \
                 {self.exe} {self.arg}
         """], cwd=os.path.expanduser("~"), check=True) 
