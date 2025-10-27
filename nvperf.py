@@ -126,11 +126,14 @@ class CMD_config:
             "horizon7": "172.16.177.216",
             "n1x6": "10.31.40.241",
         }
-
-        if platform.system() == "Windows":
-            self.__config_windows_host()
-        elif platform.system() == "Linux":
-            self.__config_linux_host()
+        try:
+            if platform.system() == "Windows":
+                self.__config_windows_host()
+            elif platform.system() == "Linux":
+                self.__config_linux_host()
+        except Exception as e:
+            print(f"{type(e).__name__}: {e}", file=sys.stderr)
+            input("Press [Enter] to exit: ")
 
     def __config_windows_host(self):
         if not ctypes.windll.shell32.IsUserAnAdmin():
@@ -360,6 +363,9 @@ class CMD_startx:
                 sudo pkill -KILL -x Xorg
                 sleep 1
             fi
+            screen -ls | awk '/Detached/ && /bareX/ {{ print $1 }}' | while IFS= read -r session; do
+                screen -S "$session" -X stuff $'\r'
+            done
         """], check=True)
 
         # Start a bare X server in GNU screen
