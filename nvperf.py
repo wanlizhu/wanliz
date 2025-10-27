@@ -719,18 +719,21 @@ class CMD_viewperf:
         return "Start profiling viewperf 2020 v3"
     
     def __get_result_fps(self, viewset, subtest):
-        pattern = f"viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
-        matches = list(pathlib.Path.home().glob(pattern))
-        if not matches:
-            raise RuntimeError(f"Failed to find results of {viewset}")
+        try:
+            pattern = f"viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
+            matches = list(pathlib.Path.home().glob(pattern))
+            if not matches:
+                raise RuntimeError(f"Failed to find results of {viewset}")
 
-        results_xml = max(matches, key=lambda p: p.stat().st_mtime) 
-        root = ElementTree.parse(results_xml).getroot()
+            results_xml = max(matches, key=lambda p: p.stat().st_mtime) 
+            root = ElementTree.parse(results_xml).getroot()
 
-        if subtest:
-            return root.find(f".//Test[@Index='{subtest}']").get("FPS")
-        else:
-            return root.find("Composite").get("Score")
+            if subtest:
+                return root.find(f".//Test[@Index='{subtest}']").get("FPS")
+            else:
+                return root.find("Composite").get("Score")
+        except Exception as e:
+            return 0
     
     def run(self):
         timestamp = perf_counter()
@@ -774,7 +777,10 @@ class CMD_viewperf:
                                         cwd=os.path.expanduser('~/viewperf2020v3'), 
                                         check=False, 
                                         capture_output=True)
-                fps = float(self.__get_result_fps(viewset, subtest) if output.returncode == 0 else 0)
+                if output.returncode == 0:
+                    fps = float(self.__get_result_fps(viewset, subtest))
+                else:
+                    fps = 0
                 samples.append(fps)
                 print(f"{viewset}{subtest if subtest else ''} @ {i:02d} run: {fps: 3.2f} FPS")
             if rounds > 1:
