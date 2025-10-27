@@ -18,6 +18,8 @@ import getpass
 import requests
 import webbrowser
 import shutil
+from datetime import timedelta
+from time import perf_counter
 from statistics import mean, stdev
 from contextlib import suppress
 from urllib.parse import urlparse
@@ -656,6 +658,7 @@ class CMD_viewperf:
             return root.find("Composite").get("Score")
     
     def run(self):
+        timestamp = perf_counter()
         subtest_nums = { "catia": 8, "creo": 13, "energy": 6, "maya": 10, "medical": 10, "snx": 10, "sw": 10 }
         self.viewset = horizontal_select("[1/3] Target viewset", ["all", "catia", "creo", "energy", "maya", "medical", "snx", "sw"], 4)
         if self.viewset == "all":
@@ -681,6 +684,8 @@ class CMD_viewperf:
             self.__run_in_gdb()
         elif env == "limiter":
             self.__run_in_limiter()
+        
+        print(f"\nTime elapsed: {str(timedelta(seconds=perf_counter()-timestamp)).split('.')[0]}")
         
     def __run_in_stats(self):
         viewsets = ["catia", "creo", "energy", "maya", "medical", "snx", "sw"] if self.viewset == "all" else [self.viewset]
