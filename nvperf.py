@@ -689,7 +689,7 @@ class CMD_viewperf:
     def __run_in_stats(self):
         viewsets = ["catia", "creo", "energy", "maya", "medical", "snx", "sw"] if self.viewset == "all" else [self.viewset]
         subtest = None if self.viewset == "all" else self.subtest
-        rounds = int(horizontal_select("Number of rounds", ["1", "3", "30"], 0))
+        rounds = int(horizontal_select("Number of rounds", ["1", "3", "10", "30"], 0))
         table = ",".join(["Viewset", "Average FPS", "StdDev", "Min", "Max"])
         for viewset in viewsets:
             samples = []
