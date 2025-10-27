@@ -18,6 +18,7 @@ import getpass
 import requests
 import webbrowser
 import shutil
+from statistics import mean, stdev
 from contextlib import suppress
 from urllib.parse import urlparse
 from xml.etree import ElementTree 
@@ -656,100 +657,139 @@ class CMD_viewperf:
     
     def run(self):
         subtest_nums = { "catia": 8, "creo": 13, "energy": 6, "maya": 10, "medical": 10, "snx": 10, "sw": 10 }
-        viewset = horizontal_select("[1/3] Target viewset", ["catia", "creo", "energy", "maya", "medical", "snx", "sw"], 3)
-        subtest = horizontal_select("[2/3] Target subtest", ["all"] + [str(i) for i in range(1, subtest_nums[viewset] + 1)], 0)
-        subtest = "" if subtest == "all" else subtest
-        env = horizontal_select("[3/3] Launch in profiling/debug env", ["no", "pic-x", "ngfx", "nsys", "gdb", "stats"], 0)
-    
-        exe = os.path.expanduser('~/viewperf2020v3/viewperf/bin/viewperf')
-        arg = f"viewsets/{viewset}/config/{viewset}.xml {subtest} -resolution 3840x2160" 
-        dir = os.path.expanduser('~/viewperf2020v3')
-        
-        if env == "pic-x":
-            api = horizontal_select("[1/5] Capture graphics API", ["ogl", "vk"], 0)
-            startframe = horizontal_select("[2/5] Start capturing at frame index", ["100", "<input>"], 0)
-            frames = horizontal_select("[3/5] Number of frames to capture", ["3", "<input>"], 0)
-            count = sum(1 for p in pathlib.Path("").glob("viewperf_{viewset}_*") if p.is_file())
-            default_name = f"viewperf_{viewset}_{count}"
-            name = horizontal_select("[4/5] Output name", [default_name, "<input>"], 0)
-            upload = horizontal_select("[5/5] Upload output to GTL for sharing", ["yes", "no"], 1)
-            subprocess.run([
-                "sudo", 
-                os.path.expanduser("~/SinglePassCapture/pic-x"),
-                f"--api={api}",
-                "--check_clocks=0",
-                f"--startframe={startframe}",
-                f"--frames={frames}",
-                f"--name={name}",
-                f"--exe={exe}",
-                f"--arg={arg}",
-                f"--workdir={dir}"
-            ], check=True)
-            if upload == "yes":
-                script = f"~/SinglePassCapture/PerfInspector/output/{name}/upload_report.sh"
-                subprocess.run(os.path.expanduser(script), check=True, shell=True)
-        elif env == "ngfx":
-            gputrace = Nsight_graphics_gputrace(exe, arg, dir)
-            gputrace.capture(startframe=100, frames=3)
-        elif env == "nsys":
-            subprocess.run(["bash", "-lc", rf"""
-                cd {dir}
-                echo "Nsight system exe: $(which nsys)"
-                sudo "$(which nsys)" profile \
-                    --run-as={getpass.getuser()} \
-                    --sample='system-wide' \
-                    --event-sample='system-wide' \
-                    --stats=true \
-                    --trace='cuda,nvtx,osrt,opengl' \
-                    --opengl-gpu-workload=true \
-                    --start-frame-index=100 \
-                    --duration-frames=60  \
-                    --gpu-metrics-devices=all  \
-                    --gpuctxsw=true \
-                    --output="viewperf_medical__%h__$(date '+%y%m%d-%H%M')" \
-                    --force-overwrite=true \
-                    {exe} {arg}
-            """], cwd=os.path.expanduser("~"), check=True) 
-        elif env == "gdb":
-            subprocess.run(["bash", "-lc", f"""
-                if ! command -v cgdb >/dev/null 2>&1; then
-                    sudo apt install -y cgdb
-                fi 
-                
-                gdbenv=()
-                while IFS='=' read -r k v; do 
-                    gdbenv+=( -ex "set env $k $v" )
-                done < <(env | grep -E '^(__GL_|LD_)')
-
-                cd {dir}
-                cgdb -- \
-                    -ex "set trace-commands on" \
-                    -ex "set pagination off" \
-                    -ex "set confirm off" \
-                    -ex "set debuginfod enabled on" \
-                    -ex "set breakpoint pending on" \
-                    "${{gdbenv[@]}}" \
-                    -ex "file {exe}" \
-                    -ex "set args {arg}" \
-                    -ex "set trace-commands off"
-            """], check=True)
-        elif env == "stats":
-            choice = horizontal_select("[1/2] Emulate perf limiter of", ["CPU", "GPU"], 1)
-            lowest = horizontal_select("[2/2] Emulation lower bound", ["50%", "33%", "10%"], 0)
-            lowest = 5 if lowest == "50%" else (3 if lowest == "33%" else 1)
-            limiter = None 
-            try:
-                limiter = CPU_freq_limiter() if choice == "CPU" else GPU_freq_limiter()
-                for scale in [x / 10 for x in range(lowest, 11, 1)]:
-                    limiter.scale_max_freq(scale)
-                    subprocess.run(["bash", "-lc", f"{exe} {arg}"], cwd=dir, check=True, capture_output=True)
-                    print(f"{viewset}{subtest}: {self.__get_result_fps(viewset, subtest)} @ {scale:.1f}x cpu freq")
-                    limiter.reset()
-            finally:
-                if limiter is not None: limiter.reset()
+        self.viewset = horizontal_select("[1/3] Target viewset", ["all", "catia", "creo", "energy", "maya", "medical", "snx", "sw"], 4)
+        if self.viewset == "all":
+            env = "none"
         else:
-            subprocess.run(["bash", "-lc", f"{exe} {arg}"], cwd=dir, check=True)
-            print(f"{viewset}{subtest}: {self.__get_result_fps(viewset, subtest)}")
+            self.subtest = horizontal_select("[2/3] Target subtest", ["all"] + [str(i) for i in range(1, subtest_nums[self.viewset] + 1)], 0)
+            self.subtest = "" if self.subtest == "all" else self.subtest
+            env = horizontal_select("[3/3] Launch in profiling/debug env", ["stats", "picx", "ngfx", "nsys", "gdb", "limiter"], 0)
+
+            self.exe = os.path.expanduser('~/viewperf2020v3/viewperf/bin/viewperf')
+            self.arg = f"viewsets/{self.viewset}/config/{self.viewset}.xml {self.subtest} -resolution 3840x2160" 
+            self.dir = os.path.expanduser('~/viewperf2020v3')
+    
+        if env == "stats":
+            self.__run_in_stats()
+        elif env == "picx":
+            self.__run_in_picx()
+        elif env == "ngfx":
+            self.__run_in_nsight_graphics()
+        elif env == "nsys":
+            self.__run_in_nsight_systems()
+        elif env == "gdb":
+            self.__run_in_gdb()
+        elif env == "limiter":
+            self.__run_in_limiter()
+        
+    def __run_in_stats(self):
+        viewsets = ["catia", "creo", "energy", "maya", "medical", "snx", "sw"] if self.viewset == "all" else [self.viewset]
+        subtest = None if self.viewset == "all" else self.subtest
+        rounds = int(horizontal_select("Number of rounds", ["1", "3", "30"], 0))
+        table = ",".join(["viewset", "Average FPS", "StdDev"])
+        for viewset in viewsets:
+            samples = []
+            for i in range(1, rounds + 1):
+                output = subprocess.run(["bash", "-lc", f"$HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml -resolution 3840x2160"], 
+                                        cwd=os.path.expanduser('~/viewperf2020v3'), 
+                                        check=False, 
+                                        capture_output=True)
+                fps = self.__get_result_fps(viewset, subtest) if output.returncode == 0 else 0
+                samples.append(fps)
+                print(f"{viewset} @ {i} run: \t{fps}")
+            if rounds > 1:
+                table += "\n" + ",".join([viewset, f"{mean(samples):.2f}", f"{stdev(samples):.3f}"])
+            else:
+                table += "\n" + ",".join([viewset, f"{samples[0]:.2f}", "0"])
+        print("")
+        subprocess.run(["bash", "-lc", "column -t -s ,"], input=table + "\n", text=True, check=True)
+        
+    def __run_in_picx(self):
+        api = horizontal_select("[1/5] Capture graphics API", ["ogl", "vk"], 0)
+        startframe = horizontal_select("[2/5] Start capturing at frame index", ["100", "<input>"], 0)
+        frames = horizontal_select("[3/5] Number of frames to capture", ["3", "<input>"], 0)
+        count = sum(1 for p in pathlib.Path("").glob("viewperf_{viewset}_*") if p.is_file())
+        default_name = f"viewperf_{self.viewset}_{count}"
+        name = horizontal_select("[4/5] Output name", [default_name, "<input>"], 0)
+        upload = horizontal_select("[5/5] Upload output to GTL for sharing", ["yes", "no"], 1)
+        subprocess.run([
+            "sudo", 
+            os.path.expanduser("~/SinglePassCapture/pic-x"),
+            f"--api={api}",
+            "--check_clocks=0",
+            f"--startframe={startframe}",
+            f"--frames={frames}",
+            f"--name={name}",
+            f"--exe={self.exe}",
+            f"--arg={self.arg}",
+            f"--workdir={dir}"
+        ], check=True)
+        if upload == "yes":
+            script = f"~/SinglePassCapture/PerfInspector/output/{name}/upload_report.sh"
+            subprocess.run(os.path.expanduser(script), check=True, shell=True)
+
+    def __run_in_nsight_graphics(self):
+        gputrace = Nsight_graphics_gputrace(self.exe, self.arg, self.dir)
+        gputrace.capture(startframe=100, frames=3)
+
+    def __run_in_nsight_systems(self):
+        subprocess.run(["bash", "-lc", rf"""
+            cd {self.dir}
+            echo "Nsight system exe: $(which nsys)"
+            sudo "$(which nsys)" profile \
+                --run-as={getpass.getuser()} \
+                --sample='system-wide' \
+                --event-sample='system-wide' \
+                --stats=true \
+                --trace='cuda,nvtx,osrt,opengl' \
+                --opengl-gpu-workload=true \
+                --start-frame-index=100 \
+                --duration-frames=60  \
+                --gpu-metrics-devices=all  \
+                --gpuctxsw=true \
+                --output="viewperf_medical__%h__$(date '+%y%m%d-%H%M')" \
+                --force-overwrite=true \
+                {self.exe} {self.arg}
+        """], cwd=os.path.expanduser("~"), check=True) 
+
+    def __run_in_gdb(self):
+        subprocess.run(["bash", "-lc", f"""
+            if ! command -v cgdb >/dev/null 2>&1; then
+                sudo apt install -y cgdb
+            fi 
+            
+            gdbenv=()
+            while IFS='=' read -r k v; do 
+                gdbenv+=( -ex "set env $k $v" )
+            done < <(env | grep -E '^(__GL_|LD_)')
+
+            cd {self.dir}
+            cgdb -- \
+                -ex "set trace-commands on" \
+                -ex "set pagination off" \
+                -ex "set confirm off" \
+                -ex "set debuginfod enabled on" \
+                -ex "set breakpoint pending on" \
+                "${{gdbenv[@]}}" \
+                -ex "file {self.exe}" \
+                -ex "set args {self.arg}" \
+                -ex "set trace-commands off"
+        """], check=True)
+
+    def __run_in_limiter(self):
+        choice = horizontal_select("[1/2] Emulate perf limiter of", ["CPU", "GPU"], 1)
+        lowest = horizontal_select("[2/2] Emulation lower bound", ["50%", "33%", "10%"], 0)
+        lowest = 5 if lowest == "50%" else (3 if lowest == "33%" else 1)
+        limiter = None 
+        try:
+            limiter = CPU_freq_limiter() if choice == "CPU" else GPU_freq_limiter()
+            for scale in [x / 10 for x in range(lowest, 11, 1)]:
+                limiter.scale_max_freq(scale)
+                subprocess.run(["bash", "-lc", f"{self.exe} {self.arg}"], cwd=self.dir, check=True, capture_output=True)
+                print(f"{self.viewset}{self.subtest}: {self.__get_result_fps(self.viewset, self.subtest)} @ {scale:.1f}x cpu freq")
+                limiter.reset()
+        finally:
+            if limiter is not None: limiter.reset()
 
 
 if __name__ == "__main__":
