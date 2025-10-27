@@ -708,7 +708,7 @@ class CMD_viewperf:
         print("")
         output = subprocess.run(["bash", "-lc", "column -t -s ,"], input=table + "\n", text=True, check=True, capture_output=True)
         print(output.stdout if output.returncode == 0 else output.stderr)
-        with open(os.path.expanduser(f"~/viewperf_stats_{datetime.now().strftime('%Y_%m%d_%H%M')}.txt"), "w", encoding="utf-8") as file:
+        with open(os.path.expanduser(f"~/viewperf_stats_{datetime.datetime.now().strftime('%Y_%m%d_%H%M')}.txt"), "w", encoding="utf-8") as file:
             file.write(output.stdout)
 
     def __run_in_picx(self):
