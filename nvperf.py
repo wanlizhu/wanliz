@@ -661,7 +661,7 @@ class CMD_viewperf:
         subtest_nums = { "catia": 8, "creo": 13, "energy": 6, "maya": 10, "medical": 10, "snx": 10, "sw": 10 }
         self.viewset = horizontal_select("[1/3] Target viewset", ["all", "catia", "creo", "energy", "maya", "medical", "snx", "sw"], 4)
         if self.viewset == "all":
-            env = "none"
+            env = "stats"
         else:
             self.subtest = horizontal_select("[2/3] Target subtest", ["all"] + [str(i) for i in range(1, subtest_nums[self.viewset] + 1)], 0)
             self.subtest = "" if self.subtest == "all" else self.subtest
