@@ -694,9 +694,9 @@ class CMD_viewperf:
                                         cwd=os.path.expanduser('~/viewperf2020v3'), 
                                         check=False, 
                                         capture_output=True)
-                fps = self.__get_result_fps(viewset, subtest) if output.returncode == 0 else 0
+                fps = float(self.__get_result_fps(viewset, subtest) if output.returncode == 0 else 0)
                 samples.append(fps)
-                print(f"{viewset} @ {i} run: \t{fps}")
+                print(f"{viewset} @ {i:02d} run: \t{fps: 7.2f}")
             if rounds > 1:
                 table += "\n" + ",".join([viewset, f"{mean(samples):.2f}", f"{stdev(samples):.3f}"])
             else:
