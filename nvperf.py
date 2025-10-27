@@ -293,6 +293,19 @@ class CMD_startx:
         return "Start a bare X server for graphics profiling"
     
     def run(self):
+        # Kill running X server
+        subprocess.run(["bash", "-lc", rf"""
+            if [[ ! -z $(pidof Xorg) ]]; then 
+                read -p "Press [Enter] to kill running X server: "    
+                sudo pkill -TERM -x Xorg
+                sleep 1
+            fi 
+            if [[ ! -z $(pidof Xorg) ]]; then 
+                sudo pkill -KILL -x Xorg
+                sleep 1
+            fi
+        """], check=True)
+
         # Start a bare X server in GNU screen
         subprocess.run(["bash", "-lc", f"screen -S bareX bash -lci \"sudo X {os.environ['DISPLAY']} -ac +iglx || read -p 'Press [Enter] to exit: '\""], check=True)
         while not os.path.exists("/tmp/.X11-unix/X0"):
