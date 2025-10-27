@@ -1,23 +1,20 @@
 #!/usr/bin/env python3
 import os
 import sys
-import stat 
 import time 
 import datetime
 import inspect
 import subprocess
 import psutil
-import textwrap
+import shutil
 import signal
 import re
 import pathlib
 import shlex
-import select 
 import platform
 import getpass 
-import requests
 import webbrowser
-import shutil
+import ctypes
 from datetime import timedelta
 from time import perf_counter
 from statistics import mean, stdev
@@ -27,11 +24,6 @@ if platform.system() == "Linux":
     import termios
     import tty 
     
-RESET = "\033[0m"
-DIM   = "\033[90m"
-RED   = "\033[31m"  
-CYAN  = "\033[36m"
-BOLD  = "\033[1m"
 ARGPOS = 1
 os.environ.update({
     "__GL_SYNC_TO_VBLANK": "0",
@@ -50,15 +42,23 @@ if not os.environ.get("DISPLAY"):    os.environ["DISPLAY"] = ":0"
 if not os.environ.get("XAUTHORITY"): os.environ["XAUTHORITY"] = os.path.expanduser("~/.Xauthority") 
 signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
+supports_ANSI = True
+if platform.system() == "Windows": 
+    kernel32 = ctypes.windll.kernel32
+    handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
+    mode = ctypes.c_uint()
+    if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+        supports_ANSI = False
+    else:
+        supports_ANSI = bool(mode.value & 0x0004)
+RESET = "\033[0m"  if supports_ANSI else ""
+DIM   = "\033[90m" if supports_ANSI else ""
+RED   = "\033[31m" if supports_ANSI else ""
+CYAN  = "\033[36m" if supports_ANSI else ""
+BOLD  = "\033[1m"  if supports_ANSI else ""
 
 def horizontal_select(prompt, options, index):
     global ARGPOS
-    RESET = "\033[0m"  
-    DIM   = "\033[90m" 
-    RED   = "\033[31m"
-    CYAN  = "\033[36m" 
-    BOLD  = "\033[1m"  
-
     if ARGPOS > 0 and ARGPOS < len(sys.argv):
         value = sys.argv[ARGPOS]
         print("\r\033[2K" + f"{BOLD}{CYAN}{prompt} : {RESET}<< {RED}{value}{RESET}")
@@ -95,7 +95,7 @@ def horizontal_select(prompt, options, index):
             elif ch1 == "\x03": # Ctrl-C
                 sys.stdout.write("\r\n")
                 sys.stdout.flush() 
-                exit(0)
+                sys.exit(0)
     finally:
         if stdin_fd is not None and oldattr is not None:
             termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
@@ -118,6 +118,43 @@ class CMD_config:
         return "Configure test environment"
     
     def run(self):
+        self.hosts = {
+            "office": "172.16.179.143",
+            "proxy": "10.176.11.106",
+            "horizon5": "172.16.178.123",
+            "horizon6": "172.16.177.182",
+            "horizon7": "172.16.177.216",
+            "n1x6": "10.31.40.241",
+        }
+
+        if platform.system() == "Windows":
+            self.__config_windows_host()
+        elif platform.system() == "Linux":
+            self.__config_linux_host()
+
+    def __config_windows_host(self):
+        if not ctypes.windll.shell32.IsUserAnAdmin():
+            raise PermissionError("Must run with --admin option")
+
+        names = r"\b(" + "|".join(re.escape(k) for k in (*self.hosts, "wanliz")) + r")\b"
+        mappings = "\n".join(f"{ip} {name}" for name, ip in self.hosts.items())
+        subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
+            $ErrorActionPreference = 'Stop'
+            $hostsfile = 'C:\Windows\System32\drivers\etc\hosts'
+            $pattern = '({names})'
+            if ((Get-Item -LiteralPath $hostsfile).Attributes -band [IO.FileAttributes]::ReadOnly) {{
+                attrib -R $hostsfile
+            }}
+            $lines = Get-Content -LiteralPath $hostsfile -Encoding ASCII -ErrorAction SilentlyContinue 
+            if ($null -eq $lines) {{ $lines = @() }}
+            $content_old = $lines | Where-Object {{ ($_ -notmatch $pattern) -and ($_.Trim() -ne '') }}
+            $content_new = ($content_old + "" + "`n# --- wanliz ---`n{mappings}`n") -join "`r`n"
+            [IO.File]::WriteAllText($hostsfile, $content_new + "`r`n", [Text.Encoding]::ASCII)
+            Get-Content -LiteralPath $hostsfile -Raw
+        """], check=True)
+
+        
+    def __config_linux_host(self):
         # Enable no-password sudo
         subprocess.run(["bash", "-lc", """
             if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
@@ -132,22 +169,14 @@ class CMD_config:
         print("/mnt/linuxqa \t [ MOUNTED ]")
 
         # Add known host IPs (hostname -> IP)
-        hosts = {
-            "office": "172.16.179.143",
-            "proxy": "10.176.11.106",
-            "horizon5": "172.16.178.123",
-            "horizon6": "172.16.177.182",
-            "horizon7": "172.16.177.216",
-            "n1x6": "10.31.40.241",
-        }
         hosts_out = []
         for line in pathlib.Path("/etc/hosts").read_text().splitlines():
             if line.strip().startswith("#"): 
                 continue
-            if any(name in hosts for name in line.split()[1:]):
+            if any(name in self.hosts for name in line.split()[1:]):
                 continue 
             hosts_out.append(line)
-        hosts_out += [f"{ip}\t{name}" for name, ip in hosts.items()]
+        hosts_out += [f"{ip}\t{name}" for name, ip in self.hosts.items()]
         pathlib.Path("/tmp/hosts").write_text("\n".join(hosts_out) + "\n")
         subprocess.run("sudo install -m 644 /tmp/hosts /etc/hosts", check=True, shell=True)
         print("/etc/hosts \t [ UPDATED ]")
@@ -272,8 +301,13 @@ class CMD_mount:
             linux_folder = horizontal_select("Linux shared folder", None, None).strip().replace("/", "\\")
             linux_folder = linux_folder.rstrip("\\")
             unc_path = linux_folder if linux_folder.startswith("\\\\") else ("\\\\" + linux_folder.lstrip("\\")) 
-            user = input("User: ")
-            subprocess.run(f'cmd /k net use Z: "{unc_path}" /persistent:yes {str("/user:" + user + " *") if user else ""}', check=True, shell=True)
+            drive = input("Mount to drive", ["N", "X", "Y", "Z"], 3)
+            user = input("Username on server: ")
+            mode = horizontal_select("Target sharing protocol", ["SMB", "NFS"], 0)
+            if mode == "SMB":
+                subprocess.run(f'cmd /k net use Z: "{unc_path}" /persistent:yes {str("/user:" + user + " *") if user else ""}', check=True, shell=True)
+            else:
+                self.__mount_NFS_folder_on_windows(drive, unc_path, user)
         elif platform.system() == "Linux":
             windows_folder = horizontal_select("Windows shared folder", None, None).strip().replace("\\", "/")
             windows_folder = shlex.quote(windows_folder)
@@ -286,6 +320,28 @@ class CMD_mount:
                 sudo mkdir -p {mount_dir} &&
                 sudo mount -t cifs {windows_folder} {mount_dir} {str("-o username=" + user) if user else ""}
             """], check=True)
+
+    def __mount_NFS_folder_on_windows(self, drive, unc_path, user):
+        if os.path.exists(f"{drive}:\\"):
+            raise RuntimeError(f"Drive {drive}:\\ exists")
+        # Enable NFS service
+        subprocess.run([
+            "dism.exe", "/online", 
+            "Enable-Feature", "/All", "/NoRestart", 
+            "/FeatureName:ServicesForNFS-ClientOnly", 
+            "/FeatureName:ClientForNFS-Infrastructure"
+        ], check=True)
+        # Enable Anonymous uid/gid mapping (optional)
+        subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "ByPass", "-Command", rf"""
+            reg add "HKLM\SOFTWARE\Microsoft\ClientForNFS\CurrentVersion\Default" /v AnonymousUid /t REG_DWORD /d 0 /f
+            reg add "HKLM\SOFTWARE\Microsoft\ClientForNFS\CurrentVersion\Default" /v AnonymousGid /t REG_DWORD /d 0 /f
+            nfsadmin client stop
+            nfsadmin client start
+        """], check=True)
+        # Actual mounting
+        subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "ByPass", "-Command", rf"""
+            mount -o anon -p {unc_path} {drive}:
+        """], check=True)
 
 
 class CMD_startx:
@@ -814,6 +870,11 @@ class CMD_viewperf:
 
 
 if __name__ == "__main__":
+    if all([platform.system() == "Windows", "--admin" in sys.argv, ctypes.windll.shell32.IsUserAnAdmin() == 0]):
+        cmdline = subprocess.list2cmdline([os.path.abspath(sys.argv[0])] + [arg for arg in sys.argv[1:] if arg != "--admin"])
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmdline, None, 1)
+        sys.exit(0)
+
     cmds = []
     cmds_desc = []
     for name, cls in sorted(inspect.getmembers(sys.modules[__name__], inspect.isclass)):
