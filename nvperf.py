@@ -22,7 +22,6 @@ from datetime import timedelta
 from time import perf_counter
 from statistics import mean, stdev
 from contextlib import suppress
-from urllib.parse import urlparse
 from xml.etree import ElementTree 
 if platform.system() == "Linux": 
     import termios
