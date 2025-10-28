@@ -463,7 +463,7 @@ class CMD_rmmod:
             subprocess.run(["bash", "-lc", r"""
                 mods=$(lsmod | awk '/^nvidia/ {print $1}')
                 if [[ -n "$mods" ]]; then 
-                    echo "Removing modules: $mods"
+                    echo -e "Removing modules: \n$mods"
                     sudo modprobe -r $mods 
                 fi 
             """], check=True)
