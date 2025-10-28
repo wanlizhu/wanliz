@@ -371,11 +371,13 @@ class CMD_startx:
         # Start a bare X server in GNU screen
         subprocess.run(["bash", "-lc", f"screen -S bareX bash -lci \"sudo X {os.environ['DISPLAY']} -ac +iglx || read -p 'Press [Enter] to exit: '\""], check=True)
         while not os.path.exists("/tmp/.X11-unix/X0"):
-            time.sleep(0.1)
+            time.sleep(0.2)
+            print("Wait for X server to start up")
 
         # Unsandbag for much higher perf 
         if os.path.exists(os.path.expanduser("~/sandbag-tool")):
-            subprocess.run(["bash", "-lc", f"{os.path.expanduser('~/sandbag-tool')} -unsandbag"], check=True)
+            print("Unsangbag nvidia driver")
+            subprocess.run(["bash", "-lc", f"~/sandbag-tool -unsandbag"], check=True)
         else:
             print("File doesn't exist: ~/sandbag-tool")
             print("Unsandbag \t [ FAILED ]")
@@ -384,6 +386,7 @@ class CMD_startx:
         if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e"):
             perfdebug = "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug"
             if os.path.exists(perfdebug):
+                print("Lock GPU clocks")
                 subprocess.run(["bash", "-lc", f"sudo {perfdebug} --lock_loose  set pstateId   P0"], check=True)
                 subprocess.run(["bash", "-lc", f"sudo {perfdebug} --lock_strict set gpcclkkHz  2000000"], check=True)
                 subprocess.run(["bash", "-lc", f"sudo {perfdebug} --lock_loose  set xbarclkkHz 1800000"], check=True)
