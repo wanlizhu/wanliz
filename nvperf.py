@@ -781,11 +781,12 @@ class CMD_viewperf:
                 output = subprocess.run(["bash", "-lc", f"$HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml {subtest if subtest else ''} -resolution 3840x2160"], 
                                         cwd=os.path.expanduser('~/viewperf2020v3'), 
                                         check=False, 
+                                        text=True,
                                         capture_output=True)
                 if output.returncode == 0:
                     fps = float(self.__get_result_fps(viewset, subtest)) 
                 else: 
-                    print(output.stderr)
+                    #print(output.stderr)
                     fps = 0
                 samples.append(fps)
                 print(f"{viewset}{subtest if subtest else ''} @ {i:02d} run: {fps: 3.2f} FPS")
