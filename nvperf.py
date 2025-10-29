@@ -783,8 +783,9 @@ class CMD_viewperf:
                                         check=False, 
                                         capture_output=True)
                 if output.returncode == 0:
-                    fps = float(self.__get_result_fps(viewset, subtest))
-                else:
+                    fps = float(self.__get_result_fps(viewset, subtest)) 
+                else: 
+                    print(output.stderr)
                     fps = 0
                 samples.append(fps)
                 print(f"{viewset}{subtest if subtest else ''} @ {i:02d} run: {fps: 3.2f} FPS")
