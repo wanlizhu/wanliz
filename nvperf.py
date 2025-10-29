@@ -737,6 +737,7 @@ class CMD_viewperf:
             else:
                 return root.find("Composite").get("Score")
         except Exception as e:
+            print(f"{type(e).__name__}: {e}", file=sys.stderr)
             return 0
     
     def run(self):
