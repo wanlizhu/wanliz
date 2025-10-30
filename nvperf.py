@@ -198,19 +198,6 @@ class CMD_config:
             subprocess.run(["bash", "-lc", f"echo '{cipher}' | openssl enc -d -aes-256-cbc -pbkdf2 -a > ~/.gtl_api_key"], check=True)
             subprocess.run("chmod 500 ~/.gtl_api_key", check=True, shell=True)
             print("~/.gtl_api_key \t [ ADDED ]")
-        
-        if os.path.exists(os.path.expanduser("~/SinglePassCapture")):
-            subprocess.run(["bash", "-lc", """
-                export PIP_BREAK_SYSTEM_PACKAGES=1
-                pip install -i https://sc-hw-artf.nvidia.com/artifactory/api/pypi/hwinf-pi-pypi/simple \
-                    --extra-index-url https://urm.nvidia.com/artifactory/api/pypi/nv-shared-pypi/simple \
-                    --extra-index-url https://pypi.perflab.nvidia.com pi-uploader &>/dev/null
-                pip install -r $HOME/SinglePassCapture/Scripts/requirements.txt \
-                    -r $HOME/SinglePassCapture/PerfInspector/processing/requirements.txt \
-                    -r $HOME/SinglePassCapture/PerfInspector/processing/requirements_perfsim.txt \
-                    -r $HOME/SinglePassCapture/PerfInspector/processing/requirements_with_extra_index.txt
-            """], check=True)
-            print("PI report uploader packages \t [ INSTALLED ]")
 
         # Install Linux kernel tools 
         subprocess.run(["bash", "-lc", r"""
@@ -223,7 +210,7 @@ class CMD_config:
                 linux-cloud-tools-$(uname -r | sed 's/-[^-]*$//')-generic
             )
             for pkg in "${packages[@]}"; do
-                dpkg -s $pkg &>/dev/null || sudo apt install -y $pkg  
+                dpkg -s $pkg &>/dev/null || sudo apt install -y $pkg || true 
             done 
         """], check=False)
 
