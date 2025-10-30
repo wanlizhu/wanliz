@@ -654,16 +654,18 @@ class PerfInspector_gputrace:
             fi
         """], check=True)
 
-    def capture(self, api=None, startframe=None, frames=None, name=None, upload=None):
-        if api is None: api = horizontal_select("[1/5] Capture graphics API", ["ogl", "vk"], 0)
-        if startframe is None: startframe = horizontal_select("[2/5] Start capturing at frame index", ["100", "<input>"], 0)
-        if frames is None: frames = horizontal_select("[3/5] Number of frames to capture", ["3", "<input>"], 0)
-        if name is None: name = horizontal_select("[4/5] Output name", ["<default>", "<input>"], 0)
-        if upload is None: upload = horizontal_select("[5/5] Upload output to GTL for sharing", ["yes", "no"], 1)
+    def capture(self, api=None, startframe=None, frames=None, name=None, upload=None, debug=None):
+        if api is None: api = horizontal_select("[1/6] Capture graphics API", ["ogl", "vk"], 0)
+        if startframe is None: startframe = horizontal_select("[2/6] Start capturing at frame index", ["100", "<input>"], 0)
+        if frames is None: frames = horizontal_select("[3/6] Number of frames to capture", ["3", "<input>"], 0)
+        if name is None: name = horizontal_select("[4/6] Output name", ["<default>", "<input>"], 0)
+        if upload is None: upload = horizontal_select("[5/6] Upload output to GTL for sharing", ["yes", "no"], 1)
+        if debug is None: debug = horizontal_select("[6/6] Enable pic-x debugging", ["yes", "no"], 1)
         subprocess.run([x for x in [
             "sudo", 
             f"env {' '.join(self.env)}" if self.env else "",
             self.pi_root + "/pic-x",
+            "--clean=0" if debug == "yes" else "",
             f"--api={api}",
             "--check_clocks=0",
             f"--startframe={startframe}",
