@@ -1,6 +1,42 @@
 #!/usr/bin/env python3
 from perfins.PIFGfxReader import *
 
+class N1x_CHI_limiter:
+    def compare(self, n1x_report, emu_report):
+        self.n1x_report = n1x_report
+        self.emu_report = emu_report 
+
+    def get_perf_impact(self):
+        pass 
+
+    def __align_first_frame(self):
+        pass 
+
+    def __is_n1x_bucket_CHI_limited(self):
+        pass 
+
+    def __load_n1x_bucket_metrics(self):
+        n1x_metric_names = [
+            '06_MMU_limited', '07_RASTER_limited', '08_Rop_limited', '10_GCC_limited',
+            '11_LTC_limited', '12_LST_limited', '13_TTU_limited', '14_SM_limited',
+            '16_Launch_pipe_limited', '17_HSHUB_limited', 
+            'DRAM_limited', 'HSHUB_limited', 'LTC_limited', 
+            'HSHUB___DRAM_GB_per_s', 'HSHUB___read_bytes', 'HSHUB___write_bytes',
+            'ltc_chi_cmd_out_ReadNoSnp_fbp{FBP}_ltc{LTC}_l2slice{L2SLICE}',
+            'ltc_chi_cmd_out_WriteNoSnpPartial_fbp{FBP}_ltc{LTC}_l2slice{L2SLICE}',
+            'ltc_chi_cmd_out_WriteNoSnpFull_fbp{FBP}_ltc{LTC}_l2slice{L2SLICE}'
+        ]
+
+    def __load_emu_bucket_metrics(self):
+        emu_metric_names = [
+            '02_PCIe_limited', '03_SYSLTC_limited', '06_MMU_limited', '07_RASTER_limited', 
+            '08_Rop_limited', '10_GCC_limited', '11_LTC_limited', '12_LST_limited',
+            '13_TTU_limited', '14_SM_limited', '15_FB_limited', '16_Launch_pipe_limited',
+            'FB_limited', 'LTC_limited', 'SYSLTC_limited', 'FB___bytesPerClk'
+        ]
+
+        
+
 # N1x: Horizon6
 # Emu: GB203-as-T254 (Emulation)
 reader_n1x = PIFGfxReader(r"C:\Users\WanliZhu\Downloads\pi_n1x\.pfm")

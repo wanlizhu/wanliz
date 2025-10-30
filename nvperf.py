@@ -629,6 +629,55 @@ class GPU_freq_limiter:
         pass 
 
 
+class PerfInspector_gputrace:
+    def __init__(self, exe, args, workdir, env=None):
+        self.pi_root = os.path.expanduser("~/SinglePassCapture")
+        self.exe = exe 
+        self.args = args 
+        self.workdir = workdir
+        self.env = env 
+    
+    def fix(self):
+        subprocess.run(["bash", "-lc", rf"""
+            sudo apt autoremove 
+            sudo apt install -y python3-venv python3-pip 
+            sudo mv -f -t /tmp {self.pi_root}/PerfInspector/Python-venv  
+            python3 -m venv {self.pi_root}/PerfInspector/Python-venv
+            {self.pi_root}/PerfInspector/Python-venv/bin/python -m pip install -r {self.pi_root}/Scripts/requirements.txt || true
+            {self.pi_root}/PerfInspector/Python-venv/bin/python -m pip install -r {self.pi_root}/PerfInspector/processing/requirements.txt || true 
+            {self.pi_root}/PerfInspector/Python-venv/bin/python -m pip install -r {self.pi_root}/PerfInspector/processing/requirements_0.txt || true 
+            {self.pi_root}/PerfInspector/Python-venv/bin/python -m pip install -r {self.pi_root}/PerfInspector/processing/requirements_perfsim.txt || true 
+            {self.pi_root}/PerfInspector/Python-venv/bin/python -m pip install -r {self.pi_root}/PerfInspector/processing/requirements_with_extra_index.txt || true 
+            {self.pi_root}/PerfInspector/Python-venv/bin/python -m pip install --index-url https://sc-hw-artf.nvidia.com/artifactory/api/pypi/hwinf-pi-pypi/simple --extra-index-url https://pypi.perflab.nvidia.com/ --extra-index-url https://urm.nvidia.com/artifactory/api/pypi/nv-shared-pypi/simple marisa-trie python-rapidjson memory-profiler py7zr ruyi_formula_calculator idea2txv==0.21.17 perfins==0.5.47 gtl-api==2.25.5 hair-cli pi-uploader wget apm xgboost ruyi-formula-calculator perfins PIFlod lttb idea2txv Pillow psutil==5.9.3 pyyaml joblib xlsxwriter seaborn scikit-learn numexpr openpyxl keyring==23.4.0 requests==2.27.1 requests-toolbelt==0.9.1 tqdm==4.62.3 aem ipdb==0.13.0 dask[complete] prettytable || true
+            if ! grep -Rhs --include='*.conf' -v '^[[:space:]]*#' /etc/modprobe.d /etc/modprob.d | grep -q 'NVreg_RestrictProfilingToAdminUsers=0' || ! grep -Rhs --include='*.conf' -v '^[[:space:]]*#' /etc/modprobe.d /etc/modprob.d | grep -Eq '(^|[;[:space:]])RmProfilerFeature=0x1([;[:space:]]|"|$)'; then
+                echo "Missing one or both settings: NVreg_RestrictProfilingToAdminUsers=0 and RmProfilerFeature=0x1"
+            fi
+        """], check=True)
+
+    def capture(self, api=None, startframe=None, frames=None, name=None, upload=None):
+        if api is None: api = horizontal_select("[1/5] Capture graphics API", ["ogl", "vk"], 0)
+        if startframe is None: startframe = horizontal_select("[2/5] Start capturing at frame index", ["100", "<input>"], 0)
+        if frames is None: frames = horizontal_select("[3/5] Number of frames to capture", ["3", "<input>"], 0)
+        if name is None: name = horizontal_select("[4/5] Output name", ["<default>", "<input>"], 0)
+        if upload is None: upload = horizontal_select("[5/5] Upload output to GTL for sharing", ["yes", "no"], 1)
+        subprocess.run([x for x in [
+            "sudo", 
+            f"env {' '.join(self.env)}" if self.env else "",
+            self.pi_root + "/pic-x",
+            f"--api={api}",
+            "--check_clocks=0",
+            f"--startframe={startframe}",
+            f"--frames={frames}",
+            "" if name == "<default>" else f"--name={name}",
+            f"--exe={self.exe}",
+            f"--arg={self.args}",
+            f"--workdir={self.workdir}"
+        ] if len(x) > 0], check=True)
+        if upload == "yes":
+            script = self.pi_root + f"/PerfInspector/output/{name}/upload_report.sh"
+            subprocess.run(os.path.expanduser(script), check=True, shell=True)
+        
+
 class Nsight_graphics_gputrace:
     def __init__(self, exe, args, workdir, env=None):
         subprocess.run(["bash", "-lc", rf"""
@@ -647,11 +696,13 @@ class Nsight_graphics_gputrace:
         self.__get_arch()
         self.__get_metricset()
 
-    def capture(self, startframe=100, frames=3): 
-        time_all_actions = horizontal_select("Time all API calls separately", ["yes", "no"], 1)
+    def capture(self, startframe=None, frames=None, time_all_actions=None): 
+        if startframe is None: startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
+        if frames is None: frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
+        if time_all_actions is None: time_all_actions = horizontal_select("[3/3] Time all API calls separately", ["yes", "no"], 1)
         subprocess.run(["bash", "-lc", ' '.join([line for line in [
             'sudo', self.ngfx,
-            '--output-di=$HOME',
+            '--output-dir=$HOME',
             '--platform="Linux ($(uname -m))"',
             f'--exe="{self.exe}"',
             f'--args="{self.args}"' if self.args else "",
@@ -751,7 +802,6 @@ class CMD_viewperf:
             self.subtest = horizontal_select("[2/3] Target subtest", ["all"] + [str(i) for i in range(1, subtest_nums[self.viewset] + 1)], 0)
             self.subtest = "" if self.subtest == "all" else self.subtest
             env = horizontal_select("[3/3] Launch in profiling/debug env", ["stats", "picx", "ngfx", "nsys", "gdb", "limiter"], 0)
-
             self.exe = os.path.expanduser('~/viewperf2020v3/viewperf/bin/viewperf')
             self.arg = f"viewsets/{self.viewset}/config/{self.viewset}.xml {self.subtest} -resolution 3840x2160" 
             self.dir = os.path.expanduser('~/viewperf2020v3')
@@ -802,32 +852,12 @@ class CMD_viewperf:
             file.write(output.stdout)
 
     def __run_in_picx(self):
-        api = horizontal_select("[1/5] Capture graphics API", ["ogl", "vk"], 0)
-        startframe = horizontal_select("[2/5] Start capturing at frame index", ["100", "<input>"], 0)
-        frames = horizontal_select("[3/5] Number of frames to capture", ["3", "<input>"], 0)
-        count = sum(1 for p in pathlib.Path("").glob("viewperf_{viewset}_*") if p.is_file())
-        default_name = f"viewperf_{self.viewset}_{count}"
-        name = horizontal_select("[4/5] Output name", [default_name, "<input>"], 0)
-        upload = horizontal_select("[5/5] Upload output to GTL for sharing", ["yes", "no"], 1)
-        subprocess.run([
-            "sudo", 
-            os.path.expanduser("~/SinglePassCapture/pic-x"),
-            f"--api={api}",
-            "--check_clocks=0",
-            f"--startframe={startframe}",
-            f"--frames={frames}",
-            f"--name={name}",
-            f"--exe={self.exe}",
-            f"--arg={self.arg}",
-            f"--workdir={dir}"
-        ], check=True)
-        if upload == "yes":
-            script = f"~/SinglePassCapture/PerfInspector/output/{name}/upload_report.sh"
-            subprocess.run(os.path.expanduser(script), check=True, shell=True)
+        gputrace = PerfInspector_gputrace(exe=self.exe, args=self.arg, workdir=self.dir)
+        gputrace.capture()
 
     def __run_in_nsight_graphics(self):
         gputrace = Nsight_graphics_gputrace(self.exe, self.arg, self.dir)
-        gputrace.capture(startframe=100, frames=3)
+        gputrace.capture()
 
     def __run_in_nsight_systems(self):
         subprocess.run(["bash", "-lc", rf"""
