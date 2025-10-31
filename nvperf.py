@@ -328,6 +328,8 @@ class CMD_startx:
         headless = horizontal_select("Is this a headless system", ["yes", "no"], 1)
         withDM = horizontal_select("Start with a display manager", ["yes", "no"], 1)
         withVNC = horizontal_select("Start with a VNC server", ["yes", "no"], 1)
+        unsanbag = horizontal_select("Unsanbag nvidia driver", ["yes", "no"], 0)
+        lockclocks = horizontal_select("Lock GPU clocks", ["yes", "no"], 0)
 
         # Kill running X server
         subprocess.run(["bash", "-lc", rf"""
@@ -382,7 +384,6 @@ class CMD_startx:
             """], check=True)
 
         # Unsandbag for much higher perf 
-        unsanbag = horizontal_select("Unsanbag nvidia driver", ["yes", "no"], 0)
         if unsanbag == "yes": 
             if os.path.exists(os.path.expanduser("~/sandbag-tool")):
                 print("Unsangbag nvidia driver")
@@ -393,7 +394,6 @@ class CMD_startx:
 
         # Lock GPU clocks 
         if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e"):
-            lockclocks = horizontal_select("Lock GPU clocks", ["yes", "no"], 0)
             if lockclocks == "yes":
                 perfdebug = "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug"
                 if os.path.exists(perfdebug):
@@ -405,6 +405,7 @@ class CMD_startx:
                 else:
                     print(f"File doesn't exist: {perfdebug}")
                     print("Lock clocks \t [ FAILED ]")
+        else: print("Locking GPU clocks is only required on N1x \t [ SKIPPED ]")
 
 
 class CMD_nvmake:
