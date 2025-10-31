@@ -371,14 +371,15 @@ class CMD_startx:
             pass # TODO
 
         # Start a VNC server mirroring current display 
-        subprocess.run(["bash", "-lc", rf"""
-            if [[ -z $(sudo cat /etc/gdm3/custom.conf | grep -v '^#' | grep "WaylandEnable=false") ]]; then 
-                echo "{RED}Disable wayland before starting VNC server{RESET}"
-                exit 0
-            fi 
-            screen -S x11vnc -dm x11vnc -display :0 -forever --loop -noxdamage -repeat -shared
-            sudo ss -tulpn | grep -E ":5900 |:5901 |:5902 "
-        """], check=True)
+        if withVNC == "yes":
+            subprocess.run(["bash", "-lc", rf"""
+                if [[ -z $(sudo cat /etc/gdm3/custom.conf | grep -v '^#' | grep "WaylandEnable=false") ]]; then 
+                    echo "{RED}Disable wayland before starting VNC server{RESET}"
+                    exit 0
+                fi 
+                screen -S x11vnc -dm x11vnc -display :0 -forever --loop -noxdamage -repeat -shared
+                sudo ss -tulpn | grep -E ":5900 |:5901 |:5902 "
+            """], check=True)
 
         # Unsandbag for much higher perf 
         unsanbag = horizontal_select("Unsanbag nvidia driver", ["yes", "no"], 0)
