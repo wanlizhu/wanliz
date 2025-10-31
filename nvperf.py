@@ -9,12 +9,12 @@ import psutil
 import shutil
 import signal
 import re
-import pathlib
 import shlex
 import platform
 import getpass 
 import webbrowser
 import ctypes
+from pathlib import Path 
 from datetime import timedelta
 from time import perf_counter
 from statistics import mean, stdev
@@ -25,20 +25,10 @@ if platform.system() == "Linux":
     import tty 
     
 ARGPOS = 1
-os.environ.update({
-    "__GL_SYNC_TO_VBLANK": "0",
-    "vblank_mode": "0",
-    "__GL_DEBUG_BYPASS_ASSERT": "c",
-    "PIP_BREAK_SYSTEM_PACKAGES": "1",
-    "NVM_GTLAPI_USER": "wanliz",
-    "NVM_GTLAPI_TOKEN": "eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlODVjZDU4LTM2YWUtNGZkMS1iNzZkLTZkZmZhNDg2ZjIzYSIsInNlY3JldCI6IkpuMjN0RkJuNTVMc3JFOWZIZW9tWk56a1Qvc0hpZVoxTW9LYnVTSkxXZk09In0.NzUoZbUUPQbcwFooMEhG4O0nWjYJPjBiBi78nGkhUAQ",
-    "P4ROOT": "/wanliz_sw_linux",
-    "P4PORT": "p4proxy-sc.nvidia.com:2006",
-    "P4USER": "wanliz",
-    "P4CLIENT": "wanliz_sw_linux",
-    "P4IGNORE": os.path.expanduser("~/.p4ignore")
-})
-signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
+HOME = os.path.expanduser("~")
+UNAME_M, UNAME_M2 = None, None 
+if platform.machine().lower() in ["x86_64", "amd64"]: UNAME_M, UNAME_M2 = "x86_64", "x64"
+elif platform.machine().lower() in ["aarch64", "arm64"]: UNAME_M, UNAME_M2 = "aarch64", "arm64"
 
 supports_ANSI = True
 if platform.system() == "Windows": 
@@ -54,6 +44,21 @@ DIM   = "\033[90m" if supports_ANSI else ""
 RED   = "\033[31m" if supports_ANSI else ""
 CYAN  = "\033[36m" if supports_ANSI else ""
 BOLD  = "\033[1m"  if supports_ANSI else ""
+
+signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
+
+os.environ.update({
+    "__GL_SYNC_TO_VBLANK": "0",
+    "vblank_mode": "0",
+    "__GL_DEBUG_BYPASS_ASSERT": "c",
+    "PIP_BREAK_SYSTEM_PACKAGES": "1",
+    "P4ROOT": "/wanliz_sw_linux",
+    "P4PORT": "p4proxy-sc.nvidia.com:2006",
+    "P4USER": "wanliz",
+    "P4CLIENT": "wanliz_sw_linux",
+    "P4IGNORE": HOME + "/.p4ignore"
+})
+
 
 def horizontal_select(prompt, options, index):
     global ARGPOS
@@ -173,18 +178,18 @@ class CMD_config:
 
         # Add known host IPs (hostname -> IP)
         hosts_out = []
-        for line in pathlib.Path("/etc/hosts").read_text().splitlines():
+        for line in Path("/etc/hosts").read_text().splitlines():
             if line.strip().startswith("#"): 
                 continue
             if any(name in self.hosts for name in line.split()[1:]):
                 continue 
             hosts_out.append(line)
         hosts_out += [f"{ip}\t{name}" for name, ip in self.hosts.items()]
-        pathlib.Path("/tmp/hosts").write_text("\n".join(hosts_out) + "\n")
+        Path("/tmp/hosts").write_text("\n".join(hosts_out) + "\n")
         subprocess.run("sudo install -m 644 /tmp/hosts /etc/hosts", check=True, shell=True)
         print("/etc/hosts \t [ UPDATED ]")
 
-        if not os.path.exists(os.path.expanduser("~/.ssh/id_ed25519")):
+        if not os.path.exists(HOME + "/.ssh/id_ed25519"):
             cipher_prv = "U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo"
             subprocess.run(["bash", "-lc", f"echo '{cipher_prv}' | openssl enc -d -aes-256-cbc -pbkdf2 -a > $HOME/.ssh/id_ed25519"], check=True)
             subprocess.run("chmod 600 ~/.ssh/id_ed25519", check=True, shell=True)
@@ -192,7 +197,7 @@ class CMD_config:
             subprocess.run("chmod 644 ~/.ssh/id_ed25519.pub", check=True, shell=True)
             print("~/.ssh/id_ed25519.pub \t [ ADDED ]")
 
-        if not os.path.exists(os.path.expanduser("~/.gtl_api_key")):
+        if not os.path.exists(HOME + "/.gtl_api_key"):
             cipher = "U2FsdGVkX18BU0ZpoGynLWZBV16VNV2x85CjdpJfF+JF4HhpClt/vTyr6gs6GAq0lDVWvNk7L7s7eTFcJRhEnU4IpABfxIhfktMypWw85PuJCcDXOyZm396F02KjBRwunVfNkhfuinb5y2L6YR9wYbmrGDn1+DjodSWzt1NgoWotCEyYUz0xAIstEV6lF5zedcGwSzHDdFhj3hh5YxQFANL96BFhK9aSUs4Iqs9nQIT9evjinEh5ZKNq5aJsll91czHS2oOi++7mJ9v29sU/QjaqeSWDlneZj4nPYXhZRCw="
             subprocess.run(["bash", "-lc", f"echo '{cipher}' | openssl enc -d -aes-256-cbc -pbkdf2 -a > ~/.gtl_api_key"], check=True)
             subprocess.run("chmod 500 ~/.gtl_api_key", check=True, shell=True)
@@ -204,14 +209,14 @@ class CMD_share:
         return "Share a Linux folder via both SMB and NFS simultaneously"
     
     def run(self):
-        path = horizontal_select("Select or input folder to share", [os.path.expanduser("~"), "<input>"], 0)
-        path = pathlib.Path(path).resolve()
+        path = horizontal_select("Select or input folder to share", [HOME, "<input>"], 0)
+        path = Path(path).resolve()
         if not (path.exists() and path.is_dir()):
             raise RuntimeError(f"Invalid path: {path}")
         self.__share_via_nfs(path)
         self.__share_via_smb(path)
 
-    def __share_via_smb(self, path: pathlib.Path):
+    def __share_via_smb(self, path: Path):
         output = subprocess.run(["bash", "-lc", "testparm -s"], text=True, check=False, capture_output=True)
         if output.returncode != 0 and 'not found' in output.stderr:
             subprocess.run(["bash", "-lc", "sudo apt install -y samba-common-bin samba"], check=True)
@@ -247,7 +252,7 @@ class CMD_share:
         """], check=True)
         print(f"Share {path} via SMB \t [ OK ]")
 
-    def __share_via_nfs(self, path: pathlib.Path):
+    def __share_via_nfs(self, path: Path):
         output = subprocess.run(["bash", "-lc", "sudo exportfs -v"], text=True, check=False, capture_output=True)
         if output.returncode != 0 and 'not found' in output.stderr:
             subprocess.run(["bash", "-lc", "sudo apt install -y nfs-kernel-server"], check=True)
@@ -286,7 +291,7 @@ class CMD_mount:
         elif platform.system() == "Linux":
             windows_folder = horizontal_select("Windows shared folder", None, None).strip().replace("\\", "/")
             windows_folder = shlex.quote(windows_folder)
-            mount_dir = f"/mnt/{pathlib.Path(windows_folder).name}.cifs"
+            mount_dir = f"/mnt/{Path(windows_folder).name}.cifs"
             user = input("User: ")
             subprocess.run(["bash", "-lc", f"""
                 if ! command -v mount.cifs >/dev/null 2>&1; then
@@ -324,7 +329,6 @@ class CMD_startx:
         return "Start a bare X server for graphics profiling"
     
     def run(self):
-        home = os.path.expanduser("~")
         headless = horizontal_select("Is this a headless system", ["yes", "no"], 1)
         withDM = horizontal_select("Start with a display manager", ["yes", "no"], 1)
         withVNC = horizontal_select("Start with a VNC server", ["yes", "no"], 1)
@@ -360,7 +364,7 @@ class CMD_startx:
                     --use-display-device=None \
                     --virtual=3840x2160 \
                     --enable-all-gpus
-                sudo screen -S bareX -dm bash -lci "X :0 -ac +iglx 2>&1 | tee {home}/X.log"
+                sudo screen -S bareX -dm bash -lci "X :0 -ac +iglx 2>&1 | tee {HOME}/X.log"
                 for i in $(seq 1 30); do
                     if xdpyinfo >/dev/null 2>&1; then break; fi
                     sleep 0.5
@@ -379,13 +383,12 @@ class CMD_startx:
                     echo "{RED}Disable wayland before starting VNC server{RESET}"
                     exit 0
                 fi 
-                screen -S x11vnc -dm x11vnc -display :0 -forever --loop -noxdamage -repeat -shared
-                sudo ss -tulpn | grep -E ":5900 |:5901 |:5902 "
+                x11vnc -display :0  -rfbport 5900 -noshm -forever -noxdamage -repeat -shared -bg -o $HOME/x11vnc.log && echo "Start VNC server on :5900    [ OK ]" || cat $HOME/x11vnc.log
             """], check=True)
 
         # Unsandbag for much higher perf 
         if unsanbag == "yes": 
-            if os.path.exists(os.path.expanduser("~/sandbag-tool")):
+            if os.path.exists(HOME + "/sandbag-tool"):
                 print("Unsangbag nvidia driver")
                 subprocess.run(["bash", "-lc", f"~/sandbag-tool -unsandbag"], check=True)
             else:
@@ -496,7 +499,7 @@ class CMD_install:
             driver = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
         elif driver == "office":
             branch, config, arch, version = self.__select_nvidia_driver("office") # The entire output folder to be synced to /tmp/office/
-            driver = os.path.expanduser(f"/tmp/office/_out/Linux_{arch}_{config}/NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
+            driver = f"/tmp/office/_out/Linux_{arch}_{config}/NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run"
         else: 
             raise RuntimeError("Invalid argument")
         
@@ -513,10 +516,10 @@ class CMD_install:
         subprocess.run("nvidia-smi", check=True, shell=True)
 
         # Copy tests-Linux-***.tar to ~
-        tests = pathlib.Path(driver).parent / f"tests-Linux-{'x86_64' if arch == 'amd64' else arch}.tar"
+        tests = Path(driver).parent / f"tests-Linux-{'x86_64' if arch == 'amd64' else arch}.tar"
         if tests.is_file():
-            subprocess.run(f"tar -xf {tests} -C {pathlib.Path(driver).parent}", check=True, shell=True)
-            subprocess.run(f"cp -vf {pathlib.Path(driver).parent}/tests-Linux-{'x86_64' if arch == 'amd64' else arch}/sandbag-tool/sandbag-tool ~", check=True, shell=True)
+            subprocess.run(f"tar -xf {tests} -C {Path(driver).parent}", check=True, shell=True)
+            subprocess.run(f"cp -vf {Path(driver).parent}/tests-Linux-{'x86_64' if arch == 'amd64' else arch}/sandbag-tool/sandbag-tool ~", check=True, shell=True)
 
 
     def __select_nvidia_driver(self, host):
@@ -543,7 +546,7 @@ class CMD_install:
         # Collect versions of all driver packages 
         pattern = re.compile(r'^NVIDIA-Linux-(?:x86_64|aarch64)-(?P<ver>\d+\.\d+(?:\.\d+)?)-internal\.run$')
         versions = [
-            match.group('ver') for path in pathlib.Path(output_dir).iterdir()
+            match.group('ver') for path in Path(output_dir).iterdir()
             if path.is_file() and (match := pattern.match(path.name))
         ]
 
@@ -573,15 +576,36 @@ class CMD_download:
         src = horizontal_select("Download", [
             "Nsight graphics",
             "Nsight systems", 
+            "viewperf",
+            "GravityMark",
+            "3dMark - steelNomad",
         ], 0)
         if src == "Nsight graphics": self.__download_nsight_graphics()
         elif src == "Nsight systems": self.__download_nsight_systems() 
+        elif src == "viewperf": self.__download_viewperf()
+        elif src == "GravityMark": self.__download_gravitymark()
+        elif src == "3dMark - steelNomad": self.__download_3dMark("steelNomad")
 
     def __download_nsight_graphics(self):
         webbrowser.open("https://ngfx/builds-nightly/Grfx")
 
     def __download_nsight_systems(self): 
         webbrowser.open("https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk")
+
+    def __download_viewperf(self):
+        if os.path.exists(f"/mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M}"):
+            subprocess.run(["bash", "-lc", f"cp -afT /mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M} $HOME/viewperf2020v3"])
+        else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M}")
+
+    def __download_gravitymark(self):
+        if os.path.exists(f"/mnt/linuxqa/wanliz/GravityMark/{UNAME_M}"):
+            subprocess.run(["bash", "-lc", f"cp -afT /mnt/linuxqa/wanliz/GravityMark/{UNAME_M} $HOME/GravityMark"])
+        else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/GravityMark/{UNAME_M}") 
+
+    def __download_3dMark(self, name):
+        if os.path.exists(f"/mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}"):
+            subprocess.run(["bash", "-lc", f"cp -afT /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M} $HOME/3dMark_{name}"])
+        else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}")  
 
 
 class CMD_cpu:
@@ -640,13 +664,16 @@ class GPU_freq_limiter:
 
 class PerfInspector_gputrace:
     def __init__(self, exe, args, workdir, env=None):
-        self.pi_root = os.path.expanduser("~/SinglePassCapture")
+        self.pi_root = HOME + "/SinglePassCapture"
         self.exe = exe 
         self.args = args 
         self.workdir = workdir
         self.env = env 
     
     def fix(self):
+        if not os.path.exists(self.pi_root):
+            raise RuntimeError("PerfInspector is not installed")
+        
         subprocess.run(["bash", "-lc", rf"""
             sudo apt autoremove 
             sudo apt install -y python3-venv python3-pip 
@@ -686,19 +713,20 @@ class PerfInspector_gputrace:
         ] if len(x) > 0], check=True)
         if upload == "yes":
             script = self.pi_root + f"/PerfInspector/output/{name}/upload_report.sh"
-            subprocess.run(os.path.expanduser(script), check=True, shell=True)
-        
+            subprocess.run(script, check=True, shell=True)
 
+    def upload_report(self, name=None):
+        if name is None:
+            reports = sorted([p.name for p in Path(self.pi_root + "/PerfInspector/output").iterdir() 
+                              if p.is_dir() and p.name != "perf_inspector_v2"])
+            name = horizontal_select("Select a report to upload", reports, 0)
+        subprocess.run(["bash", "-lc", "NVM_GTLAPI_USER=wanliz NVM_GTLAPI_TOKEN='eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlODVjZDU4LTM2YWUtNGZkMS1iNzZkLTZkZmZhNDg2ZjIzYSIsInNlY3JldCI6IkpuMjN0RkJuNTVMc3JFOWZIZW9tWk56a1Qvc0hpZVoxTW9LYnVTSkxXZk09In0.NzUoZbUUPQbcwFooMEhG4O0nWjYJPjBiBi78nGkhUAQ' ./upload_report.sh"], 
+                       cwd=self.pi_root+f"/PerfInspector/output/{name}", 
+                       check=True)
+    
+        
 class Nsight_graphics_gputrace:
     def __init__(self, exe, args, workdir, env=None):
-        subprocess.run(["bash", "-lc", rf"""
-            echo "Checking package dependencies of Nsight graphics..."
-            for pkg in libxcb-dri2-0 libxcb-shape0 libxcb-xinerama0 libxcb-xfixes0 libxcb-render0 libxcb-shm0 libxcb1 libx11-xcb1 libxrender1 \
-                libxkbcommon0 libxkbcommon-x11-0 libxext6 libxi6 libglib2.0-0 libglib2.0-0t64 libegl1 libopengl0 \
-                libxcb-util1 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinput0; do 
-                dpkg -s $pkg &>/dev/null || sudo apt install -y $pkg &>/dev/null
-            done 
-        """], check=True)
         self.exe = exe 
         self.args = args 
         self.workdir = workdir 
@@ -707,7 +735,21 @@ class Nsight_graphics_gputrace:
         self.__get_arch()
         self.__get_metricset()
 
+    def fix(self):
+        subprocess.run(["bash", "-lc", rf"""
+            echo "Checking package dependencies of Nsight graphics..."
+            for pkg in libxcb-dri2-0 libxcb-shape0 libxcb-xinerama0 libxcb-xfixes0 libxcb-render0 libxcb-shm0 libxcb1 libx11-xcb1 libxrender1 \
+                libxkbcommon0 libxkbcommon-x11-0 libxext6 libxi6 libglib2.0-0 libglib2.0-0t64 libegl1 libopengl0 \
+                libxcb-util1 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinput0; do 
+                dpkg -s $pkg &>/dev/null || sudo apt install -y $pkg &>/dev/null
+            done 
+        """], check=True)
+
     def capture(self, startframe=None, frames=None, time_all_actions=None): 
+        if not os.path.exists(self.ngfx):
+            CMD_download().__download_nsight_graphics()
+
+        # for N1x: --architecture="T254 GB20B" --metric-set-name="Top-Level Triage"
         if startframe is None: startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
         if frames is None: frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
         if time_all_actions is None: time_all_actions = horizontal_select("[3/3] Time all API calls separately", ["yes", "no"], 1)
@@ -732,15 +774,13 @@ class Nsight_graphics_gputrace:
 
     def __get_ngfx_path(self):
         if platform.machine() == 'aarch64':
-            self.ngfx = f'{os.path.expanduser('~')}/nvidia-nomad-internal-EmbeddedLinux.l4t/host/linux-v4l_l4t-nomad-t210-a64/ngfx'
-        elif os.path.isdir(f'{os.path.expanduser('~')}/nvidia-nomad-internal-Linux.linux'):
-            self.ngfx = f'{os.path.expanduser('~')}/nvidia-nomad-internal-Linux.linux/host/linux-desktop-nomad-x64/ngfx'
-        elif os.path.isdir(f'{os.path.expanduser('~')}/nvidia-nomad-internal-EmbeddedLinux.linux'):
-            self.ngfx = f'{os.path.expanduser('~')}/nvidia-nomad-internal-EmbeddedLinux.linux/host/linux-desktop-nomad-x64/ngfx'
+            self.ngfx = f'{HOME}/nvidia-nomad-internal-EmbeddedLinux.l4t/host/linux-v4l_l4t-nomad-t210-a64/ngfx'
+        elif os.path.isdir(f'{HOME}/nvidia-nomad-internal-Linux.linux'):
+            self.ngfx = f'{HOME}/nvidia-nomad-internal-Linux.linux/host/linux-desktop-nomad-x64/ngfx'
+        elif os.path.isdir(f'{HOME}/nvidia-nomad-internal-EmbeddedLinux.linux'):
+            self.ngfx = f'{HOME}/nvidia-nomad-internal-EmbeddedLinux.linux/host/linux-desktop-nomad-x64/ngfx'
         else:
             self.ngfx = shutil.which('ngfx')
-        if not os.path.exists(self.ngfx):
-            raise RuntimeError("Failed to find ngfx")
         self.help_all = subprocess.run(["bash", "-lc", f"{self.ngfx} --help-all"], check=False, capture_output=True, text=True).stdout
 
     def __get_arch(self):
@@ -783,7 +823,7 @@ class Nsight_graphics_gputrace:
 
 class CMD_viewperf:
     def __init__(self):
-        self.viewperf_root = os.path.expanduser("~/viewperf2020v3")
+        self.viewperf_root = HOME + "/viewperf2020v3"
 
     def __str__(self):
         return "Start profiling viewperf 2020 v3"
@@ -791,7 +831,7 @@ class CMD_viewperf:
     def __get_result_fps(self, viewset, subtest):
         try:
             pattern = f"results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
-            matches = list(pathlib.Path(self.viewperf_root).glob(pattern))
+            matches = list(Path(self.viewperf_root).glob(pattern))
             if not matches:
                 raise RuntimeError(f"Failed to find results of {viewset}")
 
@@ -808,7 +848,8 @@ class CMD_viewperf:
     
     def run(self):
         if not os.path.exists(self.viewperf_root):
-            raise RuntimeError(f"Folder doesn't exist: {self.viewperf_root}")
+            CMD_download().__download_viewperf()
+
         timestamp = perf_counter()
         subtest_nums = { "catia": 8, "creo": 13, "energy": 6, "maya": 10, "medical": 10, "snx": 10, "sw": 10 }
         self.viewset = horizontal_select("[1/3] Target viewset", ["all", "catia", "creo", "energy", "maya", "medical", "snx", "sw"], 4)
@@ -864,7 +905,7 @@ class CMD_viewperf:
         print("")
         output = subprocess.run(["bash", "-lc", "column -t -s ,"], input=table + "\n", text=True, check=True, capture_output=True)
         print(output.stdout if output.returncode == 0 else output.stderr)
-        with open(os.path.expanduser(f"~/viewperf_stats_{datetime.datetime.now().strftime('%Y_%m%d_%H%M')}.txt"), "w", encoding="utf-8") as file:
+        with open(HOME + f"/viewperf_stats_{datetime.datetime.now().strftime('%Y_%m%d_%H%M')}.txt", "w", encoding="utf-8") as file:
             file.write(output.stdout)
 
     def __run_in_picx(self):
@@ -893,7 +934,7 @@ class CMD_viewperf:
                 --output="viewperf_medical__%h__$(date '+%Y_%m%d_%H%M')" \
                 --force-overwrite=true \
                 {self.exe} {self.arg}
-        """], cwd=os.path.expanduser("~"), check=True) 
+        """], cwd=HOME, check=True) 
 
     def __run_in_gdb(self):
         subprocess.run(["bash", "-lc", f"""
@@ -937,20 +978,39 @@ class CMD_viewperf:
 
 class CMD_gmark:
     def __init__(self):
-        self.gmark_root = os.path.expanduser("~/GravityMark")
+        self.gmark_root = HOME + "/GravityMark"
         
     def __str__(self):
         return "GravityMark benchmark for OpenGL and Vulkan on all platforms"
     
     def fix(self):
         if not os.path.exists(self.gmark_root):
-            raise RuntimeError(f"Folder doesn't exist: {self.gmark_root}")
+            CMD_download().__download_gravitymark()
+
         subprocess.run(["bash", "-lc", """
             sudo apt install -y clang build-essential pkg-config libgtk2.0-dev libglib2.0-dev libpango1.0-dev libatk1.0-dev libgdk-pixbuf-2.0-dev 
         """], check=True) 
     
     def run(self):
-        pass 
+        subprocess.run(["bash", "-lc", rf"""
+            cd $HOME/GravityMark/bin
+            GravityMark.{UNAME_M2} -temporal 1  -screen 0 -fps 1 -info 1 -sensors 1 -benchmark 1 -vk -fullscreen 1 -vsync 0 -close 1
+        """], check=True) 
+
+
+class CMD_3dmark:
+    def __str__(self):
+        return "3dMark benchmarks"
+    
+    def run(self):
+        test = horizontal_select("Select 3dMark test", ["steelNomad"], 0)
+        if not os.path.exists(HOME + f"/3dMark_{test}"):
+            CMD_download().__download_3dMark(test)
+
+        subprocess.run(["bash", "-lc", rf"""
+            cd $HOME/3dMark_{test}/engine
+            ./build/bin/dev_player --asset_root=../assets_desktop --config=configs/gt1.json
+        """], check=True) 
 
 
 if __name__ == "__main__":
