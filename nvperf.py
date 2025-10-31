@@ -38,8 +38,6 @@ os.environ.update({
     "P4CLIENT": "wanliz_sw_linux",
     "P4IGNORE": os.path.expanduser("~/.p4ignore")
 })
-if not os.environ.get("DISPLAY"):    os.environ["DISPLAY"] = ":0"  
-if not os.environ.get("XAUTHORITY"): os.environ["XAUTHORITY"] = os.path.expanduser("~/.Xauthority") 
 signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
 supports_ANSI = True
@@ -106,6 +104,7 @@ class CMD_info:
         return "Get GPU HW and driver info"
     
     def run(self):
+        subprocess.run(["bash", "-lc", "DISPLAY=:0 xrandr | grep current"], check=False)
         subprocess.run(["bash", "-lc", "DISPLAY=:0 glxinfo | grep -i 'OpenGL renderer'"], check=False)
         subprocess.run(["bash", "-lc", "nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total,clocks.gr | column -s, -t"], check=False)
         subprocess.run(["bash", "-lc", "nvidia-smi -q | grep -i 'GSP Firmware Version'"], check=False)
@@ -198,21 +197,6 @@ class CMD_config:
             subprocess.run(["bash", "-lc", f"echo '{cipher}' | openssl enc -d -aes-256-cbc -pbkdf2 -a > ~/.gtl_api_key"], check=True)
             subprocess.run("chmod 500 ~/.gtl_api_key", check=True, shell=True)
             print("~/.gtl_api_key \t [ ADDED ]")
-
-        # Install Linux kernel tools 
-        subprocess.run(["bash", "-lc", r"""
-            packages=(
-                linux-tools-common 
-                linux-tools-$(uname -r)
-                linux-tools-$(uname -r | sed 's/-[^-]*$//')-generic 
-                linux-cloud-tools-common 
-                linux-cloud-tools-$(uname -r)
-                linux-cloud-tools-$(uname -r | sed 's/-[^-]*$//')-generic
-            )
-            for pkg in "${packages[@]}"; do
-                dpkg -s $pkg &>/dev/null || sudo apt install -y $pkg || true 
-            done 
-        """], check=False)
 
 
 class CMD_share:
@@ -340,6 +324,11 @@ class CMD_startx:
         return "Start a bare X server for graphics profiling"
     
     def run(self):
+        home = os.path.expanduser("~")
+        headless = horizontal_select("Is this a headless system", ["yes", "no"], 1)
+        withDM = horizontal_select("Start with a display manager", ["yes", "no"], 1)
+        withVNC = horizontal_select("Start with a VNC server", ["yes", "no"], 1)
+
         # Kill running X server
         subprocess.run(["bash", "-lc", rf"""
             if [[ ! -z $(pidof Xorg) ]]; then 
@@ -347,43 +336,74 @@ class CMD_startx:
                 sudo pkill -TERM -x Xorg
                 sleep 1
             fi 
-            if [[ ! -z $(pidof Xorg) ]]; then 
-                sudo pkill -KILL -x Xorg
-                sleep 1
-            fi
             screen -ls | awk '/Detached/ && /bareX/ {{ print $1 }}' | while IFS= read -r session; do
                 screen -S "$session" -X stuff $'\r'
             done
         """], check=True)
 
         # Start a bare X server in GNU screen
-        subprocess.run(["bash", "-lc", f"screen -S bareX bash -lci \"sudo X {os.environ['DISPLAY']} -ac +iglx || read -p 'Press [Enter] to exit: '\""], check=True)
-        while not os.path.exists("/tmp/.X11-unix/X0"):
-            time.sleep(0.2)
-            print("Wait for X server to start up")
+        if headless == "yes":
+            subprocess.run(["bash", "-lc", rf"""
+                if [[ ! -z $(pidof Xorg) ]]; then 
+                    read -p "Press [Enter] to kill running X server: "    
+                    sudo pkill -TERM -x Xorg
+                    sleep 1
+                fi 
+                screen -ls | awk '/Detached/ && /bareX/ {{ print $1 }}' | while IFS= read -r session; do
+                    screen -S "$session" -X stuff $'\r'
+                done
+                export DISPLAY=:0 
+                sudo nvidia-xconfig \
+                    --allow-empty-initial-configuration \
+                    --use-display-device=None \
+                    --virtual=3840x2160 \
+                    --enable-all-gpus
+                sudo screen -S bareX -dm bash -lci "X :0 -ac +iglx 2>&1 | tee {home}/X.log"
+                for i in $(seq 1 30); do
+                    if xdpyinfo >/dev/null 2>&1; then break; fi
+                    sleep 0.5
+                done
+                xhost + || true
+                xrandr | grep current
+                {"screen -S openbox -dm openbox" if withDM == "yes" else ""}
+            """], check=True)
+        else:
+            pass # TODO
+
+        # Start a VNC server mirroring current display 
+        subprocess.run(["bash", "-lc", rf"""
+            if [[ -z $(sudo cat /etc/gdm3/custom.conf | grep -v '^#' | grep "WaylandEnable=false") ]]; then 
+                echo "{RED}Disable wayland before starting VNC server{RESET}"
+                exit 0
+            fi 
+            screen -S x11vnc -dm x11vnc -display :0 -forever --loop -noxdamage -repeat -shared
+            sudo ss -tulpn | grep -E ":5900 |:5901 |:5902 "
+        """], check=True)
 
         # Unsandbag for much higher perf 
-        if os.path.exists(os.path.expanduser("~/sandbag-tool")):
-            print("Unsangbag nvidia driver")
-            subprocess.run(["bash", "-lc", f"~/sandbag-tool -unsandbag"], check=True)
-        else:
-            print("File doesn't exist: ~/sandbag-tool")
-            print("Unsandbag \t [ FAILED ]")
+        unsanbag = horizontal_select("Unsanbag nvidia driver", ["yes", "no"], 0)
+        if unsanbag == "yes": 
+            if os.path.exists(os.path.expanduser("~/sandbag-tool")):
+                print("Unsangbag nvidia driver")
+                subprocess.run(["bash", "-lc", f"~/sandbag-tool -unsandbag"], check=True)
+            else:
+                print("File doesn't exist: ~/sandbag-tool")
+                print("Unsandbag \t [ FAILED ]")
 
         # Lock GPU clocks 
         if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e"):
-            perfdebug = "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug"
-            if os.path.exists(perfdebug):
-                print("Lock GPU clocks")
-                subprocess.run(["bash", "-lc", f"sudo {perfdebug} --lock_loose  set pstateId   P0"], check=True)
-                subprocess.run(["bash", "-lc", f"sudo {perfdebug} --lock_strict set gpcclkkHz  2000000"], check=True)
-                subprocess.run(["bash", "-lc", f"sudo {perfdebug} --lock_loose  set xbarclkkHz 1800000"], check=True)
-                subprocess.run(["bash", "-lc", f"sudo {perfdebug} --force_regime  ffr"], check=True)
-            else:
-                print(f"File doesn't exist: {perfdebug}")
-                print("Lock clocks \t [ FAILED ]")
-        else:
-            print(f"No need to lock GPU clocks on {os.uname().machine.lower()}")
+            lockclocks = horizontal_select("Lock GPU clocks", ["yes", "no"], 0)
+            if lockclocks == "yes":
+                perfdebug = "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug"
+                if os.path.exists(perfdebug):
+                    print("Lock GPU clocks")
+                    subprocess.run(["bash", "-lc", f"sudo {perfdebug} --lock_loose  set pstateId   P0"], check=True)
+                    subprocess.run(["bash", "-lc", f"sudo {perfdebug} --lock_strict set gpcclkkHz  2000000"], check=True)
+                    subprocess.run(["bash", "-lc", f"sudo {perfdebug} --lock_loose  set xbarclkkHz 1800000"], check=True)
+                    subprocess.run(["bash", "-lc", f"sudo {perfdebug} --force_regime  ffr"], check=True)
+                else:
+                    print(f"File doesn't exist: {perfdebug}")
+                    print("Lock clocks \t [ FAILED ]")
 
 
 class CMD_nvmake:
@@ -457,7 +477,7 @@ class CMD_rmmod:
                     echo -e "Removing modules: \n$mods"
                     sudo modprobe -r $mods 
                 fi 
-            """], check=True)
+            """], check=True) # TODO
             subprocess.run(["bash", "-lc", "lsmod | grep -i '^nvidia' &>/dev/null || echo 'All nvidia modules are removed'"], check=True)
         except Exception:
             if retry: self.run(retry=False)
@@ -760,13 +780,18 @@ class Nsight_graphics_gputrace:
             
 
 class CMD_viewperf:
+    def __init__(self):
+        self.viewperf_root = os.path.expanduser("~/viewperf2020v3")
+        if not os.path.exists(self.viewperf_root):
+            raise RuntimeError(f"Folder doesn't exist: {self.viewperf_root}")
+
     def __str__(self):
         return "Start profiling viewperf 2020 v3"
     
     def __get_result_fps(self, viewset, subtest):
         try:
-            pattern = f"viewperf2020v3/results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
-            matches = list(pathlib.Path.home().glob(pattern))
+            pattern = f"results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
+            matches = list(pathlib.Path(self.viewperf_root).glob(pattern))
             if not matches:
                 raise RuntimeError(f"Failed to find results of {viewset}")
 
@@ -791,9 +816,9 @@ class CMD_viewperf:
             self.subtest = horizontal_select("[2/3] Target subtest", ["all"] + [str(i) for i in range(1, subtest_nums[self.viewset] + 1)], 0)
             self.subtest = "" if self.subtest == "all" else self.subtest
             env = horizontal_select("[3/3] Launch in profiling/debug env", ["stats", "picx", "ngfx", "nsys", "gdb", "limiter"], 0)
-            self.exe = os.path.expanduser('~/viewperf2020v3/viewperf/bin/viewperf')
+            self.exe = self.viewperf_root + '/viewperf/bin/viewperf'
             self.arg = f"viewsets/{self.viewset}/config/{self.viewset}.xml {self.subtest} -resolution 3840x2160" 
-            self.dir = os.path.expanduser('~/viewperf2020v3')
+            self.dir = self.viewperf_root
     
         if env == "stats":
             self.__run_in_stats()
@@ -818,8 +843,8 @@ class CMD_viewperf:
         for viewset in viewsets:
             samples = []
             for i in range(1, rounds + 1):
-                output = subprocess.run(["bash", "-lc", f"$HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml {subtest if subtest else ''} -resolution 3840x2160"], 
-                                        cwd=os.path.expanduser('~/viewperf2020v3'), 
+                output = subprocess.run(["bash", "-lc", self.viewperf_root + f"/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml {subtest if subtest else ''} -resolution 3840x2160"], 
+                                        cwd=self.viewperf_root, 
                                         check=False, 
                                         text=True,
                                         capture_output=True)
@@ -906,6 +931,24 @@ class CMD_viewperf:
                 limiter.reset()
         finally:
             if limiter is not None: limiter.reset()
+
+
+class CMD_gmark:
+    def __init__(self):
+        self.gmark_root = os.path.expanduser("~/GravityMark")
+        if not os.path.exists(self.gmark_root):
+            raise RuntimeError(f"Folder doesn't exist: {self.gmark_root}")
+        
+    def __str__(self):
+        return "GravityMark benchmark for OpenGL and Vulkan on all platforms"
+    
+    def fix(self):
+        subprocess.run(["bash", "-lc", """
+            sudo apt install -y clang build-essential pkg-config libgtk2.0-dev libglib2.0-dev libpango1.0-dev libatk1.0-dev libgdk-pixbuf-2.0-dev 
+        """], check=True) 
+    
+    def run(self):
+        pass 
 
 
 if __name__ == "__main__":
