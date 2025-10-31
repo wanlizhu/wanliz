@@ -359,18 +359,33 @@ class CMD_startx:
                     screen -S "$session" -X stuff $'\r'
                 done
                 export DISPLAY=:0 
-                sudo nvidia-xconfig \
-                    --allow-empty-initial-configuration \
-                    --use-display-device=None \
-                    --virtual=3840x2160 \
-                    --enable-all-gpus
-                sudo screen -S bareX -dm bash -lci "X :0 -ac +iglx 2>&1 | tee {HOME}/X.log"
-                for i in $(seq 1 30); do
+                     
+                if [[ ! -d /mnt/linuxqa/nvtest ]]; then 
+                    sudo mkdir -p /mnt/linuxqa
+                    sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa     
+                fi 
+                
+                busID=$(nvidia-xconfig --query-gpu-info | sed -n '/PCI BusID/{{s/^[^:]*:[[:space:]]*//;p;q}}')
+                sudo nvidia-xconfig -s -o /etc/X11/xorg.conf \
+                    --force-generate --mode-debug --layout=Layout0 --render-accel --cool-bits=4 \
+                    --mode-list=3840x2160 --depth 24 --no-ubb \
+                    --x-screens-per-gpu=1 --no-separate-x-screens --busid=$busID \
+                    --connected-monitor=GPU-0.DFP-0 --custom-edid=GPU-0.DFP-0:/mnt/linuxqa/nvtest/pynv_files/edids_db/ASUSPB287_DP_3840x2160x60.000_1151.bin 
+                sudo screen -S bareX -dm bash -lci "__GL_SYNC_TO_VBLANK=0 X :0 vt2 -config /etc/X11/xorg.conf -logfile $HOME/X.log -logverbose 5 -ac +iglx"
+
+                for i in $(seq 1 10); do
+                    sleep 1
                     if xdpyinfo >/dev/null 2>&1; then break; fi
-                    sleep 0.5
+                    if [[ -z $(pidof Xorg) ]]; then echo "Failed to start X server"; exit 1; fi 
                 done
                 xhost + || true
-                xrandr | grep current
+                fbsize=$(xrandr --current 2>/dev/null | sed -n 's/^Screen .* current \([0-9]\+\) x \([0-9]\+\).*/\1x\2/p;q')
+                if [[ $fbsize != "3840x2160" ]]; then 
+                    grep -E "Found 0 head on board" $HOME/X.log
+                    xrandr --fb 3840x2160
+                fi 
+                xrandr --current
+                            
                 {"screen -S openbox -dm openbox" if withDM == "yes" else ""}
             """], check=True)
         else:
