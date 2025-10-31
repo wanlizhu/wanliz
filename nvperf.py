@@ -782,8 +782,6 @@ class Nsight_graphics_gputrace:
 class CMD_viewperf:
     def __init__(self):
         self.viewperf_root = os.path.expanduser("~/viewperf2020v3")
-        if not os.path.exists(self.viewperf_root):
-            raise RuntimeError(f"Folder doesn't exist: {self.viewperf_root}")
 
     def __str__(self):
         return "Start profiling viewperf 2020 v3"
@@ -807,6 +805,8 @@ class CMD_viewperf:
             return 0
     
     def run(self):
+        if not os.path.exists(self.viewperf_root):
+            raise RuntimeError(f"Folder doesn't exist: {self.viewperf_root}")
         timestamp = perf_counter()
         subtest_nums = { "catia": 8, "creo": 13, "energy": 6, "maya": 10, "medical": 10, "snx": 10, "sw": 10 }
         self.viewset = horizontal_select("[1/3] Target viewset", ["all", "catia", "creo", "energy", "maya", "medical", "snx", "sw"], 4)
@@ -936,13 +936,13 @@ class CMD_viewperf:
 class CMD_gmark:
     def __init__(self):
         self.gmark_root = os.path.expanduser("~/GravityMark")
-        if not os.path.exists(self.gmark_root):
-            raise RuntimeError(f"Folder doesn't exist: {self.gmark_root}")
         
     def __str__(self):
         return "GravityMark benchmark for OpenGL and Vulkan on all platforms"
     
     def fix(self):
+        if not os.path.exists(self.gmark_root):
+            raise RuntimeError(f"Folder doesn't exist: {self.gmark_root}")
         subprocess.run(["bash", "-lc", """
             sudo apt install -y clang build-essential pkg-config libgtk2.0-dev libglib2.0-dev libpango1.0-dev libatk1.0-dev libgdk-pixbuf-2.0-dev 
         """], check=True) 
