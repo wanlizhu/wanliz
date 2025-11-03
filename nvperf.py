@@ -150,6 +150,13 @@ class CMD_p4:
                 echo '*.code-workspace' >> ~/.p4ignore
             fi 
         """], check=True)
+        os.environ.update({
+            "P4CLIENT": self.p4client,
+            "P4PORT": self.p4port,
+            "P4USER": self.p4user, 
+            "P4ROOT": self.p4root,
+            "P4IGNORE": self.p4ignore
+        })
 
     def __str__(self):
         return "Perforce command tool"
@@ -182,13 +189,7 @@ class CMD_p4:
             else
                 echo "N/A"        
             fi  
-        """], env={
-            "P4CLIENT": self.p4client,
-            "P4PORT": self.p4port,
-            "P4USER": self.p4user, 
-            "P4ROOT": self.p4root,
-            "P4IGNORE": self.p4ignore
-        }, cwd=self.p4root, check=True)
+        """], cwd=self.p4root, check=True)
 
     def __pull(self):
         force = horizontal_select("Force pull", ["yes", "no"], 1)
