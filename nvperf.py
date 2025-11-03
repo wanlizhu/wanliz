@@ -576,15 +576,13 @@ class CMD_nvmake:
             raise RuntimeError("P4ROOT is not defined")
         
         # Collect compiling arguments 
-        branch = horizontal_select("[1/6] Target branch", ["r580", "bugfix_main"], 0)
-        branch = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
-        branch = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
-        config = horizontal_select("[2/6] Target config", ["develop", "debug", "release", "<input>"], 0)
-        arch   = horizontal_select("[3/6] Target architecture", ["amd64", "aarch64", "<input>"], 0)
-        module = horizontal_select("[4/6] Target module", ["drivers", "opengl", "<input>"], 0)
-        regen  = horizontal_select("[4a/6] Regen opengl code", ["yes", "no"], 1) if module == "opengl" else "no"
-        jobs   = horizontal_select("[5/6] Number of compiling threads", [str(os.cpu_count()), "1"], 0)
-        clean  = horizontal_select("[6/6] Make a clean build", ["yes", "no"], 1)
+        branch = horizontal_select("[1/7] Target branch", ["r580", "bugfix_main", "<input>"], 0)
+        config = horizontal_select("[2/7] Target config", ["develop", "debug", "release", "<input>"], 0)
+        arch   = horizontal_select("[3/7] Target architecture", ["amd64", "aarch64", "<input>"], 0)
+        module = horizontal_select("[4/7] Target module", ["drivers", "opengl", "<input>"], 0)
+        regen  = horizontal_select("[5/7] Regen opengl code", ["yes", "no"], 1) if module == "opengl" else "no"
+        jobs   = horizontal_select("[6/7] Number of compiling threads", [str(os.cpu_count()), "1"], 0)
+        clean  = horizontal_select("[7/7] Make a clean build", ["yes", "no"], 1)
 
         # Clean previous builds
         if clean == "yes":
