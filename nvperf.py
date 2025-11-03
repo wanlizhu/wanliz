@@ -595,10 +595,10 @@ class CMD_nvmake:
             ], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
 
         logs = []
-        for _branch in [self.__branch_path(b) for b in branch.split("&")]:
-            for _config in config.split("&"):
-                for _arch in arch.split("&"):
-                    for _module in module.split("&"):
+        for _branch in [self.__branch_path(b) for b in branch.split("|")]:
+            for _config in config.split("|"):
+                for _arch in arch.split("|"):
+                    for _module in module.split("|"):
                         try:
                             self.__unix_build_nvmake(_branch, _config, _arch, _module, regen, jobs)
                             logs.append(f"{_branch} {_config} {_arch} {_module} \t[ OK ]")
