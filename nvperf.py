@@ -166,29 +166,27 @@ class CMD_p4:
         if subcmd == "status": self.__status()
 
     def __status(self):
+        reconcile = horizontal_select("Reconcile to check added/deleted files", ["yes", "no"], 1)
         subprocess.run([*BASH_CMD, rf"""
             echo "=== Files Opened for Edit ==="
-            if p4 opened -C $P4CLIENT //$P4CLIENT/... &>/dev/null; then
-                p4 opened -C $P4CLIENT //$P4CLIENT/...
-            else
-                echo "N/A"
+            ofiles=$(p4 opened -C $P4CLIENT //$P4CLIENT/...)
+            if [[ ! -z $ofiles ]]; then
+                echo $ofiles
             fi 
-            echo 
-            echo "=== Files Not Tracked ==="
-            afiles=$(p4 reconcile -n -a $P4ROOT/... 2>/dev/null || true)
-            if [[ ! -z $afiles ]]; then 
-                echo "$afiles"
-            else
-                echo "N/A"        
-            fi  
-            echo 
-            echo "=== Files Deleted ==="
-            dfiles=$(p4 reconcile -n -d $P4ROOT/... 2>/dev/null || true)
-            if [[ ! -z $dfiles ]]; then 
-                echo "$dfiles"
-            else
-                echo "N/A"        
-            fi  
+            if [[ "{reconcile}" == "yes" ]]; then 
+                echo 
+                echo "=== Files Not Tracked ==="
+                afiles=$(p4 reconcile -n -a $P4ROOT/... 2>/dev/null || true)
+                if [[ ! -z $afiles ]]; then 
+                    echo "$afiles"     
+                fi  
+                echo 
+                echo "=== Files Deleted ==="
+                dfiles=$(p4 reconcile -n -d $P4ROOT/... 2>/dev/null || true)
+                if [[ ! -z $dfiles ]]; then 
+                    echo "$dfiles"   
+                fi  
+            fi 
         """], cwd=self.p4root, check=True)
 
     def __pull(self):
