@@ -169,7 +169,7 @@ class CMD_p4:
             echo 
             echo "=== Files Not Tracked ==="
             afiles=$(p4 reconcile -n -a $P4ROOT/... 2>/dev/null || true)
-            if [[ ! -z $(afiles) ]]; then 
+            if [[ ! -z $afiles ]]; then 
                 echo "$afiles"
             else
                 echo "N/A"        
@@ -177,7 +177,7 @@ class CMD_p4:
             echo 
             echo "=== Files Deleted ==="
             dfiles=$(p4 reconcile -n -d $P4ROOT/... 2>/dev/null || true)
-            if [[ ! -z $(dfiles) ]]; then 
+            if [[ ! -z $dfiles ]]; then 
                 echo "$dfiles"
             else
                 echo "N/A"        
