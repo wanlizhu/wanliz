@@ -73,23 +73,32 @@ def horizontal_select(prompt, options, index):
     if len(options) <= index:
         return None 
 
+    is_linux = (platform.system() == "Linux")
+    stdin_fd = None 
+    oldattr = None 
     try:
-        is_linux = platform.system() == "Linux"
-        if is_linux:
+        if is_linux and termios and tty:
             stdin_fd = sys.stdin.fileno()
             oldattr = termios.tcgetattr(stdin_fd)
             tty.setraw(stdin_fd)
+
         while index >= 0 and index < len(options):
-            options_str = "/".join(f"{RESET}{DIM}[{option}]{RESET}{BOLD}{CYAN}" if i == index else option for i, option in enumerate(options))
+            options_str = "/".join(
+                (f"{RESET}{DIM}[{option}]{RESET}{BOLD}{CYAN}" if i == index else option) 
+                for i, option in enumerate(options)
+            )
             sys.stdout.write("\r\033[2K" + f"{BOLD}{CYAN}{prompt} ({options_str}): {RESET}")
             sys.stdout.flush()
 
-            ch1 = sys.stdin.read(1) if is_linux else msvcrt.getwch()
+            ch1 = (sys.stdin.read(1) if (is_linux and termios and tty) else msvcrt.getwch())
             if ch1 in ("\r", "\n"): # Enter
+                if is_linux and termios and tty:
+                    termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
                 sys.stdout.write("\r\n")
                 sys.stdout.flush()
                 return input(": ") if options[index] == "<input>" else options[index]
             
+            code = None 
             if is_linux:
                 if ch1 == "\x1b": # ESC or escape sequence
                     if sys.stdin.read(1) == "[":
@@ -109,11 +118,10 @@ def horizontal_select(prompt, options, index):
             elif code == "ctrl-c": 
                 sys.stdout.write("\r\n")
                 sys.stdout.flush() 
-                sys.exit(0)
-    except Exception as e:
-        raise
+                raise KeyboardInterrupt
     finally:
-        if is_linux and stdin_fd and oldattr: termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
+        if is_linux and termios and tty: 
+            termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
 
 
 class CMD_info:
