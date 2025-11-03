@@ -14,12 +14,12 @@ import platform
 import getpass 
 import webbrowser
 import ctypes
+import xml.etree.ElementTree as ET 
 from pathlib import Path 
 from datetime import timedelta
 from time import perf_counter
 from statistics import mean, stdev
 from contextlib import suppress
-from xml.etree import ElementTree 
 if platform.system() == "Linux": 
     import termios
     import tty 
@@ -851,7 +851,7 @@ class CMD_viewperf:
                 raise RuntimeError(f"Failed to find results of {viewset}")
 
             results_xml = max(matches, key=lambda p: p.stat().st_mtime) 
-            root = ElementTree.parse(results_xml).getroot()
+            root = ET.parse(results_xml).getroot()
 
             if subtest:
                 return root.find(f".//Test[@Index='{subtest}']").get("FPS")
@@ -1007,10 +1007,14 @@ class CMD_gmark:
         """], check=True) 
     
     def run(self):
-        subprocess.run(["bash", "-lc", rf"""
-            cd $HOME/GravityMark/bin
-            GravityMark.{UNAME_M2} -temporal 1  -screen 0 -fps 1 -info 1 -sensors 1 -benchmark 1 -vk -fullscreen 1 -vsync 0 -close 1
-        """], check=True) 
+        self.exe = f"./GravityMark.{UNAME_M2}"
+        self.args = "-temporal 1  -screen 0 -fps 1 -info 1 -sensors 1 -benchmark 1 -vk -fullscreen 1 -vsync 0 -close 1"
+        self.workdir = f"{HOME}/GravityMark/bin"
+        subprocess.run(["bash", "-lc", f"{self.exe} {self.args}"], cwd=self.workdir, check=True) 
+
+    def __run_in_picx(self):
+        gputrace = PerfInspector_gputrace(exe=self.exe, args=self.args, workdir=self.workdir)
+        gputrace.capture()
 
 
 class CMD_3dmark:
