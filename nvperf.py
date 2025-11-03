@@ -118,7 +118,7 @@ def horizontal_select(prompt, options, index):
             elif code == "ctrl-c": 
                 sys.stdout.write("\r\n")
                 sys.stdout.flush() 
-                raise KeyboardInterrupt
+                sys.exit(0)
     finally:
         if is_linux and termios and tty: 
             termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
