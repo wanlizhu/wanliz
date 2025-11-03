@@ -14,6 +14,7 @@ import platform
 import getpass 
 import webbrowser
 import ctypes
+import tempfile
 import xml.etree.ElementTree as ET 
 from pathlib import Path 
 from datetime import timedelta
@@ -28,6 +29,7 @@ if platform.system() == "Windows":
     
 ARGPOS = 1
 HOME = os.path.expanduser("~") if platform.system() == "Linux" else subprocess.run(["wsl.exe", "bash", "-lc", "echo $HOME"], check=True, text=True, capture_output=True).stdout
+HOME = HOME[:-1] if HOME.endswith("/") else HOME 
 UNAME_M, UNAME_M2 = None, None 
 if platform.machine().lower() in ["x86_64", "amd64"]: UNAME_M, UNAME_M2 = "x86_64", "x64"
 elif platform.machine().lower() in ["aarch64", "arm64"]: UNAME_M, UNAME_M2 = "aarch64", "arm64"
@@ -61,7 +63,7 @@ os.environ.update({
 })
 
 
-def horizontal_select(prompt, options, index):
+def horizontal_select(prompt, options=None, index=None):
     global ARGPOS
     if ARGPOS > 0 and ARGPOS < len(sys.argv):
         value = sys.argv[ARGPOS]
@@ -272,14 +274,10 @@ class CMD_config:
             "horizon7": "172.16.177.216",
             "n1x6": "10.31.40.241",
         }
-        try:
-            if platform.system() == "Windows":
-                self.__config_windows_host()
-            elif platform.system() == "Linux":
-                self.__config_linux_host()
-        except Exception as e:
-            print(f"{type(e).__name__}: {e}", file=sys.stderr)
-            input("Press [Enter] to exit: ")
+        if platform.system() == "Windows":
+            self.__config_windows_host()
+        elif platform.system() == "Linux":
+            self.__config_linux_host()
 
     def __config_windows_host(self):
         if not ctypes.windll.shell32.IsUserAnAdmin():
@@ -305,10 +303,11 @@ class CMD_config:
         
     def __config_linux_host(self):
         # Enable no-password sudo
-        subprocess.run([*BASH_CMD, """
+        subprocess.run([*BASH_CMD, rf"""
             if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
                 echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
-            fi"""], check=True)
+            fi
+        """], check=True)
         print("No-password sudo \t [ ENABLED ]")
 
         # Mount required folders
@@ -422,8 +421,8 @@ class CMD_mount:
             linux_folder = horizontal_select("Linux shared folder", None, None).strip().replace("/", "\\")
             linux_folder = linux_folder.rstrip("\\")
             unc_path = linux_folder if linux_folder.startswith("\\\\") else ("\\\\" + linux_folder.lstrip("\\")) 
-            drive = input("Mount to drive", ["N", "X", "Y", "Z"], 3)
-            user = input("Username on server: ")
+            drive = horizontal_select("Mount to drive", ["N", "X", "Y", "Z"], 3)
+            user = horizontal_select("Target user", ["nvidia", "wanliz", "wzhu", "<input>"], 0)
             mode = horizontal_select("Target sharing protocol", ["SMB", "NFS"], 0)
             if mode == "SMB":
                 subprocess.run(f'cmd /k net use Z: "{unc_path}" /persistent:yes {str("/user:" + user + " *") if user else ""}', check=True, shell=True)
@@ -433,7 +432,7 @@ class CMD_mount:
             windows_folder = horizontal_select("Windows shared folder", None, None).strip().replace("\\", "/")
             windows_folder = shlex.quote(windows_folder)
             mount_dir = f"/mnt/{Path(windows_folder).name}.cifs"
-            user = input("User: ")
+            user = horizontal_select("Target user", ["nvidia", "wanliz", "wzhu", "<input>"], 0)
             subprocess.run([*BASH_CMD, f"""
                 if ! command -v mount.cifs >/dev/null 2>&1; then
                     sudo apt install -y cifs-utils
@@ -594,17 +593,17 @@ class CMD_nvmake:
                 "nvmake", "sweep"
             ], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
 
-        logs = []
-        for _branch in [self.__branch_path(b) for b in branch.split("|")]:
-            for _config in config.split("|"):
-                for _arch in arch.split("|"):
-                    for _module in module.split("|"):
-                        try:
-                            self.__unix_build_nvmake(_branch, _config, _arch, _module, regen, jobs)
-                            logs.append(f"{_branch} {_config} {_arch} {_module} \t[ OK ]")
-                        except Exception as e:
-                            logs.append(f"{_branch} {_config} {_arch} {_module} \t[ FAILED ]")
-        print("\n" + "\n".join(logs))
+        with tempfile.TemporaryFile(mode="w+t", encoding="utf-8", delete=False) as out:
+            for _branch in [self.__branch_path(b) for b in branch.split("|")]:
+                for _config in config.split("|"):
+                    for _arch in arch.split("|"):
+                        for _module in module.split("|"):
+                            try:
+                                self.__unix_build_nvmake(_branch, _config, _arch, _module, regen, jobs)
+                                out.write(f"{_branch},{_config},{_arch},{_module},[ OK ]\n")
+                            except Exception as e:
+                                out.write(f"{_branch},{_config},{_arch},{_module},[ FAILED ]\n")
+            subprocess.run([*BASH_CMD, f"column -s, -o ' | ' -t {out.name}"], check=True)
 
     def __branch_path(self, branch):
         if branch == "r580": return "rel/gpu_drv/r580/r580_00"
@@ -1057,11 +1056,17 @@ class CMD_viewperf:
         for viewset in viewsets:
             samples = []
             for i in range(1, rounds + 1):
-                output = subprocess.run([*BASH_CMD, self.viewperf_root + f"/viewperf/bin/viewperf viewsets/{viewset}/config/{viewset}.xml {subtest if subtest else ''} -resolution 3840x2160"], 
-                                        cwd=self.viewperf_root, 
-                                        check=False, 
-                                        text=True,
-                                        capture_output=True)
+                output = subprocess.run([x for x in [
+                        f"{self.viewperf_root}/viewperf/bin/viewperf", 
+                        f"viewsets/{viewset}/config/{viewset}.xml", 
+                        f"{subtest if subtest else ''}", 
+                        "-resolution", "3840x2160"
+                    ] if len(x) > 0],
+                    cwd=self.viewperf_root, 
+                    check=False, 
+                    text=True,
+                    capture_output=True
+                )
                 if output.returncode == 0:
                     fps = float(self.__get_result_fps(viewset, subtest)) 
                 else: 
@@ -1216,5 +1221,4 @@ if __name__ == "__main__":
         cmd.run()
     except Exception as e:
         print(f"{type(e).__name__}: {e}", file=sys.stderr)
-    
-    input(f"{BOLD}{CYAN}Press [Enter] to exit: {RESET}")
+    horizontal_select("Press [Enter] to exit")
