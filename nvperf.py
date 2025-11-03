@@ -202,7 +202,7 @@ class CMD_p4:
     def __pull(self):
         force = horizontal_select("Force pull", ["yes", "no"], 1)
         subprocess.run([*BASH_CMD, rf"""
-            p4 sync {"-f" if force == "yes" else ""}
+            time p4 sync {"-f" if force == "yes" else ""}
             resolve_files=$(p4 resolve -n $P4ROOT/... 2>/dev/null)
             if [[ ! -z $resolve_files ]]; then 
                 echo "Need resolve, trying auto-merge"
