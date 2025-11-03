@@ -1172,15 +1172,17 @@ if __name__ == "__main__":
                 ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmdline, None, 1)
                 sys.exit(0)
 
-    cmds = []
-    cmds_desc = []
+    print(f"{RED}[use left/right arrow key to select from options]{RESET}")
+    cmds = {}
+    width = 0
     for name, cls in sorted(inspect.getmembers(sys.modules[__name__], inspect.isclass)):
         if cls.__module__ == __name__ and name.startswith("CMD_"):
-            cmds.append(name.split("_")[1])
-            cmds_desc.append(cmds[-1] + "\t\t:" +  str(cls()))
-    
-    print(f"{RED}[use left/right arrow key to select from options]{RESET}")
-    print('\n'.join(cmds_desc))
+            cmd_name = name.split("_")[1]
+            cmds[cmd_name] = str(cls())
+    width = max(map(len, cmds))
+    for k, v in cmds.items():
+        print(f"{k:>{width}} : {v}")
+
     cmd = horizontal_select(f"Enter the cmd to run", None, None)
     if globals().get(f"CMD_{cmd}") is None:
         raise RuntimeError(f"No command class for {cmd!r}")
