@@ -172,6 +172,8 @@ class CMD_p4:
     def run(self):
         subcmd = horizontal_select("Select git-emu subcmd", ["status", "pull", "stash"], 0)
         if subcmd == "status": self.__status()
+        elif subcmd == "pull": self.__pull()
+        elif subcmd == "stash": self.__stash()
 
     def __status(self):
         reconcile = horizontal_select("Reconcile to check added/deleted files", ["yes", "no"], 1)
