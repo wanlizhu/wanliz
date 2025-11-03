@@ -23,9 +23,11 @@ from contextlib import suppress
 if platform.system() == "Linux": 
     import termios
     import tty 
+if platform.system() == "Windows":
+    import msvcrt
     
 ARGPOS = 1
-HOME = os.path.expanduser("~")
+HOME = os.path.expanduser("~") if platform.system() == "Linux" else subprocess.run(["wsl.exe", "bash", "-lc", "echo $HOME"], check=True, text=True, capture_output=True).stdout
 UNAME_M, UNAME_M2 = None, None 
 if platform.machine().lower() in ["x86_64", "amd64"]: UNAME_M, UNAME_M2 = "x86_64", "x64"
 elif platform.machine().lower() in ["aarch64", "arm64"]: UNAME_M, UNAME_M2 = "aarch64", "arm64"
@@ -55,12 +57,7 @@ os.environ.update({
     "__GL_SYNC_TO_VBLANK": "0",
     "vblank_mode": "0",
     "__GL_DEBUG_BYPASS_ASSERT": "c",
-    "PIP_BREAK_SYSTEM_PACKAGES": "1",
-    "P4ROOT": "/wanliz_sw_linux",
-    "P4PORT": "p4proxy-sc.nvidia.com:2006",
-    "P4USER": "wanliz",
-    "P4CLIENT": "wanliz_sw_linux",
-    "P4IGNORE": HOME + "/.p4ignore"
+    "PIP_BREAK_SYSTEM_PACKAGES": "1"
 })
 
 
@@ -77,35 +74,46 @@ def horizontal_select(prompt, options, index):
         return None 
 
     try:
-        stdin_fd = sys.stdin.fileno()
-        oldattr = termios.tcgetattr(stdin_fd)
-        tty.setraw(stdin_fd)
+        is_linux = platform.system() == "Linux"
+        if is_linux:
+            stdin_fd = sys.stdin.fileno()
+            oldattr = termios.tcgetattr(stdin_fd)
+            tty.setraw(stdin_fd)
         while index >= 0 and index < len(options):
             options_str = "/".join(f"{RESET}{DIM}[{option}]{RESET}{BOLD}{CYAN}" if i == index else option for i, option in enumerate(options))
             sys.stdout.write("\r\033[2K" + f"{BOLD}{CYAN}{prompt} ({options_str}): {RESET}")
             sys.stdout.flush()
-            ch1 = sys.stdin.read(1)
+
+            ch1 = sys.stdin.read(1) if is_linux else msvcrt.getwch()
             if ch1 in ("\r", "\n"): # Enter
                 sys.stdout.write("\r\n")
                 sys.stdout.flush()
-                if options[index] == "<input>":
-                    termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
-                    stdin_fd = None
-                    return input(": ")
-                else:
-                    return options[index]
-            if ch1 == "\x1b": # ESC or escape sequence
-                if sys.stdin.read(1) == "[":
-                    tail = sys.stdin.read(1)
-                    if tail == "D": index = (len(options) if index == 0 else index) - 1
-                    elif tail == "C": index = (-1 if index == (len(options) - 1) else index) + 1
-            elif ch1 == "\x03": # Ctrl-C
+                return input(": ") if options[index] == "<input>" else options[index]
+            
+            if is_linux:
+                if ch1 == "\x1b": # ESC or escape sequence
+                    if sys.stdin.read(1) == "[":
+                        tail = sys.stdin.read(1)
+                        if tail == "D": code = "left"
+                        elif tail == "C": code = "right"
+                elif ch1 == "\x03": code = "ctrl-c"
+            else:
+                if ch1 in ("\x00", "\xe0"):
+                    tail = msvcrt.getwch()
+                    if tail == "K": code = "left"
+                    elif tail == "M": code = "right"
+                elif ch1 == "\x03": code = "ctrl-c"
+
+            if code == "left": index = (len(options) if index == 0 else index) - 1
+            elif code == "right": index = (-1 if index == (len(options) - 1) else index) + 1
+            elif code == "ctrl-c": 
                 sys.stdout.write("\r\n")
                 sys.stdout.flush() 
                 sys.exit(0)
+    except Exception as e:
+        raise
     finally:
-        if stdin_fd is not None and oldattr is not None:
-            termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
+        if is_linux and stdin_fd and oldattr: termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
 
 
 class CMD_info:
@@ -123,12 +131,96 @@ class CMD_info:
 
 
 class CMD_p4:
+    def __init__(self):
+        self.p4client = "wanliz_sw_linux"
+        self.p4port = "p4proxy-sc.nvidia.com:2006"
+        self.p4user = "wanliz"
+        self.p4root = "/wanliz_sw_linux" if platform.system() == "Linux" else "/mnt/d/wanliz_sw_linux"
+        self.p4ignore = HOME + "/.p4ignore"
+        subprocess.run([*BASH_CMD, rf"""
+            if [[ ! -f ~/.p4ignore ]]; then 
+                echo '_out' >> ~/.p4ignore
+                echo '.git' >> ~/.p4ignore
+                echo '.vscode' >> ~/.p4ignore
+                echo '.cursorignore' >> ~/.p4ignore
+                echo '.clangd' >> ~/.p4ignore
+                echo '.p4config' >> ~/.p4ignore
+                echo '.p4ignore' >> ~/.p4ignore
+                echo 'compile-commands.json' >> ~/.p4ignore
+                echo '*.code-workspace' >> ~/.p4ignore
+            fi 
+        """], check=True)
+
     def __str__(self):
         return "Perforce command tool"
     
     def run(self):
-        subcmd = horizontal_select("Select subcmd", ["status", "pull", "stash"], 0)
-        # TODO
+        subcmd = horizontal_select("Select git-emu subcmd", ["status", "pull", "stash"], 0)
+        if subcmd == "status": self.__status()
+
+    def __status(self):
+        subprocess.run([*BASH_CMD, rf"""
+            echo "=== Files Opened for Edit ==="
+            if p4 opened -C $P4CLIENT //$P4CLIENT/... &>/dev/null; then
+                p4 opened -C $P4CLIENT //$P4CLIENT/...
+            else
+                echo "N/A"
+            fi 
+            echo 
+            echo "=== Files Not Tracked ==="
+            afiles=$(p4 reconcile -n -a $P4ROOT/... 2>/dev/null || true)
+            if [[ ! -z $(afiles) ]]; then 
+                echo "$afiles"
+            else
+                echo "N/A"        
+            fi  
+            echo 
+            echo "=== Files Deleted ==="
+            dfiles=$(p4 reconcile -n -d $P4ROOT/... 2>/dev/null || true)
+            if [[ ! -z $(dfiles) ]]; then 
+                echo "$dfiles"
+            else
+                echo "N/A"        
+            fi  
+        """], env={
+            "P4CLIENT": self.p4client,
+            "P4PORT": self.p4port,
+            "P4USER": self.p4user, 
+            "P4ROOT": self.p4root,
+            "P4IGNORE": self.p4ignore
+        }, cwd=self.p4root, check=True)
+
+    def __pull(self):
+        force = horizontal_select("Force pull", ["yes", "no"], 1)
+        subprocess.run([*BASH_CMD, rf"""
+            p4 sync {"-f" if force == "yes" else ""}
+            resolve_files=$(p4 resolve -n $P4ROOT/... 2>/dev/null)
+            if [[ ! -z $resolve_files ]]; then 
+                echo "Need resolve, trying auto-merge"
+                p4 resolve -am $P4ROOT/... 
+                conflict_files=$(p4 resolve $P4ROOT/... 2>/dev/null)
+                if [[ ! -z $conflict_files ]]; then 
+                    echo "$(echo $conflict_files | wc -l) conflict files remain [Manual Merge]"
+                    echo $conflict_files
+                else
+                    echo "No manual resolved needed"
+                fi
+            else
+                echo "No resolves needed"
+            fi 
+        """], cwd=self.p4root, check=True)
+
+    def __stash(self):
+        name = horizontal_select("Select stash name", [f"stash_{datetime.datetime.now().astimezone():%Y-%m-%d_%H-%M-%S}", "<input>"], 0)
+        subprocess.run([*BASH_CMD, rf"""
+            p4 reconcile -e -a -d $P4ROOT/... >/dev/null || true
+            p4 change -o /tmp/stash
+            sed -i "s|<enter description here>|STASH: $(date '+%F %T')" /tmp/stash 
+            cl=$(p4 change -i </tmp/stash | awk '/^Change/ {{print $2}}')
+            p4 reopen -c $cl $P4ROOT/... >/dev/null || true 
+            p4 shelve -f -c $cl >/dev/null 
+            echo "Stashed into CL $cl"
+        """], cwd=self.p4root, check=True)
 
 
 class CMD_rsync:
@@ -146,10 +238,14 @@ class CMD_rsync:
             "/mnt/d/wanliz_sw_linux/" if windows else HOME, 
             "<input>"
         ], 0)
+        compression = horizontal_select("Rsync with compression", ["yes", "no"], 0)
+        compression = f"--compress --compress-choice=zstd --compress-level=7 -e 'ssh -T -o Compression=no'" if compression == "yes" else ""
         subprocess.run([*BASH_CMD, rf"""
-            rsync -avh -z --delete --info=progress2\
+            time rsync -avh --delete --delete-excluded --info=progress2 {compression} \
                 --exclude '.git/' \
                 --exclude '_out/' \
+                --exclude '.Trash-[0-9]*/' --exclude '.Trash/' --exclude '.Trashes/' \
+                --exclude '$RECYCLE.BIN/' --exclude '.Spotlight-V[0-9]*/' \
                 wanliz@office:/wanliz_sw_linux/ {folder}
         """], check=True)
 
@@ -1081,7 +1177,7 @@ if __name__ == "__main__":
     for name, cls in sorted(inspect.getmembers(sys.modules[__name__], inspect.isclass)):
         if cls.__module__ == __name__ and name.startswith("CMD_"):
             cmds.append(name.split("_")[1])
-            cmds_desc.append(cmds[-1] + "\t:" +  str(cls()))
+            cmds_desc.append(cmds[-1] + "\t\t:" +  str(cls()))
     
     print(f"{RED}[use left/right arrow key to select from options]{RESET}")
     print('\n'.join(cmds_desc))
@@ -1094,3 +1190,5 @@ if __name__ == "__main__":
         cmd.run()
     except Exception as e:
         print(f"{type(e).__name__}: {e}", file=sys.stderr)
+    
+    input(f"{BOLD}{CYAN}Press [Enter] to exit: {RESET}")
