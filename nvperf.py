@@ -579,9 +579,9 @@ class CMD_nvmake:
         branch = horizontal_select("[1/6] Target branch", ["r580", "bugfix_main"], 0)
         branch = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
         branch = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
-        config = horizontal_select("[2/6] Target config", ["develop", "debug", "release"], 0)
-        arch   = horizontal_select("[3/6] Target architecture", ["amd64", "aarch64"], 0)
-        module = horizontal_select("[4/6] Target module", ["drivers", "opengl"], 0)
+        config = horizontal_select("[2/6] Target config", ["develop", "debug", "release", "<input>"], 0)
+        arch   = horizontal_select("[3/6] Target architecture", ["amd64", "aarch64", "<input>"], 0)
+        module = horizontal_select("[4/6] Target module", ["drivers", "opengl", "<input>"], 0)
         regen  = horizontal_select("[4a/6] Regen opengl code", ["yes", "no"], 1) if module == "opengl" else "no"
         jobs   = horizontal_select("[5/6] Number of compiling threads", [str(os.cpu_count()), "1"], 0)
         clean  = horizontal_select("[6/6] Make a clean build", ["yes", "no"], 1)
@@ -596,7 +596,24 @@ class CMD_nvmake:
                 "nvmake", "sweep"
             ], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
 
-        # Run nvmake through unix-build 
+        logs = []
+        for _branch in [self.__branch_path(b) for b in branch.split("&")]:
+            for _config in config.split("&"):
+                for _arch in arch.split("&"):
+                    for _module in module.split("&"):
+                        try:
+                            self.__unix_build_nvmake(_branch, _config, _arch, _module, regen, jobs)
+                            logs.append(f"{_branch} {_config} {_arch} {_module} \t[ OK ]")
+                        except Exception as e:
+                            logs.append(f"{_branch} {_config} {_arch} {_module} \t[ FAILED ]")
+        print("\n" + "\n".join(logs))
+
+    def __branch_path(self, branch):
+        if branch == "r580": return "rel/gpu_drv/r580/r580_00"
+        elif branch == "bugfix_main": return "dev/gpu_drv/bugfix_main"
+        else: return branch 
+        
+    def __unix_build_nvmake(self, branch, config, arch, module, regen, jobs):
         subprocess.run([x for x in [
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
             "--unshare-namespaces", 
