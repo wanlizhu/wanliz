@@ -5,7 +5,6 @@ import time
 import datetime
 import inspect
 import subprocess
-import psutil
 import shutil
 import signal
 import re
@@ -15,6 +14,8 @@ import getpass
 import webbrowser
 import ctypes
 import tempfile
+import importlib
+import traceback
 import xml.etree.ElementTree as ET 
 from pathlib import Path 
 from datetime import timedelta
@@ -26,104 +27,21 @@ if platform.system() == "Linux":
     import tty 
 if platform.system() == "Windows":
     import msvcrt
-    
-ARGPOS = 1
-HOME = os.path.expanduser("~") if platform.system() == "Linux" else subprocess.run(["wsl.exe", "bash", "-lc", "echo $HOME"], check=True, text=True, capture_output=True).stdout
-HOME = HOME[:-1] if HOME.endswith("/") else HOME 
-UNAME_M, UNAME_M2 = None, None 
-if platform.machine().lower() in ["x86_64", "amd64"]: UNAME_M, UNAME_M2 = "x86_64", "x64"
-elif platform.machine().lower() in ["aarch64", "arm64"]: UNAME_M, UNAME_M2 = "aarch64", "arm64"
-
-supports_ANSI = True
-if platform.system() == "Windows": 
-    BASH_CMD = ("wsl.exe", "bash", "-lc")
-    kernel32 = ctypes.windll.kernel32
-    handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
-    mode = ctypes.c_uint()
-    if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
-        supports_ANSI = False
-    else:
-        supports_ANSI = bool(mode.value & 0x0004)
-else:
-    BASH_CMD = ("bash", "-lc")
-
-RESET = "\033[0m"  if supports_ANSI else ""
-DIM   = "\033[90m" if supports_ANSI else ""
-RED   = "\033[31m" if supports_ANSI else ""
-CYAN  = "\033[36m" if supports_ANSI else ""
-BOLD  = "\033[1m"  if supports_ANSI else ""
-
-signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
-
-os.environ.update({
-    "__GL_SYNC_TO_VBLANK": "0",
-    "vblank_mode": "0",
-    "__GL_DEBUG_BYPASS_ASSERT": "c",
-    "PIP_BREAK_SYSTEM_PACKAGES": "1"
-})
-
-
-def horizontal_select(prompt, options=None, index=None):
-    global ARGPOS
-    if ARGPOS > 0 and ARGPOS < len(sys.argv):
-        value = sys.argv[ARGPOS]
-        print("\r\033[2K" + f"{BOLD}{CYAN}{prompt} : {RESET}<< {RED}{value}{RESET}")
-        ARGPOS += 1
-        return value 
-    if options is None or index is None:
-        return input(f"{BOLD}{CYAN}{prompt} : {RESET}")
-    if len(options) <= index:
-        return None 
-
-    is_linux = (platform.system() == "Linux")
-    stdin_fd = None 
-    oldattr = None 
+pip_checked = False
+for name in ["psutil"]:
     try:
-        if is_linux and termios and tty:
-            stdin_fd = sys.stdin.fileno()
-            oldattr = termios.tcgetattr(stdin_fd)
-            tty.setraw(stdin_fd)
-
-        while index >= 0 and index < len(options):
-            options_str = "/".join(
-                (f"{RESET}{DIM}[{option}]{RESET}{BOLD}{CYAN}" if i == index else option) 
-                for i, option in enumerate(options)
-            )
-            sys.stdout.write("\r\033[2K" + f"{BOLD}{CYAN}{prompt} ({options_str}): {RESET}")
-            sys.stdout.flush()
-
-            ch1 = (sys.stdin.read(1) if (is_linux and termios and tty) else msvcrt.getwch())
-            if ch1 in ("\r", "\n"): # Enter
-                if is_linux and termios and tty:
-                    termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
-                sys.stdout.write("\r\n")
-                sys.stdout.flush()
-                return input(": ") if options[index] == "<input>" else options[index]
-            
-            code = None 
-            if is_linux:
-                if ch1 == "\x1b": # ESC or escape sequence
-                    if sys.stdin.read(1) == "[":
-                        tail = sys.stdin.read(1)
-                        if tail == "D": code = "left"
-                        elif tail == "C": code = "right"
-                elif ch1 == "\x03": code = "ctrl-c"
-            else:
-                if ch1 in ("\x00", "\xe0"):
-                    tail = msvcrt.getwch()
-                    if tail == "K": code = "left"
-                    elif tail == "M": code = "right"
-                elif ch1 == "\x03": code = "ctrl-c"
-
-            if code == "left": index = (len(options) if index == 0 else index) - 1
-            elif code == "right": index = (-1 if index == (len(options) - 1) else index) + 1
-            elif code == "ctrl-c": 
-                sys.stdout.write("\r\n")
-                sys.stdout.flush() 
-                sys.exit(0)
-    finally:
-        if is_linux and termios and tty: 
-            termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
+        globals()[name] = importlib.import_module(name)
+    except ModuleNotFoundError as e:
+        if not pip_checked:
+            if subprocess.run([sys.executable, "-m", "pip", "--version"], 
+                           stdout=subprocess.DEVNULL, 
+                           stderr=subprocess.DEVNULL, 
+                           capture_output=True,
+                           check=False).returncode != 0:
+                subprocess.run(["sudo", "apt", "install", "-y", "python3-pip"], check=True)
+            pip_checked = True
+        package = name.split(".", 1)[0]
+        subprocess.run([sys.executable, "-m", "pip", "install", package], check=True)
 
 
 class CMD_info:
@@ -244,21 +162,27 @@ class CMD_rsync:
             self.__rsync_wanliz_sw_linux()
 
     def __rsync_wanliz_sw_linux(self):
-        windows = platform.system() == "Windows"
-        folder = horizontal_select("Rsync to local folder", [
-            "/mnt/d/wanliz_sw_linux/" if windows else HOME, 
-            "<input>"
-        ], 0)
-        compression = horizontal_select("Rsync with compression", ["yes", "no"], 0)
-        compression = f"--compress --compress-choice=zstd --compress-level=7 -e 'ssh -T -o Compression=no'" if compression == "yes" else ""
-        subprocess.run([*BASH_CMD, rf"""
-            time rsync -avh --delete --delete-excluded --info=progress2 {compression} \
-                --exclude '.git/' \
-                --exclude '_out/' \
-                --exclude '.Trash-[0-9]*/' --exclude '.Trash/' --exclude '.Trashes/' \
-                --exclude '$RECYCLE.BIN/' --exclude '.Spotlight-V[0-9]*/' \
-                wanliz@office:/wanliz_sw_linux/ {folder}
-        """], check=True)
+        if platform.system() == "Windows":
+            root = horizontal_select("Rsync to local folder", ["D:\\wanliz_sw_linux", "<input>"], 0)
+            subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
+                New-Item -ItemType Directory -Force -Path "{root}" | Out-Null
+                net use  "\\office\wanliz_sw_linux" /user:wanliz /persistent:no | Out-Null
+                robocopy "\\office\wanliz_sw_linux" "{root}" /MIR /R:0 /W:0 /MT:32 /Z /FFT /ETA /XD '.git' '_out' '.Trash-*' '.Trash' '.Trashes' '$RECYCLE.BIN' '.Spotlight-V*'
+            """], check=False)
+        else:
+            root = horizontal_select("Rsync to local folder", [HOME + "/wanliz_sw_linux", "<input>"], 0)
+            root = root[:-1] if root.endswith("/") else root 
+            compress = horizontal_select("Rsync with compression", ["yes", "no"], 0)
+            rsync_options = rsync_options = f"--compress --compress-choice=zstd --compress-level=7" if compress else ""
+            ssh_options = "-e 'ssh -T -o Compression=no'" if compress else ""
+            subprocess.run([*BASH_CMD, rf"""
+                time rsync -ah --delete --delete-excluded --info=progress2 {rsync_options} {ssh_options} \
+                    --exclude '.git/' \
+                    --exclude '_out/' \
+                    --exclude '.Trash-[0-9]*/' --exclude '.Trash/' --exclude '.Trashes/' \
+                    --exclude '$RECYCLE.BIN/' --exclude '.Spotlight-V[0-9]*/' \
+                    wanliz@office:/wanliz_sw_linux/ {root}
+            """], check=True)
 
 
 class CMD_config:
@@ -280,12 +204,16 @@ class CMD_config:
             self.__config_linux_host()
 
     def __config_windows_host(self):
-        if not ctypes.windll.shell32.IsUserAnAdmin():
-            raise PermissionError("Must run with --admin option")
-
+        if ctypes.windll.shell32.IsUserAnAdmin() == 0:
+            cmdline = subprocess.list2cmdline([os.path.abspath(sys.argv[0])] + [arg for arg in sys.argv[1:] if arg != "--admin"])
+            ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmdline, None, 1)
+            sys.exit(0)
+            
         names = r"\b(" + "|".join(re.escape(k) for k in (*self.hosts, "wanliz")) + r")\b"
         mappings = "\n".join(f"{ip} {name}" for name, ip in self.hosts.items())
         subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters' -Name 'AllowInsecureGuestAuth' -Type DWord -Value 1
+            Write-Host "Updating C:\Windows\System32\drivers\etc\hosts"
             $ErrorActionPreference = 'Stop'
             $hostsfile = 'C:\Windows\System32\drivers\etc\hosts'
             $pattern = '({names})'
@@ -297,9 +225,7 @@ class CMD_config:
             $content_old = $lines | Where-Object {{ ($_ -notmatch $pattern) -and ($_.Trim() -ne '') }}
             $content_new = ($content_old + "" + "`n# --- wanliz ---`n{mappings}`n") -join "`r`n"
             [IO.File]::WriteAllText($hostsfile, $content_new + "`r`n", [Text.Encoding]::ASCII)
-            Get-Content -LiteralPath $hostsfile -Raw
         """], check=True)
-
         
     def __config_linux_host(self):
         # Enable no-password sudo
@@ -313,6 +239,7 @@ class CMD_config:
         # Mount required folders
         if not any(p.mountpoint == "/mnt/linuxqa" for p in psutil.disk_partitions(all=True)):
             subprocess.run("sudo mkdir -p /mnt/linuxqa", check=True, shell=True)
+            subprocess.run("sudo apt install -y nfs-common cifs-utils &>/dev/null", check=True, shell=True)
             subprocess.run("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa", check=True, shell=True)
         print("/mnt/linuxqa \t [ MOUNTED ]")
 
@@ -331,6 +258,7 @@ class CMD_config:
 
         if not os.path.exists(HOME + "/.ssh/id_ed25519"):
             cipher_prv = "U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo"
+            subprocess.run("mkdir -p ~/.ssh", check=True, shell=True)
             subprocess.run([*BASH_CMD, f"echo '{cipher_prv}' | openssl enc -d -aes-256-cbc -pbkdf2 -a > $HOME/.ssh/id_ed25519"], check=True)
             subprocess.run("chmod 600 ~/.ssh/id_ed25519", check=True, shell=True)
             subprocess.run("echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > $HOME/.ssh/id_ed25519.pub", check=True, shell=True)
@@ -418,6 +346,10 @@ class CMD_mount:
     
     def run(self):
         if platform.system() == "Windows":
+            if ctypes.windll.shell32.IsUserAnAdmin() == 0:
+                cmdline = subprocess.list2cmdline([os.path.abspath(sys.argv[0])] + [arg for arg in sys.argv[1:] if arg != "--admin"])
+                ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmdline, None, 1)
+                sys.exit(0)
             linux_folder = horizontal_select("Linux shared folder", None, None).strip().replace("/", "\\")
             linux_folder = linux_folder.rstrip("\\")
             unc_path = linux_folder if linux_folder.startswith("\\\\") else ("\\\\" + linux_folder.lstrip("\\")) 
@@ -425,7 +357,7 @@ class CMD_mount:
             user = horizontal_select("Target user", ["nvidia", "wanliz", "wzhu", "<input>"], 0)
             mode = horizontal_select("Target sharing protocol", ["SMB", "NFS"], 0)
             if mode == "SMB":
-                subprocess.run(f'cmd /k net use Z: "{unc_path}" /persistent:yes {str("/user:" + user + " *") if user else ""}', check=True, shell=True)
+                subprocess.run(f'cmd /k net use {drive}: "{unc_path}" /persistent:yes {str("/user:" + user + " *") if user else ""}', check=True, shell=True)
             else:
                 self.__mount_NFS_folder_on_windows(drive, unc_path, user)
         elif platform.system() == "Linux":
@@ -1013,7 +945,7 @@ class CMD_viewperf:
             else:
                 return root.find("Composite").get("Score")
         except Exception as e:
-            print(f"{type(e).__name__}: {e}", file=sys.stderr)
+            print(f"Line {e.__traceback__.tb_lineno}: {type(e).__name__}: {e}", file=sys.stderr)
             return 0
     
     def run(self):
@@ -1193,14 +1125,122 @@ class CMD_3dmark:
         """], check=True) 
 
 
-if __name__ == "__main__":
-    if platform.system() == "Windows":
-        if "--admin" in sys.argv:
-            if ctypes.windll.shell32.IsUserAnAdmin() == 0:
-                cmdline = subprocess.list2cmdline([os.path.abspath(sys.argv[0])] + [arg for arg in sys.argv[1:] if arg != "--admin"])
-                ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmdline, None, 1)
-                sys.exit(0)
+def horizontal_select(prompt, options=None, index=None):
+    global ARGPOS
+    if ARGPOS > 0 and ARGPOS < len(sys.argv):
+        value = sys.argv[ARGPOS]
+        print(f"{BOLD}{CYAN}{prompt} : {RESET}<< {RED}{value}{RESET}")
+        ARGPOS += 1
+        return value 
+    if options is None or index is None:
+        return input(f"{BOLD}{CYAN}{prompt} : {RESET}")
+    if len(options) <= index:
+        return None 
 
+    is_linux = (platform.system() == "Linux")
+    stdin_fd = None 
+    oldattr = None 
+    try:
+        if is_linux and termios and tty:
+            stdin_fd = sys.stdin.fileno()
+            oldattr = termios.tcgetattr(stdin_fd)
+            tty.setraw(stdin_fd)
+
+        while index >= 0 and index < len(options):
+            options_str = "/".join(
+                (f"{RESET}{DIM}[{option}]{RESET}{BOLD}{CYAN}" if i == index else option) 
+                for i, option in enumerate(options)
+            )
+            sys.stdout.write("\r\033[2K" + f"{BOLD}{CYAN}{prompt} ({options_str}): {RESET}")
+            sys.stdout.flush()
+
+            ch1 = (sys.stdin.read(1) if (is_linux and termios and tty) else msvcrt.getwch())
+            if ch1 in ("\r", "\n"): # Enter
+                if is_linux and termios and tty:
+                    termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
+                sys.stdout.write("\r\n")
+                sys.stdout.flush()
+                return input(": ") if options[index] == "<input>" else options[index]
+            
+            code = None 
+            if is_linux:
+                if ch1 == "\x1b": # ESC or escape sequence
+                    if sys.stdin.read(1) == "[":
+                        tail = sys.stdin.read(1)
+                        if tail == "D": code = "left"
+                        elif tail == "C": code = "right"
+                elif ch1 == "\x03": code = "ctrl-c"
+            else:
+                if ch1 in ("\x00", "\xe0"):
+                    tail = msvcrt.getwch()
+                    if tail == "K": code = "left"
+                    elif tail == "M": code = "right"
+                elif ch1 == "\x03": code = "ctrl-c"
+
+            if code == "left": index = (len(options) if index == 0 else index) - 1
+            elif code == "right": index = (-1 if index == (len(options) - 1) else index) + 1
+            elif code == "ctrl-c": 
+                sys.stdout.write("\r\n")
+                sys.stdout.flush() 
+                sys.exit(0)
+    finally:
+        if is_linux and termios and tty: 
+            termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
+
+
+def __check_env():
+    global BASH_CMD
+    global RESET, DIM, RED, CYAN, BOLD 
+    global ERASE_LEFT, ERASE_RIGHT, ERASE_LINE
+    global ARGPOS, HOME 
+    global UNAME_M, UNAME_M2
+
+    supports_ANSI = True
+    if platform.system() == "Windows": 
+        if ctypes.windll.shell32.IsUserAnAdmin() == 0 and "--admin" in sys.argv:
+            cmdline = subprocess.list2cmdline([os.path.abspath(sys.argv[0])] + [arg for arg in sys.argv[1:] if arg != "--admin"])
+            ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmdline, None, 1)
+            sys.exit(0)
+
+        BASH_CMD = ("wsl.exe", "bash", "-lc")
+        ENABLE_VT = 0x0004
+        kernel32 = ctypes.windll.kernel32
+        stdout = msvcrt.get_osfhandle(sys.stdout.fileno())
+        mode = ctypes.c_uint()
+        if not kernel32.GetConsoleMode(stdout, ctypes.byref(mode)):
+            supports_ANSI = False
+        elif (mode.value & ENABLE_VT) == 0:
+            if not kernel32.SetConsoleMode(stdout, mode.value | ENABLE_VT):
+                supports_ANSI = False
+    else:
+        BASH_CMD = ("bash", "-lc")
+
+    RESET = "\033[0m"  if supports_ANSI else ""
+    DIM   = "\033[90m" if supports_ANSI else ""
+    RED   = "\033[31m" if supports_ANSI else ""
+    CYAN  = "\033[36m" if supports_ANSI else ""
+    BOLD  = "\033[1m"  if supports_ANSI else ""
+    ERASE_RIGHT = "\r\033[0K" if supports_ANSI else "" 
+    ERASE_LEFT  = "\r\033[1K" if supports_ANSI else ""
+    ERASE_LINE  = "\r\033[2K" if supports_ANSI else ""
+
+    ARGPOS = 1
+    HOME = os.path.expanduser("~") 
+    HOME = HOME[:-1] if HOME.endswith("/") else HOME 
+    UNAME_M, UNAME_M2 = None, None 
+    if platform.machine().lower() in ["x86_64", "amd64"]: UNAME_M, UNAME_M2 = "x86_64", "x64"
+    elif platform.machine().lower() in ["aarch64", "arm64"]: UNAME_M, UNAME_M2 = "aarch64", "arm64"
+
+    os.environ.update({
+        "__GL_SYNC_TO_VBLANK": "0",
+        "vblank_mode": "0",
+        "__GL_DEBUG_BYPASS_ASSERT": "c",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1"
+    })
+    signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
+
+
+def __main_cmd_prompt():
     print(f"{RED}[use left/right arrow key to select from options]{RESET}")
     cmds = {}
     width = 0
@@ -1215,10 +1255,15 @@ if __name__ == "__main__":
     cmd = horizontal_select(f"Enter the cmd to run", None, None)
     if globals().get(f"CMD_{cmd}") is None:
         raise RuntimeError(f"No command class for {cmd!r}")
+    return cmd 
 
+
+if __name__ == "__main__":
     try:
+        __check_env() 
+        cmd = __main_cmd_prompt()
         cmd = globals().get(f"CMD_{cmd}")()
         cmd.run()
     except Exception as e:
-        print(f"{type(e).__name__}: {e}", file=sys.stderr)
+        print(f"Line {e.__traceback__.tb_lineno}: {type(e).__name__}: {e}", file=sys.stderr)
     horizontal_select("Press [Enter] to exit")
