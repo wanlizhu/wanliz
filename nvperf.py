@@ -173,10 +173,9 @@ class CMD_rsync:
             root = horizontal_select("Rsync to local folder", [HOME + "/wanliz_sw_linux", "<input>"], 0)
             root = root[:-1] if root.endswith("/") else root 
             compress = horizontal_select("Rsync with compression", ["yes", "no"], 0)
-            rsync_options = rsync_options = f"--compress --compress-choice=zstd --compress-level=7" if compress else ""
-            ssh_options = "-e 'ssh -T -o Compression=no'" if compress else ""
+            compress = f"--compress --compress-choice=zstd --compress-level=5 -e 'ssh -T -o Compression=no'" if compress else ""
             subprocess.run([*BASH_CMD, rf"""
-                time rsync -ah --delete --delete-excluded --info=progress2 {rsync_options} {ssh_options} \
+                time rsync -ah --delete --delete-excluded --info=progress2 {compress} \
                     --exclude '.git/' \
                     --exclude '_out/' \
                     --exclude '.Trash-[0-9]*/' --exclude '.Trash/' --exclude '.Trashes/' \
@@ -422,14 +421,6 @@ class CMD_startx:
         # Start a bare X server in GNU screen
         if headless == "yes":
             subprocess.run([*BASH_CMD, rf"""
-                if [[ ! -z $(pidof Xorg) ]]; then 
-                    read -p "Press [Enter] to kill running X server: "    
-                    sudo pkill -TERM -x Xorg
-                    sleep 1
-                fi 
-                screen -ls | awk '/Detached/ && /bareX/ {{ print $1 }}' | while IFS= read -r session; do
-                    screen -S "$session" -X stuff $'\r'
-                done
                 export DISPLAY=:0 
                      
                 if [[ ! -d /mnt/linuxqa/nvtest ]]; then 
@@ -575,17 +566,18 @@ class CMD_rmmod:
     
     def run(self, retry=True):
         try:
-            subprocess.run([*BASH_CMD, "sudo systemctl stop gdm gdm3 sddm lightdm xdm &>/dev/null || true"], check=True)
-            subprocess.run([*BASH_CMD, "sudo fuser -k -TERM /dev/nvidia* &>/dev/null || true"], check=True)
-            subprocess.run([*BASH_CMD, "sudo fuser -k -KILL /dev/nvidia* &>/dev/null || true"], check=True)
             subprocess.run([*BASH_CMD, r"""
-                mods=$(lsmod | awk '/^nvidia/ {print $1}')
-                if [[ -n "$mods" ]]; then 
-                    echo -e "Removing modules: \n$mods"
-                    sudo modprobe -r $mods 
-                fi 
-            """], check=True) # TODO
-            subprocess.run([*BASH_CMD, "lsmod | grep -i '^nvidia' &>/dev/null || echo 'All nvidia modules are removed'"], check=True)
+                sudo rm -f /tmp/nvidia_pids
+                sudo systemctl stop gdm sddm lightdm nvidia-persistenced nvidia-dcgm 2>/dev/null || true
+                sudo lsof  -t /dev/nvidia* /dev/dri/{card*,renderD*} 2>/dev/null >>/tmp/nvidia_pids
+                sudo grep -El 'lib(nvidia|cuda|GLX_nvidia|EGL_nvidia|nvoptix|nvrm|nvcuvid)' /proc/*/maps 2>/dev/null | sed -E 's@/proc/([0-9]+)/maps@\1@' >>/tmp/nvidia_pids 
+                awk '{for (i=1; i<=NF; i++) print $i}' /tmp/nvidia_pids | sort -u | while IFS= read -r pid; do 
+                    [[ $pid =~ ^[0-9]+$ ]] || continue
+                    [[ $pid -eq 1 || $pid -eq $$ ]] && continue
+                    sudo kill -9 $pid  
+                done 
+                echo "[DGX station: don't forget to restart nvidia-dcgm]"
+            """], check=True) 
         except Exception:
             if retry: self.run(retry=False)
             else: raise
@@ -765,14 +757,14 @@ class GPU_freq_limiter:
 
 
 class PerfInspector_gputrace:
-    def __init__(self, exe, args, workdir, env=None):
+    def __init__(self, exe=None, args=None, workdir=None, env=None):
         self.pi_root = HOME + "/SinglePassCapture"
         self.exe = exe 
         self.args = args 
         self.workdir = workdir
         self.env = env 
     
-    def fix(self):
+    def fix_me(self):
         if not os.path.exists(self.pi_root):
             raise RuntimeError("PerfInspector is not installed")
         
@@ -792,13 +784,29 @@ class PerfInspector_gputrace:
             fi
         """], check=True)
 
+    def run_in_server_mode(self, api=None, frames=None, debug=None):
+        if api is None: api = horizontal_select("[1/3] Capture graphics API", ["ogl", "vk"], 0)
+        if frames is None: frames = horizontal_select("[3/6] Number of frames to capture", ["3", "<input>"], 0)
+        if debug is None: debug = horizontal_select("[6/6] Enable pic-x debugging", ["yes", "no"], 1)
+
+        subprocess.run(["bash", "-lc", rf"""
+            export LD_LIBRARY_PATH={self.pi_root}
+            python3 {self.pi_root}/Scripts/VkLayerSetup/SetImplicitLayer.py --install
+            sudo {self.pi_root}/pic-x --api={api} --check_clocks=0 {"--clean=0" if debug == "yes" else ""}
+            python3 {self.pi_root}/Scripts/VkLayerSetup/SetImplicitLayer.py --uninstall
+        """], check=True)
+
     def capture(self, api=None, startframe=None, frames=None, name=None, upload=None, debug=None):
+        if self.exe is None or not os.path.exists(self.exe):
+            raise RuntimeError("A valid executable for --exe is required")
+
         if api is None: api = horizontal_select("[1/6] Capture graphics API", ["ogl", "vk"], 0)
         if startframe is None: startframe = horizontal_select("[2/6] Start capturing at frame index", ["100", "<input>"], 0)
         if frames is None: frames = horizontal_select("[3/6] Number of frames to capture", ["3", "<input>"], 0)
         if name is None: name = horizontal_select("[4/6] Output name", ["<default>", "<input>"], 0)
         if upload is None: upload = horizontal_select("[5/6] Upload output to GTL for sharing", ["yes", "no"], 1)
         if debug is None: debug = horizontal_select("[6/6] Enable pic-x debugging", ["yes", "no"], 1)
+        
         subprocess.run([x for x in [
             "sudo", 
             f"env {' '.join(self.env)}" if self.env else "",
@@ -837,7 +845,7 @@ class Nsight_graphics_gputrace:
         self.__get_arch()
         self.__get_metricset()
 
-    def fix(self):
+    def fix_me(self):
         subprocess.run([*BASH_CMD, rf"""
             echo "Checking package dependencies of Nsight graphics..."
             for pkg in libxcb-dri2-0 libxcb-shape0 libxcb-xinerama0 libxcb-xfixes0 libxcb-render0 libxcb-shm0 libxcb1 libx11-xcb1 libxrender1 \
@@ -1091,7 +1099,7 @@ class CMD_gmark:
     def __str__(self):
         return "GravityMark benchmark for OpenGL and Vulkan on all platforms"
     
-    def fix(self):
+    def fix_me(self):
         if not os.path.exists(self.gmark_root):
             CMD_download().__download_gravitymark()
 
@@ -1135,7 +1143,7 @@ def horizontal_select(prompt, options=None, index=None):
     if options is None or index is None:
         return input(f"{BOLD}{CYAN}{prompt} : {RESET}")
     if len(options) <= index:
-        return None 
+        raise RuntimeError(f"Index {index} out of range [0, {len(options)})") 
 
     is_linux = (platform.system() == "Linux")
     stdin_fd = None 
@@ -1180,6 +1188,8 @@ def horizontal_select(prompt, options=None, index=None):
             if code == "left": index = (len(options) if index == 0 else index) - 1
             elif code == "right": index = (-1 if index == (len(options) - 1) else index) + 1
             elif code == "ctrl-c": 
+                if is_linux and termios and tty:
+                    termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
                 sys.stdout.write("\r\n")
                 sys.stdout.flush() 
                 sys.exit(0)
