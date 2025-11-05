@@ -167,7 +167,7 @@ class CMD_rsync:
             subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
                 New-Item -ItemType Directory -Force -Path "{root}" | Out-Null
                 net use  "\\office\wanliz_sw_linux" /user:wanliz /persistent:no | Out-Null
-                robocopy "\\office\wanliz_sw_linux" "{root}" /MIR /R:0 /W:0 /MT:32 /Z /FFT /ETA /XD '.git' '_out' '.Trash-*' '.Trash' '.Trashes' '$RECYCLE.BIN' '.Spotlight-V*'
+                robocopy "\\office\wanliz_sw_linux" "{root}" /MIR /R:1 /W:1 /MT:32 /FFT /DCOPY:T /COPY:DT /A-:SH /XJ /NP /NFL /NDL /XD '.git' '_out' '.Trash-*' '.Trash' '.Trashes' '$RECYCLE.BIN' '.Spotlight-V*'
             """], check=False)
         else:
             root = horizontal_select("Rsync to local folder", [HOME + "/wanliz_sw_linux", "<input>"], 0)
