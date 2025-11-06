@@ -792,7 +792,7 @@ class PerfInspector_gputrace:
         subprocess.run(["bash", "-lc", rf"""
             export LD_LIBRARY_PATH={self.pi_root}
             python3 {self.pi_root}/Scripts/VkLayerSetup/SetImplicitLayer.py --install
-            sudo {self.pi_root}/pic-x --api={api} --check_clocks=0 {"--clean=0" if debug == "yes" else ""}
+            sudo {self.pi_root}/pic-x --api={api} --check_clocks=0 {"--clean=0" if debug == "yes" else ""} --trigger=1
             python3 {self.pi_root}/Scripts/VkLayerSetup/SetImplicitLayer.py --uninstall
         """], check=True)
 
@@ -993,6 +993,7 @@ class CMD_viewperf:
         subtest = None if self.viewset == "all" else self.subtest
         rounds = int(horizontal_select("Number of rounds", ["1", "3", "10", "30"], 0))
         table = ",".join(["Viewset", "Average FPS", "StdDev", "Min", "Max"])
+        raw = {}
         for viewset in viewsets:
             samples = []
             for i in range(1, rounds + 1):
@@ -1007,13 +1008,10 @@ class CMD_viewperf:
                     text=True,
                     capture_output=True
                 )
-                if output.returncode == 0:
-                    fps = float(self.__get_result_fps(viewset, subtest)) 
-                else: 
-                    #print(output.stderr)
-                    fps = 0
+                fps = float(self.__get_result_fps(viewset, subtest)) if output.returncode == 0 else 0 
                 samples.append(fps)
                 print(f"{viewset}{subtest if subtest else ''} @ {i:02d} run: {fps: 3.2f} FPS")
+            raw[viewset] = samples
             if rounds > 1:
                 table += "\n" + ",".join([viewset, f"{mean(samples):.2f}", f"{stdev(samples):.3f}", f"{min(samples):.2f}", f"{max(samples):.2f}"])
             else:
@@ -1021,8 +1019,22 @@ class CMD_viewperf:
         print("")
         output = subprocess.run([*BASH_CMD, "column -t -s ,"], input=table + "\n", text=True, check=True, capture_output=True)
         print(output.stdout if output.returncode == 0 else output.stderr)
-        with open(HOME + f"/viewperf_stats_{datetime.datetime.now().strftime('%Y_%m%d_%H%M')}.txt", "w", encoding="utf-8") as file:
+        timestamp = datetime.datetime.now().strftime('%Y_%m%d_%H%M')
+        with open(HOME + f"/viewperf_stats_{timestamp}.txt", "w", encoding="utf-8") as file:
             file.write(output.stdout)
+        with open(HOME + f"/viewperf_stats_{timestamp}.raw.csv", "w", encoding="utf-8") as file:
+            file.write(self.__format_raw_data_as_csv(raw))
+
+    def __format_raw_data_as_csv(self, data: dict):
+        rows = []
+        rows.append(["FPS"] + list(data.keys()))
+        runs = {k: len(v) for k, v in data.items()}
+        max_runs = max(runs.values())
+        for i in range(max_runs):
+            row = [f"Run {i}"] + [str(data[name][i]) for name in data.keys()]
+            rows.append(row)
+        rows.append(["Average"] + [sum(data[name][:max_runs]) / max_runs for name in data.keys()])
+        
 
     def __run_in_picx(self):
         gputrace = PerfInspector_gputrace(exe=self.exe, args=self.arg, workdir=self.dir)
