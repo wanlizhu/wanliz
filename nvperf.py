@@ -95,7 +95,7 @@ class CMD_p4:
         elif subcmd == "pull": self.__pull()
         elif subcmd == "stash": self.__stash()
 
-    def __status(self):
+    def _status(self):
         reconcile = horizontal_select("Reconcile to check added/deleted files", ["yes", "no"], 1)
         subprocess.run([*BASH_CMD, rf"""
             echo "=== Files Opened for Edit ==="
@@ -119,7 +119,7 @@ class CMD_p4:
             fi 
         """], cwd=self.p4root, check=True)
 
-    def __pull(self):
+    def _pull(self):
         force = horizontal_select("Force pull", ["yes", "no"], 1)
         subprocess.run([*BASH_CMD, rf"""
             time p4 sync {"-f" if force == "yes" else ""}
@@ -139,7 +139,7 @@ class CMD_p4:
             fi 
         """], cwd=self.p4root, check=True)
 
-    def __stash(self):
+    def _stash(self):
         name = horizontal_select("Select stash name", [f"stash_{datetime.datetime.now().astimezone():%Y-%m-%d_%H-%M-%S}", "<input>"], 0)
         subprocess.run([*BASH_CMD, rf"""
             p4 reconcile -e -a -d $P4ROOT/... >/dev/null || true
@@ -161,7 +161,7 @@ class CMD_rsync:
         if src == "p4:wanliz_sw_linux":
             self.__rsync_wanliz_sw_linux()
 
-    def __rsync_wanliz_sw_linux(self):
+    def _rsync_wanliz_sw_linux(self):
         if platform.system() == "Windows":
             root = horizontal_select("Rsync to local folder", ["D:\\wanliz_sw_linux", "<input>"], 0)
             subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
@@ -202,7 +202,7 @@ class CMD_config:
         elif platform.system() == "Linux":
             self.__config_linux_host()
 
-    def __config_windows_host(self):
+    def _config_windows_host(self):
         if ctypes.windll.shell32.IsUserAnAdmin() == 0:
             cmdline = subprocess.list2cmdline([os.path.abspath(sys.argv[0])] + [arg for arg in sys.argv[1:] if arg != "--admin"])
             ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmdline, None, 1)
@@ -226,7 +226,7 @@ class CMD_config:
             [IO.File]::WriteAllText($hostsfile, $content_new + "`r`n", [Text.Encoding]::ASCII)
         """], check=True)
         
-    def __config_linux_host(self):
+    def _config_linux_host(self):
         # Enable no-password sudo
         subprocess.run([*BASH_CMD, rf"""
             if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
@@ -283,7 +283,7 @@ class CMD_share:
         self.__share_via_nfs(path)
         self.__share_via_smb(path)
 
-    def __share_via_smb(self, path: Path):
+    def _share_via_smb(self, path: Path):
         output = subprocess.run([*BASH_CMD, "testparm -s"], text=True, check=False, capture_output=True)
         if output.returncode != 0 and 'not found' in output.stderr:
             subprocess.run([*BASH_CMD, "sudo apt install -y samba-common-bin samba"], check=True)
@@ -319,7 +319,7 @@ class CMD_share:
         """], check=True)
         print(f"Share {path} via SMB \t [ OK ]")
 
-    def __share_via_nfs(self, path: Path):
+    def _share_via_nfs(self, path: Path):
         output = subprocess.run([*BASH_CMD, "sudo exportfs -v"], text=True, check=False, capture_output=True)
         if output.returncode != 0 and 'not found' in output.stderr:
             subprocess.run([*BASH_CMD, "sudo apt install -y nfs-kernel-server"], check=True)
@@ -372,7 +372,7 @@ class CMD_mount:
                 sudo mount -t cifs {windows_folder} {mount_dir} {str("-o username=" + user) if user else ""}
             """], check=True)
 
-    def __mount_NFS_folder_on_windows(self, drive, unc_path, user):
+    def _mount_NFS_folder_on_windows(self, drive, unc_path, user):
         if os.path.exists(f"{drive}:\\"):
             raise RuntimeError(f"Drive {drive}:\\ exists")
         # Enable NFS service
@@ -528,12 +528,12 @@ class CMD_nvmake:
                                 out.write(f"{_branch},{_config},{_arch},{_module},[ FAILED ]\n")
             subprocess.run([*BASH_CMD, f"column -s, -o ' | ' -t {out.name}"], check=True)
 
-    def __branch_path(self, branch):
+    def _branch_path(self, branch):
         if branch == "r580": return "rel/gpu_drv/r580/r580_00"
         elif branch == "bugfix_main": return "dev/gpu_drv/bugfix_main"
         else: return branch 
         
-    def __unix_build_nvmake(self, branch, config, arch, module, regen, jobs):
+    def _unix_build_nvmake(self, branch, config, arch, module, regen, jobs):
         subprocess.run([x for x in [
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
             "--unshare-namespaces", 
@@ -616,7 +616,7 @@ class CMD_install:
             subprocess.run(f"cp -vf {Path(driver).parent}/tests-Linux-{'x86_64' if arch == 'amd64' else arch}/sandbag-tool/sandbag-tool ~", check=True, shell=True)
 
 
-    def __select_nvidia_driver(self, host):
+    def _select_nvidia_driver(self, host):
         branch  = horizontal_select("[1/4] Target branch", ["r580", "bugfix_main"], 0)
         branch  = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
         branch  = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
@@ -625,7 +625,7 @@ class CMD_install:
         version = self.__select_nvidia_driver_version(host, branch, config, arch)
         return branch, config, arch, version 
     
-    def __select_nvidia_driver_version(self, host, branch, config, arch):
+    def _select_nvidia_driver_version(self, host, branch, config, arch):
         if "P4ROOT" not in os.environ: 
             raise RuntimeError("P4ROOT is not defined")
         
@@ -680,23 +680,23 @@ class CMD_download:
         elif src == "GravityMark": self.__download_gravitymark()
         elif src == "3dMark - steelNomad": self.__download_3dMark("steelNomad")
 
-    def __download_nsight_graphics(self):
+    def _download_nsight_graphics(self):
         webbrowser.open("https://ngfx/builds-nightly/Grfx")
 
-    def __download_nsight_systems(self): 
+    def _download_nsight_systems(self): 
         webbrowser.open("https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk")
 
-    def __download_viewperf(self):
+    def _download_viewperf(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M}"):
             subprocess.run([*BASH_CMD, f"cp -afT /mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M} $HOME/viewperf2020v3"])
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M}")
 
-    def __download_gravitymark(self):
+    def _download_gravitymark(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/GravityMark/{UNAME_M}"):
             subprocess.run([*BASH_CMD, f"cp -afT /mnt/linuxqa/wanliz/GravityMark/{UNAME_M} $HOME/GravityMark"])
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/GravityMark/{UNAME_M}") 
 
-    def __download_3dMark(self, name):
+    def _download_3dMark(self, name):
         if os.path.exists(f"/mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}"):
             subprocess.run([*BASH_CMD, f"cp -afT /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M} $HOME/3dMark_{name}"])
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}")  
@@ -857,7 +857,7 @@ class Nsight_graphics_gputrace:
 
     def capture(self, startframe=None, frames=None, time_all_actions=None): 
         if not os.path.exists(self.ngfx):
-            CMD_download().__download_nsight_graphics()
+            CMD_download()._download_nsight_graphics()
 
         # for N1x: --architecture="T254 GB20B" --metric-set-name="Top-Level Triage"
         if startframe is None: startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
@@ -882,7 +882,7 @@ class Nsight_graphics_gputrace:
             '--time-every-action' if time_all_actions == "yes" else ""
         ] if len(line) > 0])], check=True) 
 
-    def __get_ngfx_path(self):
+    def _get_ngfx_path(self):
         if platform.machine() == 'aarch64':
             self.ngfx = f'{HOME}/nvidia-nomad-internal-EmbeddedLinux.l4t/host/linux-v4l_l4t-nomad-t210-a64/ngfx'
         elif os.path.isdir(f'{HOME}/nvidia-nomad-internal-Linux.linux'):
@@ -893,12 +893,12 @@ class Nsight_graphics_gputrace:
             self.ngfx = shutil.which('ngfx')
         self.help_all = subprocess.run([*BASH_CMD, f"{self.ngfx} --help-all"], check=False, capture_output=True, text=True).stdout
 
-    def __get_arch(self):
+    def _get_arch(self):
         arch_list =  [l.strip() for l in re.search(r'Available architectures:\n((?:\s{2,}.+\n)+)', self.help_all).group(1).splitlines()]
         arch_list = arch_list[:next((i for i, x in enumerate(arch_list) if x == '' or x.startswith("-")), len(arch_list))] 
         self.arch = horizontal_select("Select architecture", arch_list, 0)
 
-    def __get_metricset(self):
+    def _get_metricset(self):
         indent_base = -1
         indent_arch = -1
         arch_name = None 
@@ -938,7 +938,7 @@ class CMD_viewperf:
     def __str__(self):
         return "Start profiling viewperf 2020 v3"
     
-    def __get_result_fps(self, viewset, subtest):
+    def _get_result_fps(self, viewset, subtest):
         try:
             pattern = f"results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
             matches = list(Path(self.viewperf_root).glob(pattern))
@@ -958,7 +958,7 @@ class CMD_viewperf:
     
     def run(self):
         if not os.path.exists(self.viewperf_root):
-            CMD_download().__download_viewperf()
+            CMD_download()._download_viewperf()
 
         timestamp = perf_counter()
         subtest_nums = { "catia": 8, "creo": 13, "energy": 6, "maya": 10, "medical": 10, "snx": 10, "sw": 10 }
@@ -988,7 +988,7 @@ class CMD_viewperf:
         
         print(f"\nTime elapsed: {str(timedelta(seconds=perf_counter()-timestamp)).split('.')[0]}")
         
-    def __run_in_stats(self):
+    def _run_in_stats(self):
         viewsets = ["catia", "creo", "energy", "maya", "medical", "snx", "sw"] if self.viewset == "all" else [self.viewset]
         subtest = None if self.viewset == "all" else self.subtest
         rounds = int(horizontal_select("Number of rounds", ["1", "3", "10", "30"], 0))
@@ -1025,7 +1025,7 @@ class CMD_viewperf:
         with open(HOME + f"/viewperf_stats_{timestamp}.raw.csv", "w", encoding="utf-8") as file:
             file.write(self.__format_raw_data_as_csv(raw))
 
-    def __format_raw_data_as_csv(self, data: dict):
+    def _format_raw_data_as_csv(self, data: dict):
         rows = []
         rows.append(["FPS"] + list(data.keys()))
         runs = {k: len(v) for k, v in data.items()}
@@ -1036,15 +1036,15 @@ class CMD_viewperf:
         rows.append(["Average"] + [sum(data[name][:max_runs]) / max_runs for name in data.keys()])
         return "\n".join([",".join(row) for row in rows])
 
-    def __run_in_picx(self):
+    def _run_in_picx(self):
         gputrace = PerfInspector_gputrace(exe=self.exe, args=self.arg, workdir=self.dir)
         gputrace.capture()
 
-    def __run_in_nsight_graphics(self):
+    def _run_in_nsight_graphics(self):
         gputrace = Nsight_graphics_gputrace(self.exe, self.arg, self.dir)
         gputrace.capture()
 
-    def __run_in_nsight_systems(self):
+    def _run_in_nsight_systems(self):
         subprocess.run([*BASH_CMD, rf"""
             cd {self.dir}
             echo "Nsight system exe: $(which nsys)"
@@ -1064,7 +1064,7 @@ class CMD_viewperf:
                 {self.exe} {self.arg}
         """], cwd=HOME, check=True) 
 
-    def __run_in_gdb(self):
+    def _run_in_gdb(self):
         subprocess.run([*BASH_CMD, f"""
             if ! command -v cgdb >/dev/null 2>&1; then
                 sudo apt install -y cgdb
@@ -1088,7 +1088,7 @@ class CMD_viewperf:
                 -ex "set trace-commands off"
         """], check=True)
 
-    def __run_in_limiter(self):
+    def _run_in_limiter(self):
         choice = horizontal_select("[1/2] Emulate perf limiter of", ["CPU", "GPU"], 1)
         lowest = horizontal_select("[2/2] Emulation lower bound", ["50%", "33%", "10%"], 0)
         lowest = 5 if lowest == "50%" else (3 if lowest == "33%" else 1)
@@ -1113,7 +1113,7 @@ class CMD_gmark:
     
     def fix_me(self):
         if not os.path.exists(self.gmark_root):
-            CMD_download().__download_gravitymark()
+            CMD_download()._download_gravitymark()
 
         subprocess.run([*BASH_CMD, """
             sudo apt install -y clang build-essential pkg-config libgtk2.0-dev libglib2.0-dev libpango1.0-dev libatk1.0-dev libgdk-pixbuf-2.0-dev 
@@ -1125,7 +1125,7 @@ class CMD_gmark:
         self.workdir = f"{HOME}/GravityMark/bin"
         subprocess.run([*BASH_CMD, f"{self.exe} {self.args}"], cwd=self.workdir, check=True) 
 
-    def __run_in_picx(self):
+    def _run_in_picx(self):
         gputrace = PerfInspector_gputrace(exe=self.exe, args=self.args, workdir=self.workdir)
         gputrace.capture()
 
@@ -1137,7 +1137,7 @@ class CMD_3dmark:
     def run(self):
         test = horizontal_select("Select 3dMark test", ["steelNomad"], 0)
         if not os.path.exists(HOME + f"/3dMark_{test}"):
-            CMD_download().__download_3dMark(test)
+            CMD_download()._download_3dMark(test)
 
         subprocess.run([*BASH_CMD, rf"""
             cd $HOME/3dMark_{test}/engine
@@ -1210,7 +1210,7 @@ def horizontal_select(prompt, options=None, index=None):
             termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
 
 
-def __check_env():
+def _check_env():
     global BASH_CMD
     global RESET, DIM, RED, CYAN, BOLD 
     global ERASE_LEFT, ERASE_RIGHT, ERASE_LINE
@@ -1262,7 +1262,7 @@ def __check_env():
     signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
 
-def __main_cmd_prompt():
+def _main_cmd_prompt():
     print(f"{RED}[use left/right arrow key to select from options]{RESET}")
     cmds = {}
     width = 0
