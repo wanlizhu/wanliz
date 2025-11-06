@@ -1014,7 +1014,7 @@ class CMD_viewperf:
                 fps = float(self._get_result_fps(viewset, subtest)) if output.returncode == 0 else 0 
                 samples.append(fps)
                 print(f"{viewset}{subtest if subtest else ''} @ run {i:02d}: {fps: 3.2f} FPS")
-            raw[viewset] = samples
+            raw[viewset] = [str(x) for x in samples]
             if rounds > 1:
                 table += "\n" + ",".join([viewset, f"{mean(samples):.2f}", f"{stdev(samples):.3f}", f"{min(samples):.2f}", f"{max(samples):.2f}"])
             else:
