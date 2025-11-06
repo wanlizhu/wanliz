@@ -1034,7 +1034,7 @@ class CMD_viewperf:
             row = [f"Run {i}"] + [str(data[name][i]) for name in data.keys()]
             rows.append(row)
         rows.append(["Average"] + [sum(data[name][:max_runs]) / max_runs for name in data.keys()])
-        
+        return "\n".join([",".join(row) for row in rows])
 
     def __run_in_picx(self):
         gputrace = PerfInspector_gputrace(exe=self.exe, args=self.arg, workdir=self.dir)
