@@ -400,14 +400,16 @@ class CMD_startx:
         return "Start a bare X server for graphics profiling"
     
     def run(self):
+        spark    = horizontal_select("Is this a DGX spark system", ["yes", "no"], 1)
         headless = horizontal_select("Is this a headless system", ["yes", "no"], 1)
-        withDM = horizontal_select("Start with a display manager", ["yes", "no"], 1)
-        withVNC = horizontal_select("Start with a VNC server", ["yes", "no"], 1)
-        unsanbag = horizontal_select("Unsanbag nvidia driver", ["yes", "no"], 0)
-        lockclocks = horizontal_select("Lock GPU clocks", ["yes", "no"], 0)
+        startWithDM   = horizontal_select("Start with a display manager", ["yes", "no"], 1)
+        startWithVNC  = horizontal_select("Start with a VNC server", ["yes", "no"], 1)
 
-        # Kill running X server
+        # Start a bare X server in GNU screen
         subprocess.run([*BASH_CMD, rf"""
+            export DISPLAY=:0 
+            
+            # Kill running X server before starting a new one
             if [[ ! -z $(pidof Xorg) ]]; then 
                 read -p "Press [Enter] to kill running X server: "    
                 sudo pkill -TERM -x Xorg
@@ -416,77 +418,82 @@ class CMD_startx:
             screen -ls | awk '/Detached/ && /bareX/ {{ print $1 }}' | while IFS= read -r session; do
                 screen -S "$session" -X stuff $'\r'
             done
-        """], check=True)
-
-        # Start a bare X server in GNU screen
-        if headless == "yes":
-            subprocess.run([*BASH_CMD, rf"""
-                export DISPLAY=:0 
-                     
+                        
+            # Install package dependencies
+            if [[ -z $(which xhost) ]]; then 
+                sudo apt install -y x11-xserver-utils          
+            fi
+            
+            if [[ "{headless}" == "yes" ]]; then 
+                # Mount linuxqa folder for emulated EDID file
                 if [[ ! -d /mnt/linuxqa/nvtest ]]; then 
                     sudo mkdir -p /mnt/linuxqa
                     sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa     
                 fi 
-                
+                # Create a new xorg.conf to emulate a physical monitor 
                 busID=$(nvidia-xconfig --query-gpu-info | sed -n '/PCI BusID/{{s/^[^:]*:[[:space:]]*//;p;q}}')
                 sudo nvidia-xconfig -s -o /etc/X11/xorg.conf \
                     --force-generate --mode-debug --layout=Layout0 --render-accel --cool-bits=4 \
                     --mode-list=3840x2160 --depth 24 --no-ubb \
                     --x-screens-per-gpu=1 --no-separate-x-screens --busid=$busID \
                     --connected-monitor=GPU-0.DFP-0 --custom-edid=GPU-0.DFP-0:/mnt/linuxqa/nvtest/pynv_files/edids_db/ASUSPB287_DP_3840x2160x60.000_1151.bin 
-                sudo screen -S bareX -dm bash -lci "__GL_SYNC_TO_VBLANK=0 X :0 vt2 -config /etc/X11/xorg.conf -logfile $HOME/X.log -logverbose 5 -ac +iglx"
+                sudo screen -S bareX -dm bash -lci "__GL_SYNC_TO_VBLANK=0 X :0 -config /etc/X11/xorg.conf -logfile $HOME/X.log -logverbose 5 -ac +iglx"
+            else
+                sudo screen -S bareX -dm bash -lci "__GL_SYNC_TO_VBLANK=0 X :0 -logfile $HOME/X.log -logverbose 5 -ac +iglx"
+            fi 
 
-                for i in $(seq 1 10); do
-                    sleep 1
-                    if xdpyinfo >/dev/null 2>&1; then break; fi
-                    if [[ -z $(pidof Xorg) ]]; then echo "Failed to start X server"; exit 1; fi 
-                done
-                xhost + || true
-                fbsize=$(xrandr --current 2>/dev/null | sed -n 's/^Screen .* current \([0-9]\+\) x \([0-9]\+\).*/\1x\2/p;q')
-                if [[ $fbsize != "3840x2160" ]]; then 
-                    grep -E "Found 0 head on board" $HOME/X.log
-                    xrandr --fb 3840x2160
-                fi 
-                xrandr --current
-                            
-                {"screen -S openbox -dm openbox" if withDM == "yes" else ""}
-            """], check=True)
-        else:
-            pass # TODO
+            # Wait for X server initialization
+            for i in $(seq 1 10); do
+                sleep 1
+                if xdpyinfo >/dev/null 2>&1; then break; fi
+                if [[ -z $(pidof Xorg) ]]; then echo "Failed to start X server"; exit 1; fi 
+            done
 
-        # Start a VNC server mirroring current display 
-        if withVNC == "yes":
-            subprocess.run([*BASH_CMD, rf"""
+            # Disable X server's access control
+            xhost + || true
+
+            # Resize to 4K display if needed 
+            fbsize=$(xrandr --current 2>/dev/null | sed -n 's/^Screen .* current \([0-9]\+\) x \([0-9]\+\).*/\1x\2/p;q')
+            if [[ $fbsize != "3840x2160" ]]; then 
+                grep -E "Found 0 head on board" $HOME/X.log
+                xrandr --fb 3840x2160
+            fi 
+            xrandr --current
+                        
+            # Start a simple display manager for windowing 
+            if [[ "{startWithDM}" == "yes" ]]; then 
+                screen -S openbox -dm openbox
+            fi
+
+            # Start a VNC server mirroring the new X server
+            if [[ "{startWithVNC}" == "yes" ]]; then 
                 if [[ -z $(sudo cat /etc/gdm3/custom.conf | grep -v '^#' | grep "WaylandEnable=false") ]]; then 
                     echo "{RED}Disable wayland before starting VNC server{RESET}"
                     exit 0
                 fi 
                 x11vnc -display :0  -rfbport 5900 -noshm -forever -noxdamage -repeat -shared -bg -o $HOME/x11vnc.log && echo "Start VNC server on :5900    [ OK ]" || cat $HOME/x11vnc.log
-            """], check=True)
+            fi
 
-        # Unsandbag for much higher perf 
-        if unsanbag == "yes": 
-            if os.path.exists(HOME + "/sandbag-tool"):
-                print("Unsangbag nvidia driver")
-                subprocess.run([*BASH_CMD, f"~/sandbag-tool -unsandbag"], check=True)
-            else:
-                print("File doesn't exist: ~/sandbag-tool")
-                print("Unsandbag \t [ FAILED ]")
+            # This is only needed for DGX spark systems 
+            if [[ "{spark}" == "yes" ]]; then 
+                if [[ -f $HOME/sandbag-tool ]]; then 
+                    $HOME/sandbag-tool -unsandbag 
+                else
+                    echo "File doesn't exist: $HOME/sandbag-tool"
+                fi 
+            fi
 
-        # Lock GPU clocks 
-        if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e"):
-            if lockclocks == "yes":
-                perfdebug = "/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug"
-                if os.path.exists(perfdebug):
-                    print("Lock GPU clocks")
-                    subprocess.run([*BASH_CMD, f"sudo {perfdebug} --lock_loose  set pstateId   P0"], check=True)
-                    subprocess.run([*BASH_CMD, f"sudo {perfdebug} --lock_strict set gpcclkkHz  2000000"], check=True)
-                    subprocess.run([*BASH_CMD, f"sudo {perfdebug} --lock_loose  set xbarclkkHz 1800000"], check=True)
-                    subprocess.run([*BASH_CMD, f"sudo {perfdebug} --force_regime  ffr"], check=True)
-                else:
-                    print(f"File doesn't exist: {perfdebug}")
-                    print("Lock clocks \t [ FAILED ]")
-        else: print("Locking GPU clocks is only required on N1x \t [ SKIPPED ]")
+            # This is only needed for DGX spark systems 
+            if [[ "{spark}" == "yes" ]]; then 
+                perfdebug="/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug"
+                if [[ -f $perfdebug ]]; then 
+                    sudo $perfdebug --lock_loose    set pstateId   P0
+                    sudo $perfdebug --lock_strict   set gpcclkkHz  2000000
+                    sudo $perfdebug --lock_loose    set xbarclkkHz 1800000
+                    sudo $perfdebug --force_regime  ffr
+                fi 
+            fi
+        """], check=True)
 
 
 class CMD_nvmake:
