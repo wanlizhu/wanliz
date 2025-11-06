@@ -49,8 +49,8 @@ class CMD_info:
         return "Get GPU HW and driver info"
     
     def run(self):
-        subprocess.run([*BASH_CMD, "DISPLAY=:0 xrandr | grep current"], check=False)
-        subprocess.run([*BASH_CMD, "DISPLAY=:0 glxinfo | grep -i 'OpenGL renderer'"], check=False)
+        subprocess.run([*BASH_CMD, "xrandr | grep current"], check=False)
+        subprocess.run([*BASH_CMD, "glxinfo | grep -i 'OpenGL renderer'"], check=False)
         subprocess.run([*BASH_CMD, "nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total,clocks.gr | column -s, -t"], check=False)
         subprocess.run([*BASH_CMD, "nvidia-smi -q | grep -i 'GSP Firmware Version'"], check=False)
         for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
@@ -1262,6 +1262,10 @@ def check_env():
         "__GL_DEBUG_BYPASS_ASSERT": "c",
         "PIP_BREAK_SYSTEM_PACKAGES": "1"
     })
+    if not os.environ.get("DISPLAY"): 
+        os.environ["DISPLAY"] = ":0"
+        print(f"export DISPLAY={os.environ['DISPLAY']}")
+
     signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
 
