@@ -953,7 +953,7 @@ class CMD_viewperf:
             else:
                 return root.find("Composite").get("Score")
         except Exception as e:
-            print(f"Line {e.__traceback__.tb_lineno}: {type(e).__name__}: {e}", file=sys.stderr)
+            print(e)
             return 0
     
     def run(self):
@@ -1210,7 +1210,7 @@ def horizontal_select(prompt, options=None, index=None):
             termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
 
 
-def _check_env():
+def check_env():
     global BASH_CMD
     global RESET, DIM, RED, CYAN, BOLD 
     global ERASE_LEFT, ERASE_RIGHT, ERASE_LINE
@@ -1262,7 +1262,7 @@ def _check_env():
     signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
 
-def _main_cmd_prompt():
+def main_cmd_prompt():
     print(f"{RED}[use left/right arrow key to select from options]{RESET}")
     cmds = {}
     width = 0
@@ -1282,10 +1282,10 @@ def _main_cmd_prompt():
 
 if __name__ == "__main__":
     try:
-        __check_env() 
-        cmd = __main_cmd_prompt()
+        check_env() 
+        cmd = main_cmd_prompt()
         cmd = globals().get(f"CMD_{cmd}")()
         cmd.run()
     except Exception as e:
-        print(f"Line {e.__traceback__.tb_lineno}: {type(e).__name__}: {e}", file=sys.stderr)
+        print(e)
     horizontal_select("Press [Enter] to exit")
