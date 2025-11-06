@@ -688,20 +688,17 @@ class CMD_download:
 
     def _download_viewperf(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M}"):
-            print("Downloading viewperf to $HOME/viewperf2020v3")
-            subprocess.run([*BASH_CMD, f"cp -afT /mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M} $HOME/viewperf2020v3"])
+            subprocess.run([*BASH_CMD, f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M}/ $HOME/viewperf2020v3"])
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M}")
 
     def _download_gravitymark(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/GravityMark/{UNAME_M}"):
-            print("Downloading Gravity Mark to $HOME/GravityMark")
-            subprocess.run([*BASH_CMD, f"cp -afT /mnt/linuxqa/wanliz/GravityMark/{UNAME_M} $HOME/GravityMark"])
+            subprocess.run([*BASH_CMD, f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/GravityMark/{UNAME_M}/ $HOME/GravityMark"])
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/GravityMark/{UNAME_M}") 
 
     def _download_3dMark(self, name):
         if os.path.exists(f"/mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}"):
-            print(f"Downloading 3dMark {name} to $HOME/3dMark_{name}")
-            subprocess.run([*BASH_CMD, f"cp -afT /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M} $HOME/3dMark_{name}"])
+            subprocess.run([*BASH_CMD, f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}/ $HOME/3dMark_{name}"])
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}")  
 
 
