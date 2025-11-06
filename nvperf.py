@@ -91,9 +91,9 @@ class CMD_p4:
     
     def run(self):
         subcmd = horizontal_select("Select git-emu subcmd", ["status", "pull", "stash"], 0)
-        if subcmd == "status": self.__status()
-        elif subcmd == "pull": self.__pull()
-        elif subcmd == "stash": self.__stash()
+        if subcmd == "status": self._status()
+        elif subcmd == "pull": self._pull()
+        elif subcmd == "stash": self._stash()
 
     def _status(self):
         reconcile = horizontal_select("Reconcile to check added/deleted files", ["yes", "no"], 1)
@@ -159,7 +159,7 @@ class CMD_rsync:
     def run(self):
         src = horizontal_select("Rsync from source", ["p4:wanliz_sw_linux"], 0)
         if src == "p4:wanliz_sw_linux":
-            self.__rsync_wanliz_sw_linux()
+            self._rsync_wanliz_sw_linux()
 
     def _rsync_wanliz_sw_linux(self):
         if platform.system() == "Windows":
@@ -198,9 +198,9 @@ class CMD_config:
             "n1x6": "10.31.40.241",
         }
         if platform.system() == "Windows":
-            self.__config_windows_host()
+            self._config_windows_host()
         elif platform.system() == "Linux":
-            self.__config_linux_host()
+            self._config_linux_host()
 
     def _config_windows_host(self):
         if ctypes.windll.shell32.IsUserAnAdmin() == 0:
@@ -280,8 +280,8 @@ class CMD_share:
         path = Path(path).resolve()
         if not (path.exists() and path.is_dir()):
             raise RuntimeError(f"Invalid path: {path}")
-        self.__share_via_nfs(path)
-        self.__share_via_smb(path)
+        self._share_via_nfs(path)
+        self._share_via_smb(path)
 
     def _share_via_smb(self, path: Path):
         output = subprocess.run([*BASH_CMD, "testparm -s"], text=True, check=False, capture_output=True)
@@ -358,7 +358,7 @@ class CMD_mount:
             if mode == "SMB":
                 subprocess.run(f'cmd /k net use {drive}: "{unc_path}" /persistent:yes {str("/user:" + user + " *") if user else ""}', check=True, shell=True)
             else:
-                self.__mount_NFS_folder_on_windows(drive, unc_path, user)
+                self._mount_NFS_folder_on_windows(drive, unc_path, user)
         elif platform.system() == "Linux":
             windows_folder = horizontal_select("Windows shared folder", None, None).strip().replace("\\", "/")
             windows_folder = shlex.quote(windows_folder)
@@ -517,12 +517,12 @@ class CMD_nvmake:
             ], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
 
         with tempfile.TemporaryFile(mode="w+t", encoding="utf-8", delete=False) as out:
-            for _branch in [self.__branch_path(b) for b in branch.split("|")]:
+            for _branch in [self._branch_path(b) for b in branch.split("|")]:
                 for _config in config.split("|"):
                     for _arch in arch.split("|"):
                         for _module in module.split("|"):
                             try:
-                                self.__unix_build_nvmake(_branch, _config, _arch, _module, regen, jobs)
+                                self._unix_build_nvmake(_branch, _config, _arch, _module, regen, jobs)
                                 out.write(f"{_branch},{_config},{_arch},{_module},[ OK ]\n")
                             except Exception as e:
                                 out.write(f"{_branch},{_config},{_arch},{_module},[ FAILED ]\n")
@@ -589,10 +589,10 @@ class CMD_install:
     def run(self):
         driver = horizontal_select("Driver path", ["office", "local"], 0)
         if driver == "local":
-            branch, config, arch, version = self.__select_nvidia_driver("local")
+            branch, config, arch, version = self._select_nvidia_driver("local")
             driver = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
         elif driver == "office":
-            branch, config, arch, version = self.__select_nvidia_driver("office") # The entire output folder to be synced to /tmp/office/
+            branch, config, arch, version = self._select_nvidia_driver("office") # The entire output folder to be synced to /tmp/office/
             driver = f"/tmp/office/_out/Linux_{arch}_{config}/NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run"
         else: 
             raise RuntimeError("Invalid argument")
@@ -622,7 +622,7 @@ class CMD_install:
         branch  = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
         config  = horizontal_select("[2/4] Target config", ["develop", "debug", "release"], 0)
         arch    = horizontal_select("[3/4] Target architecture", ["amd64", "aarch64"], 1 if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e") else 0)
-        version = self.__select_nvidia_driver_version(host, branch, config, arch)
+        version = self._select_nvidia_driver_version(host, branch, config, arch)
         return branch, config, arch, version 
     
     def _select_nvidia_driver_version(self, host, branch, config, arch):
@@ -674,11 +674,11 @@ class CMD_download:
             "GravityMark",
             "3dMark - steelNomad",
         ], 0)
-        if src == "Nsight graphics": self.__download_nsight_graphics()
-        elif src == "Nsight systems": self.__download_nsight_systems() 
-        elif src == "viewperf": self.__download_viewperf()
-        elif src == "GravityMark": self.__download_gravitymark()
-        elif src == "3dMark - steelNomad": self.__download_3dMark("steelNomad")
+        if src == "Nsight graphics": self._download_nsight_graphics()
+        elif src == "Nsight systems": self._download_nsight_systems() 
+        elif src == "viewperf": self._download_viewperf()
+        elif src == "GravityMark": self._download_gravitymark()
+        elif src == "3dMark - steelNomad": self._download_3dMark("steelNomad")
 
     def _download_nsight_graphics(self):
         webbrowser.open("https://ngfx/builds-nightly/Grfx")
@@ -844,9 +844,9 @@ class Nsight_graphics_gputrace:
         self.args = args 
         self.workdir = workdir 
         self.env = env 
-        self.__get_ngfx_path()
-        self.__get_arch()
-        self.__get_metricset()
+        self._get_ngfx_path()
+        self._get_arch()
+        self._get_metricset()
 
     def fix_me(self):
         subprocess.run([*BASH_CMD, rf"""
@@ -977,17 +977,17 @@ class CMD_viewperf:
             self.dir = self.viewperf_root
     
         if env == "stats":
-            self.__run_in_stats()
+            self._run_in_stats()
         elif env == "picx":
-            self.__run_in_picx()
+            self._run_in_picx()
         elif env == "ngfx":
-            self.__run_in_nsight_graphics()
+            self._run_in_nsight_graphics()
         elif env == "nsys":
-            self.__run_in_nsight_systems()
+            self._run_in_nsight_systems()
         elif env == "gdb":
-            self.__run_in_gdb()
+            self._run_in_gdb()
         elif env == "limiter":
-            self.__run_in_limiter()
+            self._run_in_limiter()
         
         print(f"\nTime elapsed: {str(timedelta(seconds=perf_counter()-timestamp)).split('.')[0]}")
         
@@ -1011,7 +1011,7 @@ class CMD_viewperf:
                     text=True,
                     capture_output=True
                 )
-                fps = float(self.__get_result_fps(viewset, subtest)) if output.returncode == 0 else 0 
+                fps = float(self._get_result_fps(viewset, subtest)) if output.returncode == 0 else 0 
                 samples.append(fps)
                 print(f"{viewset}{subtest if subtest else ''} @ {i:02d} run: {fps: 3.2f} FPS")
             raw[viewset] = samples
@@ -1026,7 +1026,7 @@ class CMD_viewperf:
         with open(HOME + f"/viewperf_stats_{timestamp}.txt", "w", encoding="utf-8") as file:
             file.write(output.stdout)
         with open(HOME + f"/viewperf_stats_{timestamp}.raw.csv", "w", encoding="utf-8") as file:
-            file.write(self.__format_raw_data_as_csv(raw))
+            file.write(self._format_raw_data_as_csv(raw))
 
     def _format_raw_data_as_csv(self, data: dict):
         rows = []
@@ -1101,7 +1101,7 @@ class CMD_viewperf:
             for scale in [x / 10 for x in range(lowest, 11, 1)]:
                 limiter.scale_max_freq(scale)
                 subprocess.run([*BASH_CMD, f"{self.exe} {self.arg}"], cwd=self.dir, check=True, capture_output=True)
-                print(f"{self.viewset}{self.subtest}: {self.__get_result_fps(self.viewset, self.subtest)} @ {scale:.1f}x cpu freq")
+                print(f"{self.viewset}{self.subtest}: {self._get_result_fps(self.viewset, self.subtest)} @ {scale:.1f}x cpu freq")
                 limiter.reset()
         finally:
             if limiter is not None: limiter.reset()
