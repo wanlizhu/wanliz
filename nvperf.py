@@ -421,7 +421,13 @@ class CMD_startx:
                         
             # Install package dependencies
             if [[ -z $(which xhost) ]]; then 
-                sudo apt install -y x11-xserver-utils          
+                sudo apt install -y x11-xserver-utils x11-utils        
+            fi
+            if [[ -z $(which openbox) ]]; then 
+                sudo apt install -y openbox obconf     
+            fi
+            if [[ -z $(which x11vnc) ]]; then 
+                sudo apt install -y x11vnc        
             fi
             
             if [[ "{headless}" == "yes" ]]; then 
