@@ -1153,6 +1153,7 @@ class Table_view:
         self.data = rows 
 
     def transpose(self, fillvalue=0):
+        return self 
         self.data = [list(col) for col in zip_longest(*self.data, fillvalue=fillvalue)]
         return self 
 
