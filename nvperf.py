@@ -1145,16 +1145,13 @@ class Table_view:
         rows.insert(0, [])
         for i in range(len(rows[1])):
             rows[0].append(" " if isinstance(rows[1][i], str) else f"Index {i}")
-        
         for i in range(len(rows)):
-                if add_index_header:
-                    rows[0] += ["Average", "CV"]
-                    add_index_header = False
-                    continue 
+            if i == 0:
+                rows[0] += ["Average", "CV"]
+            else: 
                 samples = [x for x in rows[i] if not isinstance(x, str)]
                 rows[i].append(mean(samples))
                 rows[i].append(stdev(samples) / mean(samples))
-
         self.widths = [max([2 + len(x if isinstance(x, str) else f"{x:.3f}") for x in row], default=1) for row in rows]
         self.data = [list(col) for col in zip_longest(*rows, fillvalue=0)]  
 
