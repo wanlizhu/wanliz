@@ -23,6 +23,7 @@ from datetime import timedelta
 from time import perf_counter
 from statistics import mean, stdev
 from contextlib import suppress
+from itertools import zip_longest
 if platform.system() == "Linux": 
     import termios
     import tty 
@@ -1134,6 +1135,47 @@ class CMD_nsys:
         """], cwd=workdir, check=True) 
 
 
+class Table_view:
+    def __init__(self, rows, add_index_header, add_stats_column):
+        if add_index_header:
+            rows.insert(0, [])
+            for i in range(len(self.data[0])):
+                rows[0].append(" " if isinstance(self.data[0][i], str) else f"Index {i}")
+        if add_stats_column:
+            for i in range(len(self.data)):
+                if add_index_header:
+                    rows[0] += ["Average", "CV"]
+                    add_index_header = False
+                    continue 
+                samples = [x for x in rows[i] if not isinstance(x, str)]
+                rows[i].append(mean(samples))
+                rows[i].append(stdev(samples) / mean(samples))
+        self.data = rows 
+
+    def transpose(self, fillvalue=0):
+        self.data = [list(col) for col in zip_longest(*self.data, fillvalue=fillvalue)]
+        return self 
+
+    def print(self, logfile_prefix=None):
+        csv = "\n".join([",".join([(x if isinstance(x, str) else f"{x:.3f}") for x in row]) for row in self.data])
+        if platform.system() == "Linux":
+            result = subprocess.run(["bash", "-lc", rf"""
+                echo "{csv}" | column -t -s, 
+            """], check=True, text=True, capture_output=True).stdout
+        elif platform.system() == "Windows":
+            result = subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
+                echo "{csv}" | ConvertFrom-Csv |  Format-Table -AutoSize
+            """], check=True, text=True, capture_output=True).stdout 
+        else:
+            result = str(self.data)
+        
+        if logfile_prefix is not None:
+            timestamp = datetime.datetime.now().strftime('%Y_%m%d_%H%M')
+            with open(HOME + f"/{logfile_prefix}{timestamp}.txt", "w", encoding="utf-8") as file:
+                file.write(result)
+        print(result)
+
+
 class CMD_viewperf:
     def __str__(self):
         self.platforms = ["Linux"]
@@ -1194,10 +1236,9 @@ class CMD_viewperf:
         viewsets = ["catia", "creo", "energy", "maya", "medical", "snx", "sw"] if self.viewset == "all" else [self.viewset]
         subtest = None if self.viewset == "all" else self.subtest
         rounds = int(horizontal_select("Number of rounds", ["1", "3", "10", "30"], 0))
-        table = ",".join(["Viewset", "Average FPS", "StdDev", "Min", "Max"])
-        raw = {}
+        raw_data = []
         for viewset in viewsets:
-            samples = []
+            samples = [viewset]
             for i in range(1, rounds + 1):
                 output = subprocess.run([x for x in [
                         f"{self.viewperf_root}/viewperf/bin/viewperf", 
@@ -1213,30 +1254,10 @@ class CMD_viewperf:
                 fps = float(self.get_result_fps(viewset, subtest)) if output.returncode == 0 else 0 
                 samples.append(fps)
                 print(f"{viewset}{subtest if subtest else ''} @ run {i:02d}: {fps: 3.2f} FPS")
-            raw[viewset] = [str(x) for x in samples]
-            if rounds > 1:
-                table += "\n" + ",".join([viewset, f"{mean(samples):.2f}", f"{stdev(samples):.3f}", f"{min(samples):.2f}", f"{max(samples):.2f}"])
-            else:
-                table += "\n" + ",".join([viewset, f"{samples[0]:.2f}", "0", f"{samples[0]:.2f}", f"{samples[0]:.2f}"])
+            raw_data.append(samples) 
         print("")
-        output = subprocess.run(["bash", "-lc", "column -t -s ,"], input=table + "\n", text=True, check=True, capture_output=True)
-        print(output.stdout if output.returncode == 0 else output.stderr)
-        timestamp = datetime.datetime.now().strftime('%Y_%m%d_%H%M')
-        with open(HOME + f"/viewperf_stats_{timestamp}.txt", "w", encoding="utf-8") as file:
-            file.write(output.stdout)
-        with open(HOME + f"/viewperf_stats_{timestamp}.raw.csv", "w", encoding="utf-8") as file:
-            file.write(self.format_raw_data_as_csv(raw))
-
-    def format_raw_data_as_csv(self, data: dict):
-        rows = []
-        rows.append(["FPS"] + list(data.keys()))
-        runs = {k: len(v) for k, v in data.items()}
-        max_runs = max(runs.values())
-        for i in range(max_runs):
-            row = [f"Run {i}"] + [str(data[name][i]) for name in data.keys()]
-            rows.append(row)
-        rows.append(["Average"] + [sum(data[name][:max_runs]) / max_runs for name in data.keys()])
-        return "\n".join([",".join(row) for row in rows])
+        tableview = Table_view(rows=raw_data, add_index_header=True, add_stats_column=True).transpose()
+        tableview.print(logfile_prefix="viewperf_stats_")
 
     def run_in_gdb(self):
         subprocess.run(["bash", "-lc", f"""
