@@ -1169,8 +1169,7 @@ class Table_view:
         lines = []
         for r, row in enumerate(rows):
             left = f"{str(row[0]):<{columns_width[0]}} | "
-            if r == 0: right = " ".join(format_cell(r, c, row[c]).ljust(columns_width[c]) for c in range(1, len(row)))
-            else: right = " ".join(format_cell(r, c, row[c]).rjust(columns_width[c]) for c in range(1, len(row))) 
+            right = " ".join(format_cell(r, c, row[c]).rjust(columns_width[c]) for c in range(1, len(row))) 
             lines.append(left + right)
         
         # Separators 
