@@ -1232,7 +1232,7 @@ class CMD_viewperf:
         rounds = int(horizontal_select("Number of rounds", ["1", "3", "10", "30"], 0))
         raw_data = []
         for viewset in viewsets:
-            samples = [viewset]
+            samples = []
             for i in range(1, rounds + 1):
                 #output = subprocess.run([x for x in [
                 #        f"{self.viewperf_root}/viewperf/bin/viewperf", 
