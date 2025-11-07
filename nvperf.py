@@ -1163,7 +1163,7 @@ class Table_view:
             max(4, max(len(format_cell(r, c, rows[r][c])) for r in range(len(rows))))
             for c in range(len(rows[0]))
         ]
-        total_width = sum(columns_width) + len(columns_width) * 2 - 2 
+        total_width = sum(columns_width) + len(columns_width) * 2 - 2 + 5
         
         # Build lines 
         lines = []
