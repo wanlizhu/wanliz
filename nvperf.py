@@ -1137,32 +1137,46 @@ class CMD_nsys:
 
 class Table_view:
     def __init__(self, columns, header=None):
+        # Append avg and cv to each column 
         for i, column in enumerate(columns):
             avg = mean(column)
-            cv = stdev(column) / avg
+            cv = (stdev(column) / avg) if len(column) >= 2 else 0
             column += [avg, cv]
             if header: 
                 column.insert(0, header[i])
+
+        # Add label column 
         columns.insert(0, [])
         if header:
             columns[0].append(" ")
-        columns[0] += [f"Index {i}" for i in range(len(columns) - 2)]
+        samples_num = len(columns[1]) - ( 1 if header else 0) - 2
+        columns[0] += [f"Index {i}" for i in range(1, samples_num + 1)]
         columns[0] += ["Average", "CV"]
-        columns_width = [2 + max(len(x) if isinstance(x, str) else len(f"{x:.3f}") for x in col) for col in columns]
-        
-        lines = []
-        for i, row in enumerate([list(col) for col in zip_longest(*columns, fillvalue=None)]):
-            N = columns_width[i]
-            if i == 0:
-                lines += row[0] + "|" + "".join([f"{x:<{N}}" for x in row[1:]])
-            elif i == len(columns_width) - 1:
-                lines += row[0] + "|" + "".join([f"{x:>{N}.3f}" for x in row[1:]])
-            else: 
-                lines += row[0] + "|" + "".join([f"{x:>{N}.2%}" for x in row[1:]])
-        lines.insert(1, "-" * sum(columns_width))
-        lines.insert(len(lines) - 2, "-" * sum(columns_width))
-        self.text = "\n".join(lines)
 
+        # Transpose to rows for rendering 
+        rows = [list(col) for col in zip_longest(*columns, fillvalue="")]
+        def format_cell(r, c, val):
+            if r == 0 or c == 0:   return f"{val}"
+            if rows[r][0] == "CV": return f"{val:.3%}"
+            else: return f"{val:.3f}"
+        columns_width = [
+            max(2, max(len(format_cell(r, c, rows[r][c])) for r in range(len(rows))))
+            for c in range(len(rows[0]))
+        ]
+        total_width = sum(columns_width)
+        
+        # Build lines 
+        lines = []
+        for r, row in enumerate(rows):
+            left = f"{str(row[0]):<{columns_width[0]}}|"
+            right = "".join(format_cell(r, c, row[c]).rjust(columns_width[c]) for c in range(1, len(row)))
+            lines.append(left + right)
+        
+        # Separators 
+        lines.insert(1, "-" * total_width)
+        lines.insert(len(lines) - 2, "-" * total_width)
+        self.text = "\n".join(lines)
+    
     def print(self, logfile_prefix=None):
         if logfile_prefix is not None:
             timestamp = datetime.datetime.now().strftime('%Y_%m%d_%H%M')
