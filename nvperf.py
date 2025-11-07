@@ -1158,7 +1158,8 @@ class Table_view:
     def print(self, logfile_prefix=None):
         self.data.insert(1, [f'{"-" * width}' for width in self.widths])
         self.data.insert(len(self.data) - 2, [f'{"-" * width}' for width in self.widths])
-        self.data = [row.insert(1, "|") for row in self.data]
+        for row in self.data:
+            row.insert(1, "|")
         result = "\n".join(["".join([(x if isinstance(x, str) else f"{x:.3f}") for x in row]) for row in self.data])
     
         if logfile_prefix is not None:
