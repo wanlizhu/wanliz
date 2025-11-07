@@ -1141,18 +1141,19 @@ class Table_view:
         #   [name1, 0.0, 0.0, 0.0],
         #   [name2, 0.0, 0.0, 0.0],
         # ]
-        rows.insert(0, [])
-        for i in range(len(rows[1])):
-            rows[0].append(" " if isinstance(rows[1][i], str) else f"Index {i}")
-        for i in range(len(rows)):
+        self.data = rows 
+        self.data.insert(0, [])
+        for i in range(len(self.data[1])):
+            self.data[0].append(" " if isinstance(self.data[1][i], str) else f"Index {i}")
+        for i in range(len(self.data)):
             if i == 0:
-                rows[0] += ["Average", "CV"]
+                self.data[0] += ["Average", "CV"]
             else: 
-                samples = [x for x in rows[i] if not isinstance(x, str)]
-                rows[i].append(mean(samples))
-                rows[i].append(stdev(samples) / mean(samples))
-        self.widths = [max([2 + len(x if isinstance(x, str) else f"{x:.3f}") for x in row], default=1) for row in rows]
-        self.data = [list(col) for col in zip_longest(*rows, fillvalue=0)]  
+                samples = [x for x in self.data[i] if not isinstance(x, str)]
+                self.data[i].append(mean(samples))
+                self.data[i].append(stdev(samples) / mean(samples))
+        self.widths = [max([2 + len(x if isinstance(x, str) else f"{x:.3f}") for x in row], default=1) for row in self.data]
+        self.data = [list(col) for col in zip_longest(*self.data, fillvalue=0)]  
 
     def print(self, logfile_prefix=None):
         self.data.insert(1, [f'{"-" * width}' for width in self.widths])
@@ -1186,8 +1187,7 @@ class CMD_viewperf:
                 return root.find(f".//Test[@Index='{subtest}']").get("FPS")
             else:
                 return root.find("Composite").get("Score")
-        except Exception as e:
-            print(e)
+        except Exception:
             return 0
     
     def run(self):
@@ -1334,5 +1334,5 @@ if __name__ == "__main__":
         cmd = globals().get(f"CMD_{cmd}")()
         cmd.run()
     except Exception as e:
-        print(e)
+        traceback.print_exc()
     horizontal_select("Press [Enter] to exit")
