@@ -1139,10 +1139,10 @@ class Table_view:
     def __init__(self, rows, add_index_header, add_stats_column):
         if add_index_header:
             rows.insert(0, [])
-            for i in range(len(self.data[0])):
-                rows[0].append(" " if isinstance(self.data[0][i], str) else f"Index {i}")
+            for i in range(len(rows[0])):
+                rows[0].append(" " if isinstance(rows[0][i], str) else f"Index {i}")
         if add_stats_column:
-            for i in range(len(self.data)):
+            for i in range(len(rows)):
                 if add_index_header:
                     rows[0] += ["Average", "CV"]
                     add_index_header = False
