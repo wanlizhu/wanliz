@@ -1251,7 +1251,7 @@ class CMD_viewperf:
                 print(f"{viewset}{subtest if subtest else ''} @ run {i:02d}: {fps: 3.2f} FPS")
             raw_data.append(samples) 
         print("")
-        Table_view(raw_data).print(logfile_prefix="viewperf_stats_")
+        Table_view(columns=raw_data, header=viewsets).print(logfile_prefix="viewperf_stats_")
 
     def run_in_gdb(self):
         subprocess.run(["bash", "-lc", f"""
