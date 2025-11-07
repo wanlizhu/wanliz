@@ -1136,41 +1136,39 @@ class CMD_nsys:
 
 
 class Table_view:
-    def __init__(self, rows):
-        # rows = [
-        #   [name1, 0.0, 0.0, 0.0],
-        #   [name2, 0.0, 0.0, 0.0],
-        # ]
-        self.data = rows 
-        self.data.insert(0, [])
-        for i in range(len(self.data[1])):
-            self.data[0].append(" " if isinstance(self.data[1][i], str) else f"Index {i}")
-        for i in range(len(self.data)):
+    def __init__(self, columns, header=None):
+        for i, column in enumerate(columns):
+            avg = mean(column)
+            cv = stdev(column) / avg
+            column += [avg, cv]
+            if header: 
+                column.insert(0, header[i])
+        columns.insert(0, [])
+        if header:
+            columns[0].append(" ")
+        columns[0] += [f"Index {i}" for i in range(len(columns) - 2)]
+        columns[0] += ["Average", "CV"]
+        columns_width = [2 + max(len(x) if isinstance(x, str) else len(f"{x:.3f}") for x in col) for col in columns]
+        
+        lines = []
+        for i, row in enumerate([list(col) for col in zip_longest(*columns, fillvalue=None)]):
+            N = columns_width[i]
             if i == 0:
-                self.data[0] += ["Average", "CV"]
+                lines += row[0] + "|" + "".join([f"{x:<{N}}" for x in row[1:]])
+            elif i == len(columns_width) - 1:
+                lines += row[0] + "|" + "".join([f"{x:>{N}.3f}" for x in row[1:]])
             else: 
-                samples = [x for x in self.data[i] if not isinstance(x, str)]
-                self.data[i].append(mean(samples))
-                self.data[i].append(stdev(samples) / mean(samples))
-        self.widths = [max([2 + len(x if isinstance(x, str) else f"{x:.3f}") for x in row], default=1) for row in self.data]
-        self.data = [list(col) for col in zip_longest(*self.data, fillvalue=0)]  
-        self.data.insert(1, [f'{"-" * width}' for width in self.widths])
-        self.data.insert(len(self.data) - 2, [f'{"-" * width}' for width in self.widths])
-
-        self.lines = []
-        for row in self.data:
-            for i, x in enumerate(row):
-                row[i] = f"{x:<{self.widths[i]}}" if isinstance(x, str) else f"{x:>{self.widths[i]}.3f}"
-            #row.insert(1, "|")
-            self.lines.append("".join(row))
+                lines += row[0] + "|" + "".join([f"{x:>{N}.2%}" for x in row[1:]])
+        lines.insert(1, "-" * sum(columns_width))
+        lines.insert(len(lines) - 2, "-" * sum(columns_width))
+        self.text = "\n".join(lines)
 
     def print(self, logfile_prefix=None):
-        result = "\n".join(self.lines)
         if logfile_prefix is not None:
             timestamp = datetime.datetime.now().strftime('%Y_%m%d_%H%M')
             with open(HOME + f"/{logfile_prefix}{timestamp}.txt", "w", encoding="utf-8") as file:
-                file.write(result)
-        print(result)
+                file.write(self.text)
+        print(self.text)
 
 
 class CMD_viewperf:
