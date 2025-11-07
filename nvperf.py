@@ -1141,7 +1141,6 @@ class Table_view:
         #   [name1, 0.0, 0.0, 0.0],
         #   [name2, 0.0, 0.0, 0.0],
         # ]
-
         rows.insert(0, [])
         for i in range(len(rows[1])):
             rows[0].append(" " if isinstance(rows[1][i], str) else f"Index {i}")
