@@ -290,7 +290,7 @@ class CMD_config:
 
         # Add ~/wanliz to PATH
         subprocess.run(["bash", "-lc", rf"""
-            if [[ -z $(which nvperf.sh) ]]; then 
+            if [[ -z $(which nvperf) ]]; then 
                 echo -e '\nexport PATH="$PATH:$HOME/wanliz"' >> ~/.bashrc
             fi 
         """], check=True)
@@ -783,14 +783,14 @@ class CMD_install:
         return "Install nvidia driver or other packages"
     
     def run(self):
-        driver = horizontal_select("Driver path", ["office", "local", "prebuilt"], 0)
+        driver = horizontal_select("Driver path", ["office", "local", "precompiled"], 0)
         if driver == "local":
             branch, config, arch, version = self.select_nvidia_driver("local")
             driver = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
         elif driver == "office":
             branch, config, arch, version = self.select_nvidia_driver("office") # The entire output folder to be synced to /tmp/office/
             driver = f"/tmp/office/_out/Linux_{arch}_{config}/NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run"
-        elif driver == "prebuilt": 
+        elif driver == "precompiled": 
             raise RuntimeError("Not implemented yet")
         
         if not os.path.exists(driver):
@@ -1194,7 +1194,7 @@ class Table_view:
         # Append avg and cv to each column 
         for i, column in enumerate(columns):
             avg = mean(column)
-            cv = (stdev(column) / avg) if len(column) >= 2 else 0
+            cv = (stdev(column) / avg) if (len(column) >= 2 and avg != 0) else 0
             column += [avg, cv]
             if header: 
                 column.insert(0, header[i])
@@ -1318,7 +1318,10 @@ class CMD_viewperf:
                 print(f"{viewset}{subtest if subtest else ''} @ run {i:02d}: {fps: 3.2f} FPS")
             raw_data.append(samples) 
         print("")
-        Table_view(columns=raw_data, header=viewsets).print(logfile_prefix="viewperf_stats_")
+        try:
+            Table_view(columns=raw_data, header=viewsets).print(logfile_prefix="viewperf_stats_")
+        except Exception:
+            print("\n".join([f"{name:>9}:  " + "  ".join([f"{x:>7.2f}" for x in raw_data[index]]) for index, name in enumerate(viewsets)]))
 
     def run_in_gdb(self):
         subprocess.run(["bash", "-lc", f"""
