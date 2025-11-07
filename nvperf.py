@@ -1156,15 +1156,17 @@ class Table_view:
         self.data = [list(col) for col in zip_longest(*self.data, fillvalue=0)]  
         self.data.insert(1, [f'{"-" * width}' for width in self.widths])
         self.data.insert(len(self.data) - 2, [f'{"-" * width}' for width in self.widths])
+
+        self.lines = []
         for row in self.data:
+            for i, x in enumerate(row):
+                row[i] = f"{x:<{self.widths[i]}}" if isinstance(x, str) else f"{x:>{self.widths[i]}.3f}"
             row.insert(1, "|")
+            self.lines.append(row)
+
 
     def print(self, logfile_prefix=None):
-        result = "\n".join(["".join(
-            (f"{x:<{self.widths[i]}}" if isinstance(x, str) else f"{x:>{self.widths[i]}.3f}") 
-            for i, x in enumerate(row) 
-        )] for row in self.data)
-    
+        result = "\n".join(self.lines)
         if logfile_prefix is not None:
             timestamp = datetime.datetime.now().strftime('%Y_%m%d_%H%M')
             with open(HOME + f"/{logfile_prefix}{timestamp}.txt", "w", encoding="utf-8") as file:
