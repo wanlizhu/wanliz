@@ -1199,7 +1199,7 @@ class Table_view:
             # Append avg and cv to each column 
             for i, column in enumerate(self.columns):
                 avg = mean(column)
-                cv = (stdev(column) / avg) if (len(column) >= 2 and avg != 0) else 0
+                cv = (stdev(column) / avg) if (len(column) >= 2 and avg != 0.0) else 0
                 column += [avg, cv]
                 if self.header: 
                     column.insert(0, self.header[i])
