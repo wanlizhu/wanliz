@@ -1160,7 +1160,7 @@ class Table_view:
             if rows[r][0] == "CV": return f"{val:.3%}"
             else: return f"{val:.3f}"
         columns_width = [
-            max(4, max(len(format_cell(r, c, rows[r][c]) + 2) for r in range(len(rows))))
+            max(4, max(2 + len(format_cell(r, c, rows[r][c])) for r in range(len(rows))))
             for c in range(len(rows[0]))
         ]
         total_width = sum(columns_width)
