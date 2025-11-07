@@ -18,6 +18,7 @@ import importlib
 import traceback
 import psutil
 import select
+import math 
 import xml.etree.ElementTree as ET 
 from pathlib import Path 
 from datetime import timedelta
@@ -1199,7 +1200,8 @@ class Table_view:
             # Append avg and cv to each column 
             for i, column in enumerate(self.columns):
                 avg = mean(column)
-                cv = (stdev(column) / avg) if (len(column) >= 2 and avg != 0.0) else 0
+                avg_is_zero = math.isclose(avg, 0.0, rel_tol=0.0, abs_tol=1e-12)
+                cv = (stdev(column) / avg) if (len(column) >= 2 and not avg_is_zero) else 0
                 column += [avg, cv]
                 if self.header: 
                     column.insert(0, self.header[i])
