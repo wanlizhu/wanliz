@@ -1163,13 +1163,13 @@ class Table_view:
             max(4, max(len(format_cell(r, c, rows[r][c])) for r in range(len(rows))))
             for c in range(len(rows[0]))
         ]
-        total_width = sum(columns_width)
+        total_width = sum(columns_width) + len(columns_width) * 2 - 2 
         
         # Build lines 
         lines = []
         for r, row in enumerate(rows):
-            left = f"{str(row[0]):<{columns_width[0]}} | "
-            right = " ".join(format_cell(r, c, row[c]).rjust(columns_width[c]) for c in range(1, len(row))) 
+            left = f"{str(row[0]):<{columns_width[0]}}  |  "
+            right = "  ".join(format_cell(r, c, row[c]).rjust(columns_width[c]) for c in range(1, len(row))) 
             lines.append(left + right)
         
         # Separators 
