@@ -1136,13 +1136,17 @@ class CMD_nsys:
 
 
 class Table_view:
-    def __init__(self, rows, add_index_header, add_stats_column):
-        if add_index_header:
-            rows.insert(0, [])
-            for i in range(len(rows[1])):
-                rows[0].append(" " if isinstance(rows[1][i], str) else f"Index {i}")
-        if add_stats_column:
-            for i in range(len(rows)):
+    def __init__(self, rows):
+        # rows = [
+        #   [name1, 0.0, 0.0, 0.0],
+        #   [name2, 0.0, 0.0, 0.0],
+        # ]
+
+        rows.insert(0, [])
+        for i in range(len(rows[1])):
+            rows[0].append(" " if isinstance(rows[1][i], str) else f"Index {i}")
+        
+        for i in range(len(rows)):
                 if add_index_header:
                     rows[0] += ["Average", "CV"]
                     add_index_header = False
@@ -1150,25 +1154,16 @@ class Table_view:
                 samples = [x for x in rows[i] if not isinstance(x, str)]
                 rows[i].append(mean(samples))
                 rows[i].append(stdev(samples) / mean(samples))
-        self.data = rows 
 
-    def transpose(self, fillvalue=0):
-        self.data = [list(col) for col in zip_longest(*self.data, fillvalue=fillvalue)]
-        return self 
+        self.widths = [max([2 + len(x if isinstance(x, str) else f"{x:.3f}") for x in row], default=1) for row in rows]
+        self.data = [list(col) for col in zip_longest(*rows, fillvalue=0)]  
 
     def print(self, logfile_prefix=None):
-        csv = "\n".join([",".join([(x if isinstance(x, str) else f"{x:.3f}") for x in row]) for row in self.data])
-        if platform.system() == "Linux":
-            result = subprocess.run(["bash", "-lc", rf"""
-                echo "{csv}" | column -t -s, 
-            """], check=True, text=True, capture_output=True).stdout
-        elif platform.system() == "Windows":
-            result = subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
-                echo "{csv}" | ConvertFrom-Csv |  Format-Table -AutoSize
-            """], check=True, text=True, capture_output=True).stdout 
-        else:
-            result = str(self.data)
-        
+        self.data.insert(1, [f'{"-" * width}' for width in self.widths])
+        self.data.insert(len(self.data) - 2, [f'{"-" * width}' for width in self.widths])
+        self.data = [row.insert(1, "|") for row in self.data]
+        result = "\n".join(["".join([(x if isinstance(x, str) else f"{x:.3f}") for x in row]) for row in self.data])
+    
         if logfile_prefix is not None:
             timestamp = datetime.datetime.now().strftime('%Y_%m%d_%H%M')
             with open(HOME + f"/{logfile_prefix}{timestamp}.txt", "w", encoding="utf-8") as file:
@@ -1257,8 +1252,7 @@ class CMD_viewperf:
                 print(f"{viewset}{subtest if subtest else ''} @ run {i:02d}: {fps: 3.2f} FPS")
             raw_data.append(samples) 
         print("")
-        tableview = Table_view(rows=raw_data, add_index_header=True, add_stats_column=True).transpose()
-        tableview.print(logfile_prefix="viewperf_stats_")
+        Table_view(raw_data).print(logfile_prefix="viewperf_stats_")
 
     def run_in_gdb(self):
         subprocess.run(["bash", "-lc", f"""
