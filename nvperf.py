@@ -25,6 +25,10 @@ from time import perf_counter
 from statistics import mean, stdev
 from contextlib import suppress
 from itertools import zip_longest
+try:
+    import termios, tty, msvcrt
+except Exception:
+    pass 
 
 def horizontal_select(prompt, options=None, index=None, separator="/"):
     """
@@ -136,9 +140,6 @@ def horizontal_select(prompt, options=None, index=None, separator="/"):
                 raise KeyboardInterrupt
 
 
-
-
-
 def check_global_env():
     global RESET, DIM, RED, CYAN, BOLD 
     global ERASE_LEFT, ERASE_RIGHT, ERASE_LINE
@@ -213,6 +214,103 @@ def main_cmd_prompt():
     if globals().get(f"CMD_{cmd}") is None:
         raise RuntimeError(f"No command class for {cmd!r}")
     return cmd 
+
+
+class CMD_config:
+    def __str__(self):
+        self.platforms = ["Linux", "Windows"]
+        return "Configure test environment"
+    
+    def run(self):
+        self.hosts = {
+            "office": "172.16.179.143",
+            "proxy": "10.176.11.106",
+            "horizon5": "172.16.178.123",
+            "horizon6": "172.16.177.182",
+            "horizon7": "172.16.177.216",
+            "n1x6": "10.31.40.241",
+        }
+        if platform.system() == "Windows":
+            self.config_windows_host()
+        elif platform.system() == "Linux":
+            self.config_linux_host()
+
+    def config_windows_host(self):
+        if ctypes.windll.shell32.IsUserAnAdmin() == 0:
+            cmdline = subprocess.list2cmdline([os.path.abspath(sys.argv[0])] + [arg for arg in sys.argv[1:] if arg != "--admin"])
+            ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmdline, None, 1)
+            sys.exit(0)
+            
+        names = r"\b(" + "|".join(re.escape(k) for k in (*self.hosts, "wanliz")) + r")\b"
+        mappings = "\n".join(f"{ip} {name}" for name, ip in self.hosts.items())
+        subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters' -Name 'AllowInsecureGuestAuth' -Type DWord -Value 1
+            Write-Host "Updating C:\Windows\System32\drivers\etc\hosts"
+            $ErrorActionPreference = 'Stop'
+            $hostsfile = 'C:\Windows\System32\drivers\etc\hosts'
+            $pattern = '({names})'
+            if ((Get-Item -LiteralPath $hostsfile).Attributes -band [IO.FileAttributes]::ReadOnly) {{
+                attrib -R $hostsfile
+            }}
+            $lines = Get-Content -LiteralPath $hostsfile -Encoding ASCII -ErrorAction SilentlyContinue 
+            if ($null -eq $lines) {{ $lines = @() }}
+            $content_old = $lines | Where-Object {{ ($_ -notmatch $pattern) -and ($_.Trim() -ne '') }}
+            $content_new = ($content_old + "" + "`n# --- wanliz ---`n{mappings}`n") -join "`r`n"
+            [IO.File]::WriteAllText($hostsfile, $content_new + "`r`n", [Text.Encoding]::ASCII)
+        """], check=True)
+        
+    def config_linux_host(self):
+        # Enable no-password sudo
+        subprocess.run(["bash", "-lc", rf"""
+            if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
+                echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
+            fi
+        """], check=True)
+        print("No-password sudo \t [ ENABLED ]")
+
+        # Mount required folders
+        if not any(p.mountpoint == "/mnt/linuxqa" for p in psutil.disk_partitions(all=True)):
+            subprocess.run("sudo mkdir -p /mnt/linuxqa", check=True, shell=True)
+            subprocess.run("sudo apt install -y nfs-common cifs-utils &>/dev/null", check=True, shell=True)
+            subprocess.run("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa", check=True, shell=True)
+        print("/mnt/linuxqa \t [ MOUNTED ]")
+
+        # Add known host IPs (hostname -> IP)
+        hosts_out = []
+        for line in Path("/etc/hosts").read_text().splitlines():
+            if line.strip().startswith("#"): 
+                continue
+            if any(name in self.hosts for name in line.split()[1:]):
+                continue 
+            hosts_out.append(line)
+        hosts_out += [f"{ip}\t{name}" for name, ip in self.hosts.items()]
+        Path("/tmp/hosts").write_text("\n".join(hosts_out) + "\n")
+        subprocess.run("sudo install -m 644 /tmp/hosts /etc/hosts", check=True, shell=True)
+        print("/etc/hosts \t [ UPDATED ]")
+
+        # Add ~/wanliz to PATH
+        subprocess.run(["bash", "-lc", rf"""
+            if [[ -z $(which nvperf.sh) ]]; then 
+                echo -e '\nexport PATH="$PATH:$HOME/wanliz"' >> ~/.bashrc
+            fi 
+        """], check=True)
+
+        openssl_passwd = None 
+        if not os.path.exists(HOME + "/.ssh/id_ed25519"):
+            if openssl_passwd is None: openssl_passwd = getpass.getpass("Enter OpenSSL password: ")
+            cipher_prv = "U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo"
+            subprocess.run("mkdir -p ~/.ssh", check=True, shell=True)
+            subprocess.run(["bash", "-lc", f"echo '{cipher_prv}' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{openssl_passwd}' > $HOME/.ssh/id_ed25519"], check=True)
+            subprocess.run("chmod 600 ~/.ssh/id_ed25519", check=True, shell=True)
+            subprocess.run("echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > $HOME/.ssh/id_ed25519.pub", check=True, shell=True)
+            subprocess.run("chmod 644 ~/.ssh/id_ed25519.pub", check=True, shell=True)
+            print("~/.ssh/id_ed25519.pub \t [ ADDED ]")
+        if not os.path.exists(HOME + "/.gtl_api_key"):
+            if openssl_passwd is None: openssl_passwd = getpass.getpass("Enter OpenSSL password: ")
+            cipher = "U2FsdGVkX18BU0ZpoGynLWZBV16VNV2x85CjdpJfF+JF4HhpClt/vTyr6gs6GAq0lDVWvNk7L7s7eTFcJRhEnU4IpABfxIhfktMypWw85PuJCcDXOyZm396F02KjBRwunVfNkhfuinb5y2L6YR9wYbmrGDn1+DjodSWzt1NgoWotCEyYUz0xAIstEV6lF5zedcGwSzHDdFhj3hh5YxQFANL96BFhK9aSUs4Iqs9nQIT9evjinEh5ZKNq5aJsll91czHS2oOi++7mJ9v29sU/QjaqeSWDlneZj4nPYXhZRCw="
+            subprocess.run(["bash", "-lc", f"echo '{cipher}' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{openssl_passwd}' > ~/.gtl_api_key"], check=True)
+            subprocess.run("chmod 500 ~/.gtl_api_key", check=True, shell=True)
+            print("~/.gtl_api_key \t [ ADDED ]")
 
 
 class CMD_info:
@@ -359,94 +457,6 @@ class CMD_rsync:
         subprocess.run(["bash", "-lc", rf"""
             time rsync -ah --info=progress2 {"--delete --delete-excluded" if delete else ""}  {" ".join([f"--exclude '{name}'" for name in excludes]) if excludes else ""} {src} {dst}
         """], check=True)
-
-
-class CMD_config:
-    def __str__(self):
-        self.platforms = ["Linux", "Windows"]
-        return "Configure test environment"
-    
-    def run(self):
-        self.hosts = {
-            "office": "172.16.179.143",
-            "proxy": "10.176.11.106",
-            "horizon5": "172.16.178.123",
-            "horizon6": "172.16.177.182",
-            "horizon7": "172.16.177.216",
-            "n1x6": "10.31.40.241",
-        }
-        if platform.system() == "Windows":
-            self.config_windows_host()
-        elif platform.system() == "Linux":
-            self.config_linux_host()
-
-    def config_windows_host(self):
-        if ctypes.windll.shell32.IsUserAnAdmin() == 0:
-            cmdline = subprocess.list2cmdline([os.path.abspath(sys.argv[0])] + [arg for arg in sys.argv[1:] if arg != "--admin"])
-            ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmdline, None, 1)
-            sys.exit(0)
-            
-        names = r"\b(" + "|".join(re.escape(k) for k in (*self.hosts, "wanliz")) + r")\b"
-        mappings = "\n".join(f"{ip} {name}" for name, ip in self.hosts.items())
-        subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
-            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters' -Name 'AllowInsecureGuestAuth' -Type DWord -Value 1
-            Write-Host "Updating C:\Windows\System32\drivers\etc\hosts"
-            $ErrorActionPreference = 'Stop'
-            $hostsfile = 'C:\Windows\System32\drivers\etc\hosts'
-            $pattern = '({names})'
-            if ((Get-Item -LiteralPath $hostsfile).Attributes -band [IO.FileAttributes]::ReadOnly) {{
-                attrib -R $hostsfile
-            }}
-            $lines = Get-Content -LiteralPath $hostsfile -Encoding ASCII -ErrorAction SilentlyContinue 
-            if ($null -eq $lines) {{ $lines = @() }}
-            $content_old = $lines | Where-Object {{ ($_ -notmatch $pattern) -and ($_.Trim() -ne '') }}
-            $content_new = ($content_old + "" + "`n# --- wanliz ---`n{mappings}`n") -join "`r`n"
-            [IO.File]::WriteAllText($hostsfile, $content_new + "`r`n", [Text.Encoding]::ASCII)
-        """], check=True)
-        
-    def config_linux_host(self):
-        # Enable no-password sudo
-        subprocess.run(["bash", "-lc", rf"""
-            if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
-                echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
-            fi
-        """], check=True)
-        print("No-password sudo \t [ ENABLED ]")
-
-        # Mount required folders
-        if not any(p.mountpoint == "/mnt/linuxqa" for p in psutil.disk_partitions(all=True)):
-            subprocess.run("sudo mkdir -p /mnt/linuxqa", check=True, shell=True)
-            subprocess.run("sudo apt install -y nfs-common cifs-utils &>/dev/null", check=True, shell=True)
-            subprocess.run("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa", check=True, shell=True)
-        print("/mnt/linuxqa \t [ MOUNTED ]")
-
-        # Add known host IPs (hostname -> IP)
-        hosts_out = []
-        for line in Path("/etc/hosts").read_text().splitlines():
-            if line.strip().startswith("#"): 
-                continue
-            if any(name in self.hosts for name in line.split()[1:]):
-                continue 
-            hosts_out.append(line)
-        hosts_out += [f"{ip}\t{name}" for name, ip in self.hosts.items()]
-        Path("/tmp/hosts").write_text("\n".join(hosts_out) + "\n")
-        subprocess.run("sudo install -m 644 /tmp/hosts /etc/hosts", check=True, shell=True)
-        print("/etc/hosts \t [ UPDATED ]")
-
-        openssl_passwd = getpass.getpass("Enter OpenSSL password: ")
-        if not os.path.exists(HOME + "/.ssh/id_ed25519"):
-            cipher_prv = "U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo"
-            subprocess.run("mkdir -p ~/.ssh", check=True, shell=True)
-            subprocess.run(["bash", "-lc", f"echo '{cipher_prv}' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{openssl_passwd}' > $HOME/.ssh/id_ed25519"], check=True)
-            subprocess.run("chmod 600 ~/.ssh/id_ed25519", check=True, shell=True)
-            subprocess.run("echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > $HOME/.ssh/id_ed25519.pub", check=True, shell=True)
-            subprocess.run("chmod 644 ~/.ssh/id_ed25519.pub", check=True, shell=True)
-            print("~/.ssh/id_ed25519.pub \t [ ADDED ]")
-        if not os.path.exists(HOME + "/.gtl_api_key"):
-            cipher = "U2FsdGVkX18BU0ZpoGynLWZBV16VNV2x85CjdpJfF+JF4HhpClt/vTyr6gs6GAq0lDVWvNk7L7s7eTFcJRhEnU4IpABfxIhfktMypWw85PuJCcDXOyZm396F02KjBRwunVfNkhfuinb5y2L6YR9wYbmrGDn1+DjodSWzt1NgoWotCEyYUz0xAIstEV6lF5zedcGwSzHDdFhj3hh5YxQFANL96BFhK9aSUs4Iqs9nQIT9evjinEh5ZKNq5aJsll91czHS2oOi++7mJ9v29sU/QjaqeSWDlneZj4nPYXhZRCw="
-            subprocess.run(["bash", "-lc", f"echo '{cipher}' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{openssl_passwd}' > ~/.gtl_api_key"], check=True)
-            subprocess.run("chmod 500 ~/.gtl_api_key", check=True, shell=True)
-            print("~/.gtl_api_key \t [ ADDED ]")
 
 
 class CMD_share:
