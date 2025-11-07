@@ -129,7 +129,7 @@ def horizontal_select(prompt, options=None, index=None, separator="/"):
     with raw_io_mode(fd):
         while True:
             print_prompt(index)
-            key = read_windows_key() if is_windows else read_posix_key()
+            key = read_windows_key() if is_windows else read_posix_key(fd)
             if key == "enter":
                 sys.stdout.write("\r\n"); sys.stdout.flush()
                 return input(": ") if options[index] == "<input>" else options[index]
