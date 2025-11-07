@@ -1162,8 +1162,7 @@ class Table_view:
             for i, x in enumerate(row):
                 row[i] = f"{x:<{self.widths[i]}}" if isinstance(x, str) else f"{x:>{self.widths[i]}.3f}"
             row.insert(1, "|")
-            self.lines.append(row)
-
+            self.lines.append("".join(row))
 
     def print(self, logfile_prefix=None):
         result = "\n".join(self.lines)
