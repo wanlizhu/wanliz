@@ -294,6 +294,7 @@ class CMD_config:
                 echo -e '\nexport PATH="$PATH:$HOME/wanliz"' >> ~/.bashrc
             fi 
         """], check=True)
+        print("~/.bashrc [ UPDATED ]")
 
         openssl_passwd = None 
         if not os.path.exists(HOME + "/.ssh/id_ed25519"):
