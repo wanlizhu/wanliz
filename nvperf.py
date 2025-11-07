@@ -1154,13 +1154,12 @@ class Table_view:
                 self.data[i].append(stdev(samples) / mean(samples))
         self.widths = [max([2 + len(x if isinstance(x, str) else f"{x:.3f}") for x in row], default=1) for row in self.data]
         self.data = [list(col) for col in zip_longest(*self.data, fillvalue=0)]  
-
-    def print(self, logfile_prefix=None):
         self.data.insert(1, [f'{"-" * width}' for width in self.widths])
         self.data.insert(len(self.data) - 2, [f'{"-" * width}' for width in self.widths])
         for row in self.data:
             row.insert(1, "|")
-        
+
+    def print(self, logfile_prefix=None):
         result = "\n".join(["".join(
             (f"{x:<{self.widths[i]}}" if isinstance(x, str) else f"{x:>{self.widths[i]}.3f}") 
             for i, x in enumerate(row) 
