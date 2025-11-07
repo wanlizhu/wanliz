@@ -1160,7 +1160,7 @@ class Table_view:
         self.data.insert(len(self.data) - 2, [f'{"-" * width}' for width in self.widths])
         for row in self.data:
             row.insert(1, "|")
-        result = "\n".join(["".join([(x if isinstance(x, str) else f"{x:.3f}") for x in row]) for row in self.data])
+        result = "\n".join(["".join([(f"{x:<{self.widths[i]}}" if isinstance(x, str) else f"{x:>{self.widths[i]}.3f}" for i in range(self.widths)) for x in row]) for row in self.data])
     
         if logfile_prefix is not None:
             timestamp = datetime.datetime.now().strftime('%Y_%m%d_%H%M')
