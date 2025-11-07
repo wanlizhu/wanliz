@@ -17,6 +17,7 @@ import tempfile
 import importlib
 import traceback
 import psutil
+import select
 import xml.etree.ElementTree as ET 
 from pathlib import Path 
 from datetime import timedelta
@@ -24,11 +25,118 @@ from time import perf_counter
 from statistics import mean, stdev
 from contextlib import suppress
 from itertools import zip_longest
-if platform.system() == "Linux": 
-    import termios
-    import tty 
-if platform.system() == "Windows":
-    import msvcrt
+
+def horizontal_select(prompt, options=None, index=None, separator="/"):
+    """
+    Arrow key horizontal selector that works in TTY, GNU screen, tmux,
+    Windows terminal and Powershell.
+    """
+    from contextlib import contextmanager
+    try: # Optional Linux platform bits
+        import termios, tty
+    except Exception:
+        termios = tty = None 
+    try: # Optional Windows platform bits
+        import msvcrt
+    except Exception:
+        msvcrt = None 
+
+    # Styling with safe fallbacks
+    BOLD  = globals().get("BOLD", "")
+    CYAN  = globals().get("CYAN", "")
+    RESET = globals().get("RESET", "")
+    DIM   = globals().get("DIM", "")
+    RED   = globals().get("RED", "")
+    
+    global ARGPOS 
+    if "ARGPOS" not in globals():
+        ARGPOS = 0 
+    if ARGPOS > 0 and ARGPOS < len(sys.argv):
+        value = sys.argv[ARGPOS]
+        ARGPOS += 1
+        print(f"{BOLD}{CYAN}{prompt} : {RESET}<< {RED}{value}{RESET}")
+        return value 
+    if options is None or index is None:
+        return input(f"{BOLD}{CYAN}{prompt} : {RESET}")
+    if not (0 <= index < len(options)):
+        raise RuntimeError(f"Index {index} out of range [0, {len(options)})")
+    
+    # Detect IO mode
+    is_tty = sys.stdin.isatty() and sys.stdout.isatty()
+    is_posix = (os.name == "posix" and termios and tty and is_tty)
+    is_windows = (os.name == "nt" and msvcrt is not None and is_tty)
+
+    # Fallback if no interactive terminal (e.g. IDE, redirected IO)
+    if not (is_posix or is_windows):
+        print("[non-interactive terminal detected]")
+        return input(f"{BOLD}{CYAN}{prompt} : {RESET}")
+
+    # Print prompt message
+    def print_prompt(idx: int):
+        opts = separator.join(
+            f"{RESET}{DIM}[{o}]{RESET}{BOLD}{CYAN}" if i == idx else str(o)
+            for i, o in enumerate(options)
+        )
+        sys.stdout.write("\r\033[2K" + f"{BOLD}{CYAN}{prompt} ({opts}): {RESET}")
+        sys.stdout.flush()
+    
+    # POSIX key reader
+    def read_posix_key(fd, timeout=0.05):
+        b = os.read(fd, 1)
+        if b in (b"\r", b"\n"): return "enter"
+        if b == b"\x03": return "ctrl-c"
+        if b != b"\x1b": return None  # Ignore regular chars
+        buf = b
+        while True:
+            r, _, _ = select.select([fd], [], [], timeout)
+            if not r: break
+            buf += os.read(fd, 1)
+            if buf.endswith((b"A", b"B", b"C", b"D", b"~")) or buf.endswith(b"200~") or buf.endswith(b"201~"): break
+        s = buf.decode("ascii", "ignore")
+        if s.endswith("D") or s == "\x1bOD": return "left"
+        if s.endswith("C") or s == "\x1bOC": return "right"
+        if s.endswith("A") or s == "\x1bOA": return "up"
+        if s.endswith("B") or s == "\x1bOB": return "down"
+        return None
+
+    # Windows key reader 
+    def read_windows_key():
+        ch = msvcrt.getwch()
+        if ch in ("\r", "\n"): return "enter"
+        if ch == "\x03": return "ctrl-c"
+        if ch in ("\x00", "\xe0"):
+            tail = msvcrt.getwch()
+            return {"K": "left", "M": "right", "H": "up", "P": "down"}.get(tail)
+        return None
+    
+    @contextmanager
+    def raw_io_mode(fd):
+        if not is_posix:
+            yield 
+            return 
+        old = termios.tcgetattr(fd)
+        tty.setraw(fd)
+        try:
+            yield
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
+    
+    fd = sys.stdin.fileno() if is_posix else None
+    with raw_io_mode(fd):
+        while True:
+            print_prompt(index)
+            key = read_windows_key() if is_windows else read_posix_key()
+            if key == "enter":
+                sys.stdout.write("\r\n"); sys.stdout.flush()
+                return input(": ") if options[index] == "<input>" else options[index]
+            elif key == "left": index = (index - 1) % len(options)
+            elif key == "right": index = (index + 1) % len(options)
+            elif key == "ctrl-c":
+                sys.stdout.write("\r\n"); sys.stdout.flush()
+                raise KeyboardInterrupt
+
+
+
 
 
 def check_global_env():
@@ -105,71 +213,6 @@ def main_cmd_prompt():
     if globals().get(f"CMD_{cmd}") is None:
         raise RuntimeError(f"No command class for {cmd!r}")
     return cmd 
-
-
-def horizontal_select(prompt, options=None, index=None, separator="/"):
-    global ARGPOS
-    if ARGPOS > 0 and ARGPOS < len(sys.argv):
-        value = sys.argv[ARGPOS]
-        print(f"{BOLD}{CYAN}{prompt} : {RESET}<< {RED}{value}{RESET}")
-        ARGPOS += 1
-        return value 
-    if options is None or index is None:
-        return input(f"{BOLD}{CYAN}{prompt} : {RESET}")
-    if len(options) <= index:
-        raise RuntimeError(f"Index {index} out of range [0, {len(options)})") 
-
-    is_linux = (platform.system() == "Linux")
-    stdin_fd = None 
-    oldattr = None 
-    try:
-        if is_linux and termios and tty:
-            stdin_fd = sys.stdin.fileno()
-            oldattr = termios.tcgetattr(stdin_fd)
-            tty.setraw(stdin_fd)
-
-        while index >= 0 and index < len(options):
-            options_str = separator.join(
-                (f"{RESET}{DIM}[{option}]{RESET}{BOLD}{CYAN}" if i == index else option) 
-                for i, option in enumerate(options)
-            )
-            sys.stdout.write("\r\033[2K" + f"{BOLD}{CYAN}{prompt} ({options_str}): {RESET}")
-            sys.stdout.flush()
-
-            ch1 = (sys.stdin.read(1) if (is_linux and termios and tty) else msvcrt.getwch())
-            if ch1 in ("\r", "\n"): # Enter
-                if is_linux and termios and tty:
-                    termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
-                sys.stdout.write("\r\n")
-                sys.stdout.flush()
-                return input(": ") if options[index] == "<input>" else options[index]
-            
-            code = None 
-            if is_linux:
-                if ch1 == "\x1b": # ESC or escape sequence
-                    if sys.stdin.read(1) == "[":
-                        tail = sys.stdin.read(1)
-                        if tail == "D": code = "left"
-                        elif tail == "C": code = "right"
-                elif ch1 == "\x03": code = "ctrl-c"
-            else:
-                if ch1 in ("\x00", "\xe0"):
-                    tail = msvcrt.getwch()
-                    if tail == "K": code = "left"
-                    elif tail == "M": code = "right"
-                elif ch1 == "\x03": code = "ctrl-c"
-
-            if code == "left": index = (len(options) if index == 0 else index) - 1
-            elif code == "right": index = (-1 if index == (len(options) - 1) else index) + 1
-            elif code == "ctrl-c": 
-                if is_linux and termios and tty:
-                    termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
-                sys.stdout.write("\r\n")
-                sys.stdout.flush() 
-                sys.exit(0)
-    finally:
-        if is_linux and termios and tty: 
-            termios.tcsetattr(stdin_fd, termios.TCSADRAIN, oldattr)
 
 
 class CMD_info:
