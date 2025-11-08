@@ -907,7 +907,7 @@ class CMD_download:
             "viewperf",
             "GravityMark",
             "3dMark - steelNomad",
-            "Microbenchmark"
+            "Microbench"
         ], 0)
         if src == "Perf Inspector": self.download_pi()
         elif src == "Nsight graphics": self.download_nsight_graphics()
@@ -915,7 +915,7 @@ class CMD_download:
         elif src == "viewperf": self.download_viewperf()
         elif src == "GravityMark": self.download_gravitymark()
         elif src == "3dMark - steelNomad": self.download_3dMark("steelNomad")
-        elif src == "Microbenchmark": self.download_microbenchmark()
+        elif src == "Microbench": self.download_microbench()
 
     def download_pi(self):
         pass # TODO 
@@ -944,7 +944,7 @@ class CMD_download:
             subprocess.run(["bash", "-lc", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}/ $HOME/3dMark_{name}"])
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}")  
 
-    def download_microbenchmark(self):
+    def download_microbench(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}"):
             print(f"Downloading {HOME}/nvperf_vulkan.{UNAME_M}")
             subprocess.run(["bash", "-lc", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M} {HOME}/nvperf_vulkan.{UNAME_M}"])
@@ -1489,7 +1489,7 @@ class CMD_microbench:
     def __init__(self):
         self.nvperf_vulkan = f"{HOME}/nvperf_vulkan.{UNAME_M}"
         if not os.path.exists(self.nvperf_vulkan):
-            CMD_download().download_microbenchmark() 
+            CMD_download().download_microbench() 
     
     def run(self):
         devices = self.get_device_list()
