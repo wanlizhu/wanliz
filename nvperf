@@ -220,6 +220,31 @@ def main_cmd_prompt():
     return cmd 
 
 
+class Timer:
+    def __init__(self, label="CPU Time Elapsed"):
+        self.label = label 
+
+    def __enter__(self):
+        self.start = perf_counter()
+        return self 
+    
+    def __exit__(self, exc_type, exc, tb):
+        elapsed_ns = perf_counter() - self.start
+        print(f"{self.label + ': ' if self.label else ''}{self.format(elapsed_ns)}")
+        return False
+    
+    def format(self, ns: int) -> str:
+        sec = ns / 1e9
+        if sec < 1e-6: return f"{ns} ns"
+        if sec < 1e-3: return f"{sec * 1e6:.2f} us"
+        if sec < 1: return f"{sec * 1e3:.2f} ms"
+        if sec < 60: return f"{sec:.2f} s"
+        minute, sec = divmod(sec, 60.0)
+        if minute < 60: return f"{int(minute):02d}:{sec:06.2f}"
+        hour, minute = divmod(int(minute), 60)
+        return f"{hour}:{minute:02d}:{sec:06.2f}"
+
+
 class CMD_config:
     def __str__(self):
         return "Configure test environment"
@@ -1448,10 +1473,11 @@ class CMD_3dmark:
 
 if __name__ == "__main__":
     try:
-        check_global_env() 
-        cmd = main_cmd_prompt()
-        cmd = globals().get(f"CMD_{cmd}")()
-        cmd.run()
+        with Timer():
+            check_global_env() 
+            cmd = main_cmd_prompt()
+            cmd = globals().get(f"CMD_{cmd}")()
+            cmd.run()
     except InterruptedError:
         print("[canceled (ctrl-c) by user]")
     except Exception:
