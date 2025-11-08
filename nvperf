@@ -2,7 +2,6 @@
 import os
 import sys
 import time 
-import datetime
 import inspect
 import subprocess
 import shutil
@@ -22,6 +21,7 @@ import math
 import xml.etree.ElementTree as ET 
 from pathlib import Path 
 from datetime import timedelta
+from datetime import datetime 
 from time import perf_counter
 from statistics import mean, stdev
 from contextlib import suppress
@@ -447,7 +447,7 @@ class CMD_p4:
         """], cwd=self.p4root, check=True)
 
     def stash(self):
-        name = horizontal_select("Select stash name", [f"stash_{datetime.datetime.now().astimezone():%Y-%m-%d_%H-%M-%S}", "<input>"], 0)
+        name = horizontal_select("Select stash name", [f"stash_{datetime.now().astimezone():%Y-%m-%d_%H-%M-%S}", "<input>"], 0)
         subprocess.run(["bash", "-lc", rf"""
             p4 reconcile -e -a -d $P4ROOT/... >/dev/null || true
             p4 change -o /tmp/stash
@@ -1273,7 +1273,7 @@ class Table_view:
             lines.insert(len(lines) - 2, "-" * total_width)
           
             if logfile_prefix is not None:
-                timestamp = datetime.datetime.now().strftime('%Y_%m%d_%H%M')
+                timestamp = datetime.now().strftime('%Y_%m%d_%H%M')
                 with open(HOME + f"/{logfile_prefix}{timestamp}.txt", "w", encoding="utf-8") as file:
                     file.write("\n".join(lines))
             print("\n".join(lines))
@@ -1484,9 +1484,40 @@ class CMD_microbench:
 
     def run_with_config(self, device, test):
         subprocess.run(["bash", "-lc", f"{self.nvperf_vulkan} -nullDisplay -device {device} {test} | tee /tmp/log"], check=True)
-        # TODO 
-
-
+        self.print_csv("/tmp/log", f"{HOME}/microbenchmark_{datetime.now().strftime('%Y_%m%d_%H%M')}.csv")
+        
+    def print_csv(self, logpath, csvpath): 
+        with open(csvpath, mode="w") as csvfile:
+            def flush_test_to_csv(test):
+                if test is not None:
+                    csvfile.write(f"{test['Name']},,,,")
+                    csvfile.write("\n".join([f",{c['Name']},{c['Tags']},{c['Unit']},{c['Value']}" for c in test["Test_case"]]))
+            csvfile.write(f"Test,Test_case,Tags,Unit,Value\n")
+            with open(logpath, mode="r") as logfile:
+                test = None
+                for line in logfile.readlines():
+                    line = line.strip()
+                    if line.startswith("Running test:"):
+                        flush_test_to_csv(test)
+                        test["Name"] = line.split(": ")[1]
+                        test["Test_case"] = []
+                        continue 
+                    if line.startswith("[Test_case:"):
+                        middle = line[1:-1].split(": ")[1].split(" = ")[0]
+                        name = middle.split("|")[0]  if "|" in middle else middle 
+                        tags = middle.split("|")[1:] if "|" in middle else ""
+                        result = line[1:-1].split(": ")[1].split(" = ")[1]
+                        test["Test_case"].append({
+                            "Name": name, 
+                            "Tags": " | ".join(tags), 
+                            "Unit": result.split()[1],
+                            "Value": result.split()[0]
+                        })
+                        continue
+                flush_test_to_csv(test)
+        print(f"Generated {csvpath}")
+                    
+                    
 if __name__ == "__main__":
     try:
         with Timer():
