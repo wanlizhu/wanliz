@@ -1191,11 +1191,20 @@ class CMD_nsys:
 
 
 class Table_view:
-    def __init__(self, columns, header=None):
+    def __init__(self, columns: list, header: list):
         self.columns = columns 
         self.header = header 
+        if self.columns and not self.header:
+            self.header = [f"Column {c}" for c in range(len(self.columns))]
+
+    def init_with_dict(self, data):
+        self.header = list(data.keys())
+        self.columns = [data[name] for name in self.header]
     
     def print(self, logfile_prefix=None):
+        if not (self.columns and self.header):
+            print("[columns and header are none]")
+            return 
         try:
             # Append avg and cv to each column 
             for i, column in enumerate(self.columns):
@@ -1203,14 +1212,12 @@ class Table_view:
                 avg_is_zero = math.isclose(avg, 0.0, rel_tol=0.0, abs_tol=1e-12)
                 cv = (stdev(column) / avg) if (len(column) >= 2 and not avg_is_zero) else 0
                 column += [avg, cv]
-                if self.header: 
-                    column.insert(0, self.header[i])
+                column.insert(0, self.header[i])
 
             # Add label column 
             self.columns.insert(0, [])
-            if self.header:
-                self.columns[0].append(" ")
-            samples_num = len(self.columns[1]) - ( 1 if self.header else 0) - 2
+            self.columns[0].append(" ")
+            samples_num = len(self.columns[1]) - 1 - 2
             self.columns[0] += [f"Index {i}" for i in range(1, samples_num + 1)]
             self.columns[0] += ["Average", "CV"]
 
@@ -1244,10 +1251,7 @@ class Table_view:
             print("\n".join(lines))
         except Exception:
             traceback.print_exc()
-            if self.header is None:
-                lines = ["  ".join([f"{x:>7.2f}" for x in column]) for column in self.columns]
-            else:
-                lines = [f"{name:>9}:  " + "  ".join([f"{x:>7.2f}" for x in self.columns[index]]) for index, name in enumerate(self.header)]
+            lines = [f"{name:>9}:  " + "  ".join([f"{x:>7.2f}" for x in self.columns[index]]) for index, name in enumerate(self.header)]
             print("\n" + "\n".join(lines))
 
 
