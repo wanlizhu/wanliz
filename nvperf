@@ -375,7 +375,7 @@ class CMD_p4:
         self.p4client = horizontal_select("P4 client", ["wanliz_sw_linux", "<input>"], 0)
         self.p4port = "p4proxy-sc.nvidia.com:2006"
         self.p4user = "wanliz"
-        self.p4root = horizontal_select("P4 root", ["/wanliz_sw_linux", "<input>"], 0, separator="|")
+        self.p4root = "/wanliz_sw_linux" if self.p4client == "wanliz_sw_linux" else ""
         self.p4ignore = HOME + "/.p4ignore"
         subprocess.run(["bash", "-lc", rf"""
             if [[ ! -f ~/.p4ignore ]]; then 
@@ -390,6 +390,8 @@ class CMD_p4:
                 echo '*.code-workspace' >> ~/.p4ignore
             fi 
         """], check=True)
+        if not os.path.exists(self.p4root):
+            raise RuntimeError("$P4ROOT not found")
         os.environ.update({
             "P4CLIENT": self.p4client,
             "P4PORT": self.p4port,
