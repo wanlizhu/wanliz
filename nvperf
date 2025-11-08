@@ -704,10 +704,10 @@ class CMD_nvmake:
             raise RuntimeError("P4ROOT is not defined")
         
         # Collect compiling arguments 
-        branch = horizontal_select("[1/7] Target branch", ["r580", "bugfix_main", "<input>"], 0)
+        branch = horizontal_select("[1/7] Target branch", ["r580", "bugfix_main", "apps", "<input>"], 0)
         config = horizontal_select("[2/7] Target config", ["develop", "debug", "release", "<input>"], 0)
         arch   = horizontal_select("[3/7] Target architecture", ["amd64", "aarch64", "<input>"], 0)
-        module = horizontal_select("[4/7] Target module", ["drivers", "opengl", "<input>"], 0)
+        module = horizontal_select("[4/7] Target module", ["microbench", "<input>"] if branch == "apps" else ["drivers", "opengl", "<input>"], 0)
         regen  = horizontal_select("[5/7] Regen opengl code", ["yes", "no"], 1) if module == "opengl" else "no"
         jobs   = horizontal_select("[6/7] Number of compiling threads", [str(os.cpu_count()), "1"], 0)
         clean  = horizontal_select("[7/7] Make a clean build", ["yes", "no"], 1)
@@ -720,7 +720,7 @@ class CMD_nvmake:
                 "--tools",  f"{os.environ['P4ROOT']}/tools",
                 "--devrel", f"{os.environ['P4ROOT']}/devrel/SDK/inc/GL",
                 "nvmake", "sweep"
-            ], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
+            ], cwd=f"{os.environ['P4ROOT']}", check=True)
 
         with tempfile.TemporaryFile(mode="w+t", encoding="utf-8", delete=False) as out:
             for _branch in [self.branch_path(b) for b in branch.split("|")]:
@@ -728,6 +728,7 @@ class CMD_nvmake:
                     for _arch in arch.split("|"):
                         for _module in module.split("|"):
                             try:
+                                _branch = self.override_branch_path(_branch, _module)
                                 self.unix_build_nvmake(_branch, _config, _arch, _module, regen, jobs)
                                 out.write(f"{_branch},{_config},{_arch},{_module},[ OK ]\n")
                             except Exception as e:
@@ -735,8 +736,13 @@ class CMD_nvmake:
             subprocess.run(["bash", "-lc", f"column -s, -o ' | ' -t {out.name}"], check=True)
 
     def branch_path(self, branch):
-        if branch == "r580": return "rel/gpu_drv/r580/r580_00"
-        elif branch == "bugfix_main": return "dev/gpu_drv/bugfix_main"
+        if branch == "r580": return f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"
+        elif branch == "bugfix_main": return f"{os.environ['P4ROOT']}/dev/gpu_drv/bugfix_main"
+        elif branch == "apps": return os.environ['P4ROOT']
+        else: return branch 
+    
+    def override_branch_path(self, branch, module):
+        if module == "microbench": return f"{os.environ['P4ROOT']}/apps/gpu/drivers/vulkan/microbench"
         else: return branch 
         
     def unix_build_nvmake(self, branch, config, arch, module, regen, jobs):
@@ -763,7 +769,7 @@ class CMD_nvmake:
             f"{arch}", 
             f"{config}", 
             f"-j{jobs}"
-        ] if x is not None and x != ""], cwd=f"{os.environ['P4ROOT']}/{branch}", check=True)
+        ] if x is not None and x != ""], cwd=branch, check=True)
         
 
 class CMD_rmmod:
