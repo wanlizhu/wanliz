@@ -737,7 +737,7 @@ class CMD_nvmake:
                     for _arch in arch.split("|"):
                         for _module in module.split("|"):
                             try:
-                                _branch = self.override_branch_path(_branch, _module)
+                                _branch, _module = self.override_branch_and_module(_branch, _module)
                                 self.unix_build_nvmake(_branch, _config, _arch, _module, regen, jobs)
                                 out.write(f"{_branch},{_config},{_arch},{_module},[ OK ]\n")
                             except Exception as e:
@@ -750,9 +750,9 @@ class CMD_nvmake:
         elif branch == "apps": return os.environ['P4ROOT']
         else: return branch 
     
-    def override_branch_path(self, branch, module):
-        if module == "microbench": return f"{os.environ['P4ROOT']}/apps/gpu/drivers/vulkan/microbench"
-        else: return branch 
+    def override_branch_and_module(self, branch, module):
+        if module == "microbench": return f"{os.environ['P4ROOT']}/apps/gpu/drivers/vulkan/microbench", ""
+        else: return branch, module 
         
     def unix_build_nvmake(self, branch, config, arch, module, regen, jobs):
         subprocess.run([x for x in [
