@@ -731,7 +731,7 @@ class CMD_nvmake:
                 "nvmake", "sweep"
             ], cwd=f"{os.environ['P4ROOT']}", check=True)
 
-        with tempfile.TemporaryFile(mode="w+t", encoding="utf-8", delete=False) as out:
+        with tempfile.NamedTemporaryFile(mode="w+t", encoding="utf-8", delete=False) as out:
             for _branch in [self.branch_path(b) for b in branch.split("|")]:
                 for _config in config.split("|"):
                     for _arch in arch.split("|"):
