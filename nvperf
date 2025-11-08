@@ -1468,25 +1468,17 @@ class CMD_microbench:
             CMD_download().download_microbenchmark() 
     
     def run(self):
-        headless = horizontal_select("Is this a headless system", ["yes", "no"], 1)
+        headless = horizontal_select("Is this a headless system", ["yes", "no"], 0)
 
         devices = self.get_device_list()
         if len(devices) > 1: device = horizontal_select("Select GPU device", devices, 0)
         else: device = devices[0]
         device = device[1:2] 
 
-        tests = ["all", "subset"] + self.get_test_list()
-        test = horizontal_select("Select test", tests, 0)
-
+        test = horizontal_select("Select test", ["all", "subset", "<input>"], 0)
         self.run_with_config(device=device, headless=headless, test=test)
 
     def get_device_list(self):
-        output = subprocess.run(["bash", "-lc", rf"""
-            {self.nvperf_vulkan} -t | grep -v 'Supported tests' | sed 's/^[[:space:]]\+//'
-        """], check=True, text=True, capture_output=True).stdout
-        return output.splitlines() 
-
-    def get_test_list(self):
         output = subprocess.run(["bash", "-lc", rf"""
             {self.nvperf_vulkan} -h | grep 'VK device name' | grep -v 'llvmpipe' | awk -F'name' '{{print $2}}'
         """], check=True, text=True, capture_output=True).stdout
