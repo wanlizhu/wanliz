@@ -1492,11 +1492,7 @@ class CMD_microbench:
             CMD_download().download_microbench() 
     
     def run(self):
-        devices = self.get_device_list()
-        if len(devices) > 1: device = horizontal_select("Select GPU device", devices, 0)
-        else: device = devices[0]
-        device = device[1:2] 
-
+        device = horizontal_select("Select GPU device", ["0", "1", "2", "<input>"], 0)
         test = horizontal_select("Select test", ["all", "subset", "<input>"], 0)
         self.run_with_config(device=device, test=test)
 
