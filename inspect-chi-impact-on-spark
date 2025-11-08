@@ -11,13 +11,12 @@ class Timer:
         return self 
     
     def __exit__(self, exc_type, exc, tb):
-        elapsed_ns = perf_counter() - self.start
-        print(f"{self.label + ': ' if self.label else ''}{self.format(elapsed_ns)}")
+        elapsed_sec = perf_counter() - self.start
+        print(f"{self.label + ': ' if self.label else ''}{self.format(elapsed_sec)}")
         return False
     
-    def format(self, ns: int) -> str:
-        sec = ns / 1e9
-        if sec < 1e-6: return f"{ns} ns"
+    def format(self, sec: int) -> str:
+        if sec < 1e-6: return f"{sec * 1e9 :.2f} ns"
         if sec < 1e-3: return f"{sec * 1e6:.2f} us"
         if sec < 1: return f"{sec * 1e3:.2f} ms"
         if sec < 60: return f"{sec:.2f} s"

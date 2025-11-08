@@ -209,7 +209,7 @@ def main_cmd_prompt():
     for name, cls in sorted(inspect.getmembers(sys.modules[__name__], inspect.isclass)):
         if cls.__module__ == __name__ and name.startswith("CMD_"):
             cmd_name = name.split("_")[1]
-            cmds[cmd_name] = str(cls())
+            cmds[cmd_name] = cls.__doc__
     width = max(map(len, cmds))
     for k, v in cmds.items():
         print(f"{k:>{width}} : {v}")
@@ -229,13 +229,12 @@ class Timer:
         return self 
     
     def __exit__(self, exc_type, exc, tb):
-        elapsed_ns = perf_counter() - self.start
-        print(f"{self.label + ': ' if self.label else ''}{self.format(elapsed_ns)}")
+        elapsed_sec = perf_counter() - self.start
+        print(f"{self.label + ': ' if self.label else ''}{self.format(elapsed_sec)}")
         return False
     
-    def format(self, ns: int) -> str:
-        sec = ns / 1e9
-        if sec < 1e-6: return f"{ns} ns"
+    def format(self, sec: int) -> str:
+        if sec < 1e-6: return f"{sec * 1e9 :.2f} ns"
         if sec < 1e-3: return f"{sec * 1e6:.2f} us"
         if sec < 1: return f"{sec * 1e3:.2f} ms"
         if sec < 60: return f"{sec:.2f} s"
@@ -246,9 +245,8 @@ class Timer:
 
 
 class CMD_config:
-    def __str__(self):
-        return "Configure test environment"
-    
+    """Configure test environment"""
+
     def run(self):
         self.hosts = {
             "office": "172.16.179.143",
@@ -343,8 +341,7 @@ class CMD_config:
 
 
 class CMD_info:
-    def __str__(self):
-        return "Get GPU HW and driver info"
+    """Get GPU HW and driver info"""
     
     def run(self):
         if platform.system() == "Linux":
@@ -369,8 +366,7 @@ class CMD_info:
 
 
 class CMD_p4:
-    def __str__(self):
-        return "Perforce command tool"
+    """Perforce command tool"""
     
     def run(self):
         self.check_env()
@@ -464,8 +460,7 @@ class CMD_p4:
 
 
 class CMD_rsync:
-    def __str__(self):
-        return "Rsync remote folders to local"
+    """Rsync remote folders to local"""
     
     def run(self):
         src = horizontal_select("Rsync from source", ["p4:wanliz_sw_linux from office"], 0)
@@ -486,8 +481,7 @@ class CMD_rsync:
 
 
 class CMD_share:
-    def __str__(self):
-        return "Share a Linux folder via both SMB and NFS"
+    """Share a Linux folder via both SMB and NFS"""
     
     def run(self):
         subcmd = horizontal_select("Select subcmd", ["create", "list"], 0)
@@ -568,8 +562,7 @@ class CMD_share:
 
 
 class CMD_mount:
-    def __str__(self):
-        return "Mount Windows or Linux shared folder"
+    """Mount Windows or Linux shared folder"""
     
     def run(self):
         if platform.system() == "Windows":
@@ -598,8 +591,7 @@ class CMD_mount:
 
 
 class CMD_startx:
-    def __str__(self):
-        return "Start a bare X server"
+    """Start a bare X server"""
     
     def run(self):
         spark    = horizontal_select("Is this a DGX spark system", ["yes", "no"], 1)
@@ -705,8 +697,7 @@ class CMD_startx:
 
 
 class CMD_nvmake:
-    def __str__(self):
-        return "Build nvidia driver"
+    """Build nvidia driver"""
     
     def run(self):
         if "P4ROOT" not in os.environ: 
@@ -776,8 +767,7 @@ class CMD_nvmake:
         
 
 class CMD_rmmod:
-    def __str__(self):
-        return "Remove loaded kernel modules of nvidia driver"
+    """Remove loaded kernel modules of nvidia driver"""
     
     def run(self, retry=True):
         try:
@@ -798,8 +788,7 @@ class CMD_rmmod:
             else: raise
     
 class CMD_install:
-    def __str__(self):
-        return "Install nvidia driver or other packages"
+    """Install nvidia driver or other packages"""
     
     def run(self):
         driver = horizontal_select("Driver path", ["office", "local", "precompiled"], 0)
@@ -878,22 +867,34 @@ class CMD_install:
     
 
 class CMD_download:
-    def __str__(self):
-        return "Download packages or resources"
+    """Download packages or resources"""
+
+    def __init__(self):
+        if not any(p.mountpoint == "/mnt/linuxqa" for p in psutil.disk_partitions(all=True)):
+            subprocess.run("sudo mkdir -p /mnt/linuxqa", check=True, shell=True)
+            subprocess.run("sudo apt install -y nfs-common cifs-utils &>/dev/null", check=True, shell=True)
+            subprocess.run("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa", check=True, shell=True)
     
     def run(self):
         src = horizontal_select("Download", [
+            "Perf Inspector",
             "Nsight graphics",
             "Nsight systems", 
             "viewperf",
             "GravityMark",
             "3dMark - steelNomad",
+            "Microbenchmark"
         ], 0)
-        if src == "Nsight graphics": self.download_nsight_graphics()
+        if src == "Perf Inspector": self.download_pi()
+        elif src == "Nsight graphics": self.download_nsight_graphics()
         elif src == "Nsight systems": self.download_nsight_systems() 
         elif src == "viewperf": self.download_viewperf()
         elif src == "GravityMark": self.download_gravitymark()
         elif src == "3dMark - steelNomad": self.download_3dMark("steelNomad")
+        elif src == "Microbenchmark": self.download_microbenchmark()
+
+    def download_pi(self):
+        pass # TODO 
 
     def download_nsight_graphics(self):
         webbrowser.open("https://ngfx/builds-nightly/Grfx")
@@ -919,10 +920,14 @@ class CMD_download:
             subprocess.run(["bash", "-lc", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}/ $HOME/3dMark_{name}"])
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}")  
 
+    def download_microbenchmark(self):
+        if os.path.exists(f"/mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}"):
+            print(f"Downloading {HOME}/nvperf_vulkan.{UNAME_M}")
+            subprocess.run(["bash", "-lc", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M} {HOME}/nvperf_vulkan.{UNAME_M}"])
+        else: raise RuntimeError(f"File not found: /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}")
 
 class CMD_cpu:
-    def __str__(self):
-        return "Configure CPU on host device"
+    """Configure CPU on host device"""
     
     def run(self):
         cmd = horizontal_select("Action", ["max freq"], 0)
@@ -1006,18 +1011,14 @@ class Test_info:
         return self 
 
 class CMD_pi:
+    """Perf Inspector"""
+
     def __init__(self):
         self.pi_root = HOME + "/SinglePassCapture" 
-
-    def __str__(self):
-        return "Perf Inspector"
-    
-    def check(self):
         if not os.path.exists(self.pi_root):
-            raise RuntimeError("PerfInspector is not installed")
+            CMD_download().download_pi()
     
     def run(self):
-        self.check() 
         subcmd = horizontal_select("Select subcmd", ["exe mode", "server mode", "upload report", "fix me"], 0)
         if subcmd == "exe mode":
             test = Test_info().input()
@@ -1039,7 +1040,6 @@ class CMD_pi:
             self.fix_me()
 
     def launch_and_capture(self, exe, arg, workdir, api, startframe=100, frames=3, debug=False):
-        self.check()
         subprocess.run([x for x in [
             "sudo", "env", "DISPLAY=:0",
             self.pi_root + "/pic-x",
@@ -1054,7 +1054,6 @@ class CMD_pi:
         ] if len(x) > 0], check=True)
 
     def run_in_server_mode(self, api, frames, debug):
-        self.check()
         subprocess.run(["bash", "-lc", rf"""
             export LD_LIBRARY_PATH={self.pi_root}
             python3 {self.pi_root}/Scripts/VkLayerSetup/SetImplicitLayer.py --install
@@ -1089,13 +1088,9 @@ class CMD_pi:
     
         
 class CMD_ngfx:
-    def __init__(self):
-        self.get_ngfx_path()
+    """Nsight graphics"""
 
-    def __str__(self):
-        return "Nsight graphics"
-    
-    def check(self):
+    def __init__(self):
         self.get_ngfx_path()
         if not os.path.exists(self.ngfx):
             CMD_download().download_nsight_graphics()
@@ -1103,10 +1098,9 @@ class CMD_ngfx:
         self.get_arch()
         self.get_metricset()
         self.help_all = subprocess.run(["bash", "-lc", f"{self.ngfx} --help-all"], check=False, capture_output=True, text=True).stdout
-
+        
     def run(self):
         # for N1x: --architecture="T254 GB20B" --metric-set-name="Top-Level Triage"
-        self.check()
         test = Test_info().input()
         startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
         frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
@@ -1114,7 +1108,6 @@ class CMD_ngfx:
         self.capture(exe=test.exe, args=test.arg, workdir=test.workdir, env=None, startframe=startframe, frames=frames, time_all_actions=time_all_actions)
 
     def fix_me(self):
-        self.check()
         subprocess.run(["bash", "-lc", rf"""
             echo "Checking package dependencies of Nsight graphics..."
             for pkg in libxcb-dri2-0 libxcb-shape0 libxcb-xinerama0 libxcb-xfixes0 libxcb-render0 libxcb-shm0 libxcb1 libx11-xcb1 libxrender1 \
@@ -1125,7 +1118,6 @@ class CMD_ngfx:
         """], check=True)
 
     def capture(self, exe, arg, workdir, env=None, startframe=100, frames=3, time_all_actions=False): 
-        self.check()
         subprocess.run(["bash", "-lc", ' '.join([line for line in [
             'sudo env DISPLAY=:0', self.ngfx,
             '--output-dir=$HOME',
@@ -1198,8 +1190,7 @@ class CMD_ngfx:
             
 
 class CMD_nsys:
-    def __str__(self):
-        return "Nsight systems"
+    """Nsight systems"""
     
     def run(self):
         test = Test_info().input()
@@ -1293,8 +1284,7 @@ class Table_view:
 
 
 class CMD_gdb:
-    def __str__(self):
-        return "Run program in GDB"
+    """Run program in GDB"""
 
     def run(self):
         test = Test_info().input()
@@ -1335,25 +1325,7 @@ class CMD_gdb:
 
 
 class CMD_viewperf:
-    def __str__(self):
-        return "Profiling viewperf 2020 v3"
-    
-    def get_result_fps(self, viewset, subtest):
-        try:
-            pattern = f"results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
-            matches = list(Path(self.viewperf_root).glob(pattern))
-            if not matches:
-                raise RuntimeError(f"Failed to find results of {viewset}")
-
-            results_xml = max(matches, key=lambda p: p.stat().st_mtime) 
-            root = ET.parse(results_xml).getroot()
-
-            if subtest:
-                return root.find(f".//Test[@Index='{subtest}']").get("FPS")
-            else:
-                return root.find("Composite").get("Score")
-        except Exception:
-            return 0
+    """Profiling viewperf 2020 v3"""
     
     def run(self):
         self.viewperf_root = HOME + "/viewperf2020v3"
@@ -1393,6 +1365,23 @@ class CMD_viewperf:
             self.run_in_limiter()
         
         print(f"\nTime elapsed: {str(timedelta(seconds=perf_counter()-timestamp)).split('.')[0]}")
+    
+    def get_result_fps(self, viewset, subtest):
+        try:
+            pattern = f"results/{'solidworks' if viewset == 'sw' else viewset}-*/results.xml"
+            matches = list(Path(self.viewperf_root).glob(pattern))
+            if not matches:
+                raise RuntimeError(f"Failed to find results of {viewset}")
+
+            results_xml = max(matches, key=lambda p: p.stat().st_mtime) 
+            root = ET.parse(results_xml).getroot()
+
+            if subtest:
+                return root.find(f".//Test[@Index='{subtest}']").get("FPS")
+            else:
+                return root.find("Composite").get("Score")
+        except Exception:
+            return 0
         
     def run_in_stats(self):
         viewsets = ["catia", "creo", "energy", "maya", "medical", "snx", "sw"] if self.viewset == "all" else [self.viewset]
@@ -1437,19 +1426,19 @@ class CMD_viewperf:
 
 
 class CMD_gmark:
-    def __str__(self):
-        return "GravityMark benchmark for OpenGL and Vulkan on all platforms"
-    
-    def fix_me(self):
+    """GravityMark benchmark for OpenGL and Vulkan on all platforms"""
+
+    def __init__(self):
+        self.gmark_root = HOME + "/GravityMark"
         if not os.path.exists(self.gmark_root):
             CMD_download().download_gravitymark()
-
+    
+    def fix_me(self):
         subprocess.run(["bash", "-lc", """
             sudo apt install -y clang build-essential pkg-config libgtk2.0-dev libglib2.0-dev libpango1.0-dev libatk1.0-dev libgdk-pixbuf-2.0-dev 
         """], check=True) 
     
     def run(self):
-        self.gmark_root = HOME + "/GravityMark"
         self.exe = f"./GravityMark.{UNAME_M2}"
         self.args = "-temporal 1  -screen 0 -fps 1 -info 1 -sensors 1 -benchmark 1 -vk -fullscreen 1 -vsync 0 -close 1"
         self.workdir = f"{HOME}/GravityMark/bin"
@@ -1457,8 +1446,7 @@ class CMD_gmark:
 
 
 class CMD_3dmark:
-    def __str__(self):
-        return "3dMark benchmarks"
+    """3dMark benchmarks"""
     
     def run(self):
         test = horizontal_select("Select 3dMark test", ["steelNomad"], 0)
@@ -1469,6 +1457,43 @@ class CMD_3dmark:
             cd $HOME/3dMark_{test}/engine
             ./build/bin/dev_player --asset_root=../assets_desktop --config=configs/gt1.json
         """], check=True) 
+
+
+class CMD_microbench:
+    """Nvidia's Vulkan Microbenchmark"""
+
+    def __init__(self):
+        self.nvperf_vulkan = f"{HOME}/nvperf_vulkan.{UNAME_M}"
+        if not os.path.exists(self.nvperf_vulkan):
+            CMD_download().download_microbenchmark() 
+    
+    def run(self):
+        headless = horizontal_select("Is this a headless system", ["yes", "no"], 1)
+
+        devices = self.get_device_list()
+        if len(devices) > 1: device = horizontal_select("Select GPU device", devices, 0)
+        else: device = devices[0]
+        device = device[1:2] 
+
+        tests = ["all", "subset"] + self.get_test_list()
+        test = horizontal_select("Select test", tests, 0)
+
+        self.run_with_config(device=device, headless=headless, test=test)
+
+    def get_device_list(self):
+        output = subprocess.run(["bash", "-lc", rf"""
+            {self.nvperf_vulkan} -t | grep -v 'Supported tests' | sed 's/^[[:space:]]\+//'
+        """], check=True, text=True, capture_output=True).stdout
+        return output.splitlines() 
+
+    def get_test_list(self):
+        output = subprocess.run(["bash", "-lc", rf"""
+            {self.nvperf_vulkan} -h | grep 'VK device name' | grep -v 'llvmpipe' | awk -F'name' '{{print $2}}'
+        """], check=True, text=True, capture_output=True).stdout
+        return output.splitlines()
+
+    def run_with_config(self, device, headless, test):
+        print(f"{device}+{headless}+{test}") 
 
 
 if __name__ == "__main__":
