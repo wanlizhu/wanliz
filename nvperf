@@ -127,18 +127,21 @@ def horizontal_select(prompt, options=None, index=None, separator="/"):
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
     
     fd = sys.stdin.fileno() if is_posix else None
+    selected = None 
     with raw_io_mode(fd):
         while True:
             print_prompt(index)
             key = read_windows_key() if is_windows else read_posix_key(fd)
             if key == "enter":
                 sys.stdout.write("\r\n"); sys.stdout.flush()
-                return input(": ") if options[index] == "<input>" else options[index]
+                selected =  options[index]
+                break 
             elif key == "left": index = (index - 1) % len(options)
             elif key == "right": index = (index + 1) % len(options)
             elif key == "ctrl-c":
                 sys.stdout.write("\r\n"); sys.stdout.flush()
                 raise KeyboardInterrupt
+    return input(": ") if selected == "<input>" else selected
 
 
 def check_global_env():
