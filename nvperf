@@ -369,14 +369,16 @@ class CMD_p4:
     """Perforce command tool"""
 
     def __init__(self):
-        self.setup_env()
+        CMD_p4.setup_env()
+        self.p4root = os.environ["P4ROOT"]
 
-    def setup_env(self):
-        self.p4client = horizontal_select("P4 client", ["wanliz_sw_linux", "<input>"], 0)
-        self.p4port = "p4proxy-sc.nvidia.com:2006"
-        self.p4user = "wanliz"
-        self.p4root = "/wanliz_sw_linux" if self.p4client == "wanliz_sw_linux" else ""
-        self.p4ignore = HOME + "/.p4ignore"
+    @staticmethod
+    def setup_env():
+        p4client = horizontal_select("P4 client", ["wanliz_sw_linux", "<input>"], 0)
+        p4port = "p4proxy-sc.nvidia.com:2006"
+        p4user = "wanliz"
+        p4root = "/wanliz_sw_linux" if p4client == "wanliz_sw_linux" else ""
+        p4ignore = HOME + "/.p4ignore"
         subprocess.run(["bash", "-lc", rf"""
             if [[ ! -f ~/.p4ignore ]]; then 
                 echo '_out' >> ~/.p4ignore
@@ -390,14 +392,14 @@ class CMD_p4:
                 echo '*.code-workspace' >> ~/.p4ignore
             fi 
         """], check=True)
-        if not os.path.exists(self.p4root):
+        if not os.path.exists(p4root):
             raise RuntimeError("$P4ROOT not found")
         os.environ.update({
-            "P4CLIENT": self.p4client,
-            "P4PORT": self.p4port,
-            "P4USER": self.p4user, 
-            "P4ROOT": self.p4root,
-            "P4IGNORE": self.p4ignore
+            "P4CLIENT": p4client,
+            "P4PORT": p4port,
+            "P4USER": p4user, 
+            "P4ROOT": p4root,
+            "P4IGNORE": p4ignore
         })
     
     def run(self):
@@ -704,7 +706,7 @@ class CMD_nvmake:
     """Build nvidia driver"""
 
     def __init__(self):
-        CMD_p4().setup_env()
+        CMD_p4.setup_env()
     
     def run(self):
         if "P4ROOT" not in os.environ: 
