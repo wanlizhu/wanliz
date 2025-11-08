@@ -18,6 +18,7 @@ import traceback
 import psutil
 import select
 import math 
+import socket
 import xml.etree.ElementTree as ET 
 from pathlib import Path 
 from datetime import timedelta
@@ -283,6 +284,33 @@ class CMD_config:
             $content_old = $lines | Where-Object {{ ($_ -notmatch $pattern) -and ($_.Trim() -ne '') }}
             $content_new = ($content_old + "" + "`n# --- wanliz ---`n{mappings}`n") -join "`r`n"
             [IO.File]::WriteAllText($hostsfile, $content_new + "`r`n", [Text.Encoding]::ASCII)
+
+            Host-Write "`r`nDisable 'Only allow Windows Hello sign-in'"
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\PasswordLess\Device' -Name 'DevicePasswordLessBuildVersion' -Type DWord -Value 0
+
+            Host-Write "`r`nDisable Windows Firewall for all profiles"
+            Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled False
+            Get-NetFirewallProfile | Select-Object Name, Enabled
+
+            Write-Host "`r`nChecking SSH server status"
+            $cap = Get-WindowsCapability -Online -Name OpenSSH.Server* | Select-Object -First 1
+            if ($cap.State -ne 'Installed') {{ Add-WindowsCapability -Online -Name $cap.Name }}
+            $cap = Get-WindowsCapability -Online -Name OpenSSH.Client* | Select-Object -First 1
+            if (-not $cap -or $cap.State -ne 'Installed') {{ Add-WindowsCapability -Online -Name $cap.Name }}
+            Set-Service -Name sshd -StartupType Automatic
+            Set-Service -Name ssh-agent -StartupType Automatic
+            if ((Get-Service sshd).Status -ne 'Running') {{ Start-Service sshd }}
+            if ((Get-Service ssh-agent -ErrorAction Stop).Status -ne 'Running') {{ Start-Service ssh-agent }}
+            if (-not ((Get-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name DefaultShell -ErrorAction SilentlyContinue).DefaultShell -match '\\(powershell|pwsh)\.exe$')) {{
+                New-Item -Path 'HKLM:\SOFTWARE\OpenSSH' -Force | Out-Null
+                New-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -PropertyType String -Value 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -Force | Out-Null
+                Restart-Service sshd -Force
+            }}
+            Start-Sleep -Seconds 1
+            $tcp   = Test-NetConnection -ComputerName localhost -Port 22 -WarningAction SilentlyContinue
+            $sshd  = Get-Service sshd
+            $state = if ($tcp.TcpTestSucceeded) {{ 'LISTENING' }} else {{ 'NOT LISTENING' }}
+            "SSH server status: {{0}} | Startup: {{1}} | Port 22: {{2}}" -f $sshd.Status, $sshd.StartType, $state
         """], check=True)
         
     def config_linux_host(self):
@@ -465,25 +493,55 @@ class CMD_p4:
         """], cwd=self.p4root, check=True)
 
 
-class CMD_rsync:
-    """Rsync remote folders to local"""
+class CMD_upload:
+    """Upload Linux local folder to Windows SSH host"""
     
     def run(self):
-        src = horizontal_select("Rsync from source", ["p4:wanliz_sw_linux from office"], 0)
-        if src == "p4:wanliz_sw_linux": self.sync_folder(src="wanliz@office:/wanliz_sw_linux", excludes=[".git", "_out", ".Trash-*", ".Trash", ".Trashes", "$RECYCLE.BIN", ".Spotlight-V*"], delete=True)
+        src = horizontal_select("Select local file/folder", [f"{HOME}:[no recur]", "PerfInspector/output", "<input>"], 0, separator="|")
+        user, host = self.get_windows_host()
+        dst = horizontal_select("Select remote folder", [
+            f"{user}@{host}:/D:/", 
+            f"{user}@{host}:/C:/Users/{user}/Downloads", 
+            f"{user}@{host}:/C:/Users/{user}/Documents", 
+            "<input>"
+        ], 0)
 
-    def sync_folder(self, src, excludes=None, delete=False):
-        options = [HOME]
-        if INSIDE_WSL:
-            if os.path.exists("/mnt/c/Users/WanliZhu"): 
-                options.append("/mnt/c/Users/WanliZhu")
-                options.append("/mnt/c/Users/WanliZhu/Downloads")
-            if os.path.exists("/mnt/d"): options.append("/mnt/d")
-        dst = horizontal_select("Select local folder", options + ["<input>"], 0, separator="|")
-
-        subprocess.run(["bash", "-lc", rf"""
-            time rsync -ah --info=progress2 {"--delete --delete-excluded" if delete else ""}  {" ".join([f"--exclude '{name}'" for name in excludes]) if excludes else ""} {src} {dst}
-        """], check=True)
+        if src == f"{HOME}:[no recur]":
+            files = [p for p in Path.home().iterdir() if p.is_file()]
+            cmd = rf"""
+                rm -rf   /tmp/{socket.gethostname()}
+                mkdir -p /tmp/{socket.gethostname()}
+                scp -r   /tmp/{socket.gethostname()} {dst}
+                scp -o Compression=no {" ".join(files)} {dst}/{socket.gethostname()}
+            """
+        elif src == "PerfInspector/output":
+            cmd = f"scp -r {HOME}/SinglePassCapture/PerfInspector/output {dst}"
+        else:
+            cmd = f"scp -r {src} {dst}"
+            
+        subprocess.run(["bash", "-lc", cmd], check=True)
+        
+    def get_windows_host(self):
+        success = False
+        if os.path.exists(f"{HOME}/.upload_host"):
+            text = Path(f"{HOME}/.upload_host").read_text(encoding="utf-8").rstrip("\n")
+            user = text.split("@")[0]
+            host = text.split("@")[1]
+            output = subprocess.run([
+                "ssh",  
+                "-o", "BatchMode=yes",
+                "-o", "StrictHostKeyChecking=accept-new",
+                "-o", f"ConnectTimeout=3",
+                "-p", "22", 
+                f"{user}@{host}", "true"], check=False, text=True, capture_output=True)
+            success = output.returncode == 0
+        if not success:
+            host = input("Host IP: ")
+            user = horizontal_select("User", ["WanliZhu", "<input>"], 0)
+            Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
+            return self.get_windows_host() 
+        else:
+            return user, host 
 
 
 class CMD_share:
