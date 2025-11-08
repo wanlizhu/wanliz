@@ -367,15 +367,11 @@ class CMD_info:
 
 class CMD_p4:
     """Perforce command tool"""
-    
-    def run(self):
-        self.check_env()
-        subcmd = horizontal_select("Select git-emu subcmd", ["status", "pull", "stash"], 0)
-        if subcmd == "status": self.status()
-        elif subcmd == "pull": self.pull()
-        elif subcmd == "stash": self.stash()
 
-    def check_env(self):
+    def __init__(self):
+        self.setup_env()
+
+    def setup_env(self):
         self.p4client = horizontal_select("P4 client", ["wanliz_sw_linux", "<input>"], 0)
         self.p4port = "p4proxy-sc.nvidia.com:2006"
         self.p4user = "wanliz"
@@ -401,6 +397,12 @@ class CMD_p4:
             "P4ROOT": self.p4root,
             "P4IGNORE": self.p4ignore
         })
+    
+    def run(self):
+        subcmd = horizontal_select("Select git-emu subcmd", ["status", "pull", "stash"], 0)
+        if subcmd == "status": self.status()
+        elif subcmd == "pull": self.pull()
+        elif subcmd == "stash": self.stash()
 
     def status(self):
         reconcile = horizontal_select("Reconcile to check added/deleted files", ["yes", "no"], 1)
@@ -698,6 +700,9 @@ class CMD_startx:
 
 class CMD_nvmake:
     """Build nvidia driver"""
+
+    def __init__(self):
+        CMD_p4().setup_env()
     
     def run(self):
         if "P4ROOT" not in os.environ: 
