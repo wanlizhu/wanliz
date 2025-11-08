@@ -1512,9 +1512,8 @@ class CMD_microbench:
         with open(csvpath, mode="w") as csvfile:
             def flush_test_to_csv(test):
                 if test is not None:
-                    csvfile.write(f"{test['Name']},,,,")
-                    csvfile.write("\n".join([f",{c['Name']},{c['Tags']},{c['Unit']},{c['Value']}" for c in test["Test_case"]]))
-                    csvfile.write("\n")
+                    csvfile.write(f"{test['Name']},,,,\n")
+                    csvfile.write("\n".join([f",{c['Name']},{c['Tags']},{c['Unit']},{c['Value']}" for c in test["Test_case"]]) + "\n")
             csvfile.write(f"Test,Test_case,Tags,Unit,Value\n")
             with open(logpath, mode="r") as logfile:
                 test = None
