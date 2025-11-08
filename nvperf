@@ -1493,8 +1493,6 @@ class CMD_microbench:
             CMD_download().download_microbench() 
     
     def run(self):
-        self.print_csv(f"{HOME}/microbench.raw.txt", f"{HOME}/microbench_{datetime.now().strftime('%Y_%m%d_%H%M')}.csv")
-        return 
         device = horizontal_select("Select GPU device", ["0", "1", "2", "<input>"], 0)
         test = horizontal_select("Select test", ["all", "subset", "<input>"], 0)
         self.run_with_config(device=device, test=test)
