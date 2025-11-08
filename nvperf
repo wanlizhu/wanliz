@@ -779,6 +779,7 @@ class CMD_nvmake:
             f"{config}", 
             f"-j{jobs}"
         ] if x is not None and x != ""], cwd=branch, check=True)
+        print(f"Exit {branch}")
         
 
 class CMD_rmmod:
