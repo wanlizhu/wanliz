@@ -722,7 +722,7 @@ class CMD_nvmake:
         clean  = horizontal_select("[7/7] Make a clean build", ["yes", "no"], 1)
 
         # Clean previous builds
-        if clean == "yes":
+        if clean == "yes" and module == "drivers":
             subprocess.run([
                 f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
                 "--unshare-namespaces", 
@@ -738,7 +738,7 @@ class CMD_nvmake:
                         for _module in module.split("|"):
                             try:
                                 _branch, _module = self.override_branch_and_module(_branch, _module)
-                                self.unix_build_nvmake(_branch, _config, _arch, _module, regen, jobs)
+                                self.unix_build_nvmake(_branch, _config, _arch, _module, regen, jobs, clean)
                                 out.write(f"{_branch},{_config},{_arch},{_module},[ OK ]\n")
                             except Exception as e:
                                 out.write(f"{_branch},{_config},{_arch},{_module},[ FAILED ]\n")
@@ -754,8 +754,8 @@ class CMD_nvmake:
         if module == "microbench": return f"{os.environ['P4ROOT']}/apps/gpu/drivers/vulkan/microbench", ""
         else: return branch, module 
         
-    def unix_build_nvmake(self, branch, config, arch, module, regen, jobs):
-        subprocess.run([x for x in [
+    def unix_build_nvmake(self, branch, config, arch, module, regen, jobs, clean):
+        nvmake_cmd = " ".join([x for x in [
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
             "--unshare-namespaces", 
             "--tools",  f"{os.environ['P4ROOT']}/tools",
@@ -776,10 +776,18 @@ class CMD_nvmake:
             "@generate" if regen == "yes" else "",
             "linux", 
             f"{arch}", 
-            f"{config}", 
-            f"-j{jobs}"
-        ] if x is not None and x != ""], cwd=branch, check=True)
-        print(f"Exit {branch}")
+            f"{config}"
+        ] if x is not None and x != ""])
+        subprocess.run(["bash", "-lc", rf"""
+            if [[ "{clean}" == "yes" ]]; then 
+                sudo mv _out /tmp || true  
+            fi 
+            {nvmake_cmd} -j{jobs} || {{
+                read -r -t 5 -p "About to retry with 1 thread in 5 seconds ..."
+                {nvmake_cmd} -j1
+            }} 
+            echo "Exit {branch}"
+        """], cwd=branch, check=True)
         
 
 class CMD_rmmod:
