@@ -275,15 +275,19 @@ class CMD_config:
             Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters' -Name 'AllowInsecureGuestAuth' -Type DWord -Value 1
             $ErrorActionPreference = 'Stop'
             Write-Host "Checking PATH environment variables"
-            @('C:\Program Files',$env:LOCALAPPDATA.TrimEnd('\')) | ForEach-Object {{
-                if (-not ( ($env:Path -split ';' | ForEach-Object {{ $_.Trim('"').TrimEnd('\') }}) -contains $_.Trim('"').TrimEnd('\') )) {{
-                    [Environment]::SetEnvironmentVariable(
-                        'Path',
-                        (([Environment]::GetEnvironmentVariable('Path','User') -split ';' | Where-Object {{ $_ }}) + $_) -join ';',
-                        'User'
-                    )
-                    $env:Path = (($env:Path -split ';' | Where-Object {{ $_ }}) + $_) -join ';'  # keep this console in sync
-                }}
+            $norm = {{ param($p) ($p -as [string]).Trim('"').TrimEnd('\') }}
+            $need = @('C:\Program Files', $env:LOCALAPPDATA) | ForEach-Object {{ & $norm $_ }}
+            $proc = ($env:Path -split ';') | Where-Object {{ $_ }} | ForEach-Object {{ & $norm $_ }}
+            $set  = New-Object 'System.Collections.Generic.HashSet[string]' ($proc, [StringComparer]::OrdinalIgnoreCase)
+            $added = $false
+            foreach ($p in $need) {{ if ($set.Add($p)) {{ $proc += $p; $added = $true }} }}
+            if ($added) {{
+                $newProc = ($proc -join ';')
+                $env:Path = $newProc
+                $user = ([Environment]::GetEnvironmentVariable('Path','User') -split ';') | Where-Object {{ $_ }} | ForEach-Object {{ & $norm $_ }}
+                $userSet = New-Object 'System.Collections.Generic.HashSet[string]' ($user, [StringComparer]::OrdinalIgnoreCase)
+                $userNew = ($user + ($proc | Where-Object {{ -not $userSet.Contains($_) }})) -join ';'
+                [Environment]::SetEnvironmentVariable('Path', $userNew, 'User')
             }}
 
             Write-Host "`r`nChecking C:\Windows\System32\drivers\etc\hosts"
@@ -337,13 +341,19 @@ class CMD_config:
             $script = 'C:\Program Files\WhoLocks.ps1'
             $inner  = "Start-Process powershell.exe -Verb RunAs -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File','$script','`"%1`"')"
             $cmd    = "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command $inner"
-            foreach ($key in 'HKCU:\Software\Classes\*\shell\WhoLocks','HKCU:\Software\Classes\Directory\shell\WhoLocks') {{
-                if (-not (Test-Path -LiteralPath $key)) {{
-                    reg add "$key" /f /v MUIVerb      /t REG_SZ /d "Who locks this?" >$null
-                    reg add "$key" /f /v Icon         /t REG_SZ /d "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" >$null
-                    reg add "$key" /f /v HasLUAShield /t REG_SZ /d "" >$null
-                    reg add "$key\command" /f /ve /t REG_SZ /d "$cmd" >$null
+            $keys = @('HKCU:\Software\Classes\`*\shell\WhoLocks','HKCU:\Software\Classes\Directory\shell\WhoLocks')
+            foreach ($k in $keys) {{
+                if (-not (Test-Path -LiteralPath $k)) {{
+                    New-Item -Path $k -Force | Out-Null
                 }}
+                $c = Join-Path $k 'command'
+                if (-not (Test-Path -LiteralPath $c)) {{
+                    New-Item -Path $c -Force | Out-Null
+                }}
+                New-ItemProperty -Path $k -Name MUIVerb      -Value 'Who locks this?' -PropertyType String -Force | Out-Null
+                New-ItemProperty -Path $k -Name Icon         -Value '%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe' -PropertyType String -Force | Out-Null
+                New-ItemProperty -Path $k -Name HasLUAShield -Value '' -PropertyType String -Force | Out-Null
+                Set-Item -Path $c -Value $cmd
             }}
         """], check=True)
         
