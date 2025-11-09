@@ -1144,14 +1144,12 @@ class CMD_pi:
         """], check=True)
 
     def upload_report(self, name):
-        self.v() 
         if os.path.exists(self.pi_root+f"/PerfInspector/output/{name}"):
             subprocess.run(["bash", "-lc", "NVM_GTLAPI_USER=wanliz NVM_GTLAPI_TOKEN='eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlODVjZDU4LTM2YWUtNGZkMS1iNzZkLTZkZmZhNDg2ZjIzYSIsInNlY3JldCI6IkpuMjN0RkJuNTVMc3JFOWZIZW9tWk56a1Qvc0hpZVoxTW9LYnVTSkxXZk09In0.NzUoZbUUPQbcwFooMEhG4O0nWjYJPjBiBi78nGkhUAQ' ./upload_report.sh"], 
                             cwd=self.pi_root+f"/PerfInspector/output/{name}", 
                             check=True)
     
     def fix_me(self):
-        self.check() 
         subprocess.run(["bash", "-lc", rf"""
             sudo apt autoremove 
             sudo apt install -y python3-venv python3-pip 
@@ -1205,9 +1203,9 @@ class CMD_ngfx:
             '--output-dir=$HOME',
             '--platform="Linux ($(uname -m))"',
             f'--exe="{exe}"',
-            f'--args="{arg}"' if self.args else "",
-            f'--dir="{workdir}"' if self.workdir else "",
-            f'--env="{'; '.join(env)}"' if self.env else "",
+            f'--args="{arg}"' if arg else "",
+            f'--dir="{workdir}"' if workdir else "",
+            f'--env="{'; '.join(env)}"' if env else "",
             '--activity="GPU Trace Profiler"',
             f'--start-after-frames={startframe}',
             f'--limit-to-frames={frames}',
@@ -1281,7 +1279,7 @@ class CMD_nsys:
 
     def capture(self, exe, arg, workdir, startframe=100):
         subprocess.run(["bash", "-lc", rf"""
-            cd {self.dir}
+            cd {workdir}
             echo "Nsight system exe: $(which nsys)"
             sudo "$(which nsys)" profile \
                 --run-as={getpass.getuser()} \
