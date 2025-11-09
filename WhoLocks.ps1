@@ -74,4 +74,5 @@ if ($hasEx) {
     'File Explorer restarted'
 }
 
-if ($doKillOthers -or $hasEx) { 'Done' } else { 'Skipped' }
+if ($doKillOthers -or $hasEx) { 'Killed all lockers' } else { 'Cancelled' }
+Read-Host 'Press [Enter] to exit: ' | Out-Null
