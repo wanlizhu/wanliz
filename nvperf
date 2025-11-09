@@ -285,6 +285,9 @@ class CMD_config:
             $content_new = ($content_old + "" + "`n# --- wanliz ---`n{mappings}`n") -join "`r`n"
             [IO.File]::WriteAllText($hostsfile, $content_new + "`r`n", [Text.Encoding]::ASCII)
 
+            Host-Write "`r`nAllow all users to run .ps1 scripts"
+            Set-ExecutionPolicy Bypass -Scope LocalMachine -Force
+
             Host-Write "`r`nDisable 'Only allow Windows Hello sign-in'"
             Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\PasswordLess\Device' -Name 'DevicePasswordLessBuildVersion' -Type DWord -Value 0
 
