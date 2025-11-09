@@ -283,6 +283,15 @@ class CMD_config:
                 $user = ([Environment]::GetEnvironmentVariable('Path','User') -split ';') | ? {{ $_ }} | % {{ $_.Trim('"').TrimEnd('\') }}
                 [Environment]::SetEnvironmentVariable('Path', ($user + ($miss | ? {{ $user -notcontains $_ }})) -join ';', 'User')
             }}
+                        
+            Write-Host "`r`nChecking classic context menu"
+            $k = 'HKCU:\Software\Classes\CLSID\{{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}}\InprocServer32'
+            if (-not (Test-Path $k) -or ((Get-Item $k).GetValue('', $null) -ne '')) {{
+                New-Item $k -Force | Out-Null
+                Set-Item  $k -Value ''
+                Stop-Process -Name explorer -Force
+                Start-Process explorer.exe
+            }}
 
             Write-Host "`r`nChecking C:\Windows\System32\drivers\etc\hosts"
             $hostsfile = 'C:\Windows\System32\drivers\etc\hosts'
