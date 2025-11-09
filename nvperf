@@ -1205,7 +1205,7 @@ class CMD_ngfx:
             f'--exe="{exe}"',
             f'--args="{arg}"' if arg else "",
             f'--dir="{workdir}"' if workdir else "",
-            f'--env="{'; '.join(env)}"' if env else "",
+            f'--env="{"; ".join(env)}"' if env else "",
             '--activity="GPU Trace Profiler"',
             f'--start-after-frames={startframe}',
             f'--limit-to-frames={frames}',
