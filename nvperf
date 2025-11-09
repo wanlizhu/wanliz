@@ -271,8 +271,20 @@ class CMD_config:
         names = r"\b(" + "|".join(re.escape(k) for k in (*self.hosts, "wanliz")) + r")\b"
         mappings = "\n".join(f"{ip} {name}" for name, ip in self.hosts.items())
         subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
+            Write-Host "Checking PATH environment variables"
+            @('C:\Program Files',$env:LOCALAPPDATA.TrimEnd('\')) | ForEach-Object {{
+                if (-not ( ($env:Path -split ';' | ForEach-Object {{ $_.Trim('"').TrimEnd('\') }}) -contains $_.Trim('"').TrimEnd('\') )) {{
+                    [Environment]::SetEnvironmentVariable(
+                        'Path',
+                        (([Environment]::GetEnvironmentVariable('Path','User') -split ';' | Where-Object {{ $_ }}) + $_) -join ';',
+                        'User'
+                    )
+                    $env:Path = (($env:Path -split ';' | Where-Object {{ $_ }}) + $_) -join ';'  # keep this console in sync
+                }}
+            }}
+
+            Write-Host "`r`nChecking C:\Windows\System32\drivers\etc\hosts"
             Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters' -Name 'AllowInsecureGuestAuth' -Type DWord -Value 1
-            Write-Host "Updating C:\Windows\System32\drivers\etc\hosts"
             $ErrorActionPreference = 'Stop'
             $hostsfile = 'C:\Windows\System32\drivers\etc\hosts'
             $pattern = '({names})'
@@ -319,7 +331,7 @@ class CMD_config:
             $state = if ($tcp.TcpTestSucceeded) {{ 'LISTENING' }} else {{ 'NOT LISTENING' }}
             "SSH server status: {{0}} | Startup: {{1}} | Port 22: {{2}}" -f $sshd.Status, $sshd.StartType, $state
 
-            Write-Host "`r`nAdding context menu items"
+            Write-Host "`r`nChecking context menu items"
             Invoke-WebRequest "https://raw.githubusercontent.com/wanlizhu/wanliz/main/WhoLocks.ps1" -OutFile "C:\Program Files\WhoLocks.ps1"
             $icon = '%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe'
             $inner = (
