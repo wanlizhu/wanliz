@@ -294,11 +294,15 @@ class CMD_config:
 
             Write-Host "`r`nChecking SSH server status"
             $cap = Get-WindowsCapability -Online -Name OpenSSH.Server* | Select-Object -First 1
-            if ($cap.State -ne 'Installed') {{ Add-WindowsCapability -Online -Name $cap.Name }}
+            if ($cap.State -ne 'Installed') {{ 
+                Add-WindowsCapability -Online -Name $cap.Name 
+                Set-Service -Name sshd -StartupType Automatic
+            }}
             $cap = Get-WindowsCapability -Online -Name OpenSSH.Client* | Select-Object -First 1
-            if (-not $cap -or $cap.State -ne 'Installed') {{ Add-WindowsCapability -Online -Name $cap.Name }}
-            Set-Service -Name sshd -StartupType Automatic
-            Set-Service -Name ssh-agent -StartupType Automatic
+            if (-not $cap -or $cap.State -ne 'Installed') {{ 
+                Add-WindowsCapability -Online -Name $cap.Name 
+                Set-Service -Name ssh-agent -StartupType Automatic
+            }}
             if ((Get-Service sshd).Status -ne 'Running') {{ Start-Service sshd }}
             if ((Get-Service ssh-agent -ErrorAction Stop).Status -ne 'Running') {{ Start-Service ssh-agent }}
             if (-not ((Get-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name DefaultShell -ErrorAction SilentlyContinue).DefaultShell -match '\\(powershell|pwsh)\.exe$')) {{
@@ -311,6 +315,32 @@ class CMD_config:
             $sshd  = Get-Service sshd
             $state = if ($tcp.TcpTestSucceeded) {{ 'LISTENING' }} else {{ 'NOT LISTENING' }}
             "SSH server status: {{0}} | Startup: {{1}} | Port 22: {{2}}" -f $sshd.Status, $sshd.StartType, $state
+
+            Write-Host "`r`nAdding context menu items"
+            Invoke-WebRequest "https://raw.githubusercontent.com/wanlizhu/wanliz/main/WhoLocks.ps1" -OutFile "C:\Program Files\WhoLocks.ps1"
+            $icon = '%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe'
+            $inner = (
+                'Start-Process powershell.exe ' +
+                '-Verb RunAs ' +
+                "-ArgumentList '-NoProfile -ExecutionPolicy Bypass -File ""{{0}}"" """"%1""""'"
+            ) -f "C:\Program Files\WhoLocks.ps1"
+            $cmd = (
+                'powershell.exe ' +
+                '-NoProfile ' +
+                '-ExecutionPolicy Bypass ' +
+                ('-Command "{{0}}"' -f $inner)
+            )
+            foreach ($k in 'HKCU:\Software\Classes\*\shell\WhoLocks','HKCU:\Software\Classes\Directory\shell\WhoLocks') {
+                if (-not (Test-Path -LiteralPath $k)) {
+                    New-Item -LiteralPath $k -Force | Out-Null
+                    New-ItemProperty -LiteralPath $k MUIVerb       -Value 'Who locks this? (Admin)' -PropertyType String -Force | Out-Null
+                    New-ItemProperty -LiteralPath $k Icon          -Value $icon                     -PropertyType String -Force | Out-Null
+                    New-ItemProperty -LiteralPath $k HasLUAShield  -Value ''                        -PropertyType String -Force | Out-Null
+                    $c = Join-Path $k 'command'
+                    New-Item -LiteralPath $c -Force | Out-Null
+                    Set-Item -LiteralPath $c -Value $cmd
+                }
+            }
         """], check=True)
         
     def config_linux_host(self):

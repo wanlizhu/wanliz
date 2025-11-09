@@ -1,40 +1,16 @@
 #!/usr/bin/env python3
-from time import perf_counter
+from pathlib import Path 
+from importlib.util import spec_from_file_location, module_from_spec
 from perfins.PIFGfxReader import *
 
-class Timer:
-    def __init__(self, label="CPU Time Elapsed"):
-        self.label = label 
+nvperf_path = Path(__file__).with_name("nvperf")
+nvperf_spec = spec_from_file_location("nvperf", nvperf_path)
+nvperf = module_from_spec(nvperf_spec)
+nvperf_spec.loader.exec_module(nvperf)
 
-    def __enter__(self):
-        self.start = perf_counter()
-        return self 
-    
-    def __exit__(self, exc_type, exc, tb):
-        elapsed_sec = perf_counter() - self.start
-        print(f"{self.label + ': ' if self.label else ''}{self.format(elapsed_sec)}")
-        return False
-    
-    def format(self, sec: int) -> str:
-        if sec < 1e-6: return f"{sec * 1e9 :.2f} ns"
-        if sec < 1e-3: return f"{sec * 1e6:.2f} us"
-        if sec < 1: return f"{sec * 1e3:.2f} ms"
-        if sec < 60: return f"{sec:.2f} s"
-        minute, sec = divmod(sec, 60.0)
-        if minute < 60: return f"{int(minute):02d}:{sec:06.2f}"
-        hour, minute = divmod(int(minute), 60)
-        return f"{hour}:{minute:02d}:{sec:06.2f}"
-
-
-with Timer():
-    spark_pi_reader = PIFGfxReader(r"C:\Users\WanliZhu\Downloads\AAA_spark\.pfm")
+with nvperf.Timer():
+    spark_pi_reader = PIFGfxReader(r"C:\Users\WanliZhu\Downloads\PICapture_HW_CHI_on_spark\.pfm")
     spark_frames  = spark_pi_reader.getSpanValues("frame_0")
-    if os.path.exists(r"C:\Users\WanliZhu\Downloads\AAA_proxy\.pfm-"):
-        proxy_pi_reader = PIFGfxReader(r"C:\Users\WanliZhu\Downloads\AAA_proxy\.pfm")
-        proxy_frames  = proxy_pi_reader.getSpanValues("frame_0") if proxy_pi_reader else None 
-    else:
-        proxy_pi_reader = None 
-        proxy_frames = None 
     impact1_total_slowdown = 0
     impact1_chi_caused_slowdown = 0
     impact2_chi_caused_slowdown = 0
@@ -89,30 +65,12 @@ with Timer():
         if solution == 2:
             return is_dram_limited and (is_single_sector_io or is_dram_write_dominated)
         
-
-    # Align frames to the left
-    if proxy_pi_reader is None:
-        spark_frame_begin = 0
-        max_frame_pos = len(spark_frames)
-    else:
-        aligned_frames = (
-            (spark_frame_index, proxy_frame_index)
-            for spark_frame_index, spark_frame in enumerate(spark_frames)
-            for proxy_frame_index, proxy_frame in enumerate(proxy_frames)
-            if spark_frame["name"].split("_")[1] == proxy_frame["name"].split("_")[1]
-        )
-        try:
-            spark_frame_begin, proxy_frame_begin = next(aligned_frames)
-        except StopIteration:
-            raise RuntimeError("Aligned frames not found")
-        max_frame_pos = min(len(spark_frames) - spark_frame_begin, len(proxy_frames) - proxy_frame_begin)
-
     # Traverse aligned spark and proxy frames 
-    for i in range(max_frame_pos):
+    for i in range(len(spark_frames)):
         spark_frame = {
-            "start": int(spark_frames[spark_frame_begin + i]["start"]), 
-            "end": int(spark_frames[spark_frame_begin + i]["end"]),
-            "duration": int(spark_frames[spark_frame_begin + i]["end"]) - int(spark_frames[spark_frame_begin + i]["start"])
+            "start": int(spark_frames[i]["start"]), 
+            "end": int(spark_frames[i]["end"]),
+            "duration": int(spark_frames[i]["end"]) - int(spark_frames[i]["start"])
         }
         spark_frame_buckets = spark_pi_reader.getSpanValues(name="3D0_0", 
                                                             timeStart=spark_frame["start"],
@@ -120,22 +78,8 @@ with Timer():
         if not spark_frame_buckets:
             continue 
 
-        if proxy_pi_reader is None:
-            max_frame_bucket_pos = len(spark_frame_buckets)
-            frame_time_diff = spark_frame["duration"]
-        else:
-            proxy_frame = {
-                "start": int(proxy_frames[proxy_frame_begin + i]["start"]), 
-                "end": int(proxy_frames[proxy_frame_begin + i]["end"]),
-                "duration": int(proxy_frames[proxy_frame_begin + i]["end"]) - int(proxy_frames[proxy_frame_begin + i]["start"])
-            }
-            proxy_frame_buckets = proxy_pi_reader.getSpanValues(name="3D0_0", 
-                                                                timeStart=proxy_frame["start"],
-                                                                timeEnd=proxy_frame["end"])
-            if not proxy_frame_buckets:
-                continue 
-            max_frame_bucket_pos = min(len(spark_frame_buckets), len(proxy_frame_buckets))
-            frame_time_diff = spark_frame["duration"] - proxy_frame["duration"]
+        max_frame_bucket_pos = len(spark_frame_buckets)
+        frame_time_diff = spark_frame["duration"]
 
         for j in range(max_frame_bucket_pos):
             spark_bucket = {
@@ -147,16 +91,7 @@ with Timer():
             if not spark_bucket_metrics:
                 continue 
 
-            if proxy_pi_reader is None:
-                bucket_time_diff = spark_bucket["duration"]
-            else:
-                proxy_bucket = {
-                    "start": int(proxy_frame_buckets[j]["start"]),
-                    "end": int(proxy_frame_buckets[j]["end"]),
-                    "duration": int(proxy_frame_buckets[j]["end"]) - int(proxy_frame_buckets[j]["start"])
-                }
-                bucket_time_diff = spark_bucket["duration"] - proxy_bucket["duration"]
-            
+            bucket_time_diff = spark_bucket["duration"]
             impact1_total_slowdown += bucket_time_diff
             if is_spark_HW_CHI_limited(spark_bucket_metrics, 1):
                 impact1_chi_caused_slowdown += bucket_time_diff
