@@ -529,6 +529,7 @@ class CMD_upload:
             passwd_cipher = Path("/tmp/.wanliz.passwd").read_text(encoding="utf-8").rstrip("\n")
         else:
             passwd_cipher = getpass.getpass("OpenSSL Password: ")
+            Path("/tmp/.wanliz.passwd").write_text(passwd_cipher, encoding="utf-8")
         passwd = subprocess.run(["bash", "-lc", f"echo 'U2FsdGVkX1+hqRcADWpr1Nk/5Ble1wUjLLYXmW3HlKCop5/DZ3v6OsdtlhNpWmNH' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{passwd_cipher}'"], check=True, text=True, capture_output=True).stdout 
             
         if self.test(user, host, passwd):
