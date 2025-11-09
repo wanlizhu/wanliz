@@ -18,6 +18,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME; 
 
 public static class RM {
     [StructLayout(LayoutKind.Sequential)] struct RP { public int dwProcessId; public FILETIME ft; }
