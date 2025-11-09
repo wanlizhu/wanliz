@@ -549,16 +549,10 @@ class CMD_upload:
         return self.get_windows_host() 
         
     def test(self, user, host):
-        cmd = [
-            "ssh",  
-            "-o BatchMode=yes",
-            "-o StrictHostKeyChecking=accept-new",
-            "-o ConnectTimeout=3",
-            "-p 22", f"{user}@{host} true"
-        ]
-        output = subprocess.run(["bash", "-lc", " ".join(cmd)], check=False)
+        output = subprocess.run(["bash", "-lc", rf"""
+            ssh -o StrictHostKeyChecking=accept-new f"{user}@{host} true
+        """], check=False)
         if output.returncode != 0:
-            print(output.stderr)
             return False
         return True
 
