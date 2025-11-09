@@ -271,6 +271,8 @@ class CMD_config:
         names = r"\b(" + "|".join(re.escape(k) for k in (*self.hosts, "wanliz")) + r")\b"
         mappings = "\n".join(f"{ip} {name}" for name, ip in self.hosts.items())
         subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters' -Name 'AllowInsecureGuestAuth' -Type DWord -Value 1
+            $ErrorActionPreference = 'Stop'
             Write-Host "Checking PATH environment variables"
             @('C:\Program Files',$env:LOCALAPPDATA.TrimEnd('\')) | ForEach-Object {{
                 if (-not ( ($env:Path -split ';' | ForEach-Object {{ $_.Trim('"').TrimEnd('\') }}) -contains $_.Trim('"').TrimEnd('\') )) {{
@@ -284,8 +286,6 @@ class CMD_config:
             }}
 
             Write-Host "`r`nChecking C:\Windows\System32\drivers\etc\hosts"
-            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters' -Name 'AllowInsecureGuestAuth' -Type DWord -Value 1
-            $ErrorActionPreference = 'Stop'
             $hostsfile = 'C:\Windows\System32\drivers\etc\hosts'
             $pattern = '({names})'
             if ((Get-Item -LiteralPath $hostsfile).Attributes -band [IO.FileAttributes]::ReadOnly) {{
@@ -295,15 +295,15 @@ class CMD_config:
             if ($null -eq $lines) {{ $lines = @() }}
             $content_old = $lines | Where-Object {{ ($_ -notmatch $pattern) -and ($_.Trim() -ne '') }}
             $content_new = ($content_old + "" + "`n# --- wanliz ---`n{mappings}`n") -join "`r`n"
-            [IO.File]::WriteAllText($hostsfile, $content_new + "`r`n", [Text.Encoding]::ASCII)
+            [IO.File]::WriteAllText($hostsfile, $content_new + "`r`n", [System.Text.Encoding]::ASCII)
 
-            Host-Write "`r`nAllow all users to run .ps1 scripts"
+            Write-Host "`r`nAllow all users to run .ps1 scripts"
             Set-ExecutionPolicy Bypass -Scope LocalMachine -Force
 
-            Host-Write "`r`nDisable 'Only allow Windows Hello sign-in'"
+            Write-Host "`r`nDisable 'Only allow Windows Hello sign-in'"
             Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\PasswordLess\Device' -Name 'DevicePasswordLessBuildVersion' -Type DWord -Value 0
 
-            Host-Write "`r`nDisable Windows Firewall for all profiles"
+            Write-Host "`r`nDisable Windows Firewall for all profiles"
             Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled False
             Get-NetFirewallProfile | Select-Object Name, Enabled
 
@@ -333,29 +333,20 @@ class CMD_config:
 
             Write-Host "`r`nChecking context menu items"
             Invoke-WebRequest "https://raw.githubusercontent.com/wanlizhu/wanliz/main/WhoLocks.ps1" -OutFile "C:\Program Files\WhoLocks.ps1"
-            $icon = '%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe'
-            $inner = (
-                'Start-Process powershell.exe ' +
-                '-Verb RunAs ' +
-                "-ArgumentList '-NoProfile -ExecutionPolicy Bypass -File ""{{0}}"" """"%1""""'"
-            ) -f "C:\Program Files\WhoLocks.ps1"
-            $cmd = (
-                'powershell.exe ' +
-                '-NoProfile ' +
-                '-ExecutionPolicy Bypass ' +
-                ('-Command "{{0}}"' -f $inner)
-            )
-            foreach ($k in 'HKCU:\Software\Classes\*\shell\WhoLocks','HKCU:\Software\Classes\Directory\shell\WhoLocks') {
-                if (-not (Test-Path -LiteralPath $k)) {
+            $script = 'C:\Program Files\WhoLocks.ps1'
+            $inner  = "Start-Process powershell.exe -Verb RunAs -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File','$script','`"%1`"')"
+            $cmd    = "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command $inner"
+            foreach ($k in 'HKCU:\Software\Classes\*\shell\WhoLocks','HKCU:\Software\Classes\Directory\shell\WhoLocks') {{
+                if (-not (Test-Path -LiteralPath $k)) {{
                     New-Item -LiteralPath $k -Force | Out-Null
-                    New-ItemProperty -LiteralPath $k MUIVerb       -Value 'Who locks this? (Admin)' -PropertyType String -Force | Out-Null
-                    New-ItemProperty -LiteralPath $k Icon          -Value $icon                     -PropertyType String -Force | Out-Null
-                    New-ItemProperty -LiteralPath $k HasLUAShield  -Value ''                        -PropertyType String -Force | Out-Null
+                    New-ItemProperty -LiteralPath $k MUIVerb      -Value 'Who locks this?' -PropertyType String -Force | Out-Null
+                    New-ItemProperty -LiteralPath $k Icon         -Value '%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe' -PropertyType String -Force | Out-Null
+                    New-ItemProperty -LiteralPath $k HasLUAShield -Value '' -PropertyType String -Force | Out-Null
                     $c = Join-Path $k 'command'
                     New-Item -LiteralPath $c -Force | Out-Null
                     Set-Item -LiteralPath $c -Value $cmd
-                }
-            }
+                }}
+            }}
         """], check=True)
         
     def config_linux_host(self):
