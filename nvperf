@@ -498,7 +498,7 @@ class CMD_upload:
     
     def run(self):
         src = horizontal_select("Upload from", [f"{HOME}:no-recur", "PerfInspector/output", "<input>"], 0, separator="|")
-        user, host = self.get_windows_host()
+        user, host, passwd = self.get_windows_host()
         dst = horizontal_select(f"Save to", ["D:/", f"C:/Users/{user}/Downloads/", "<input>"], 0, separator="|")
 
         if src == f"{HOME}:no-recur":
@@ -506,13 +506,13 @@ class CMD_upload:
             cmd = rf"""
                 rm -rf   /tmp/{socket.gethostname()}
                 mkdir -p /tmp/{socket.gethostname()}
-                scp -r   /tmp/{socket.gethostname()} /{dst}
-                scp -o Compression=no {" ".join(files)} /{dst}/{socket.gethostname()}
+                scp -r   /tmp/{socket.gethostname()} {user}:{passwd}@{host}:/{dst}
+                scp -o Compression=no {" ".join(files)} {user}:{passwd}@{host}:/{dst}/{socket.gethostname()}
             """
         elif src == "PerfInspector/output":
-            cmd = f"scp -r {HOME}/SinglePassCapture/PerfInspector/output /{dst}"
+            cmd = f"scp -r {HOME}/SinglePassCapture/PerfInspector/output {user}:{passwd}@{host}:/{dst}"
         else:
-            cmd = f"scp -r {src} /{dst}"
+            cmd = f"scp -r {src} {user}:{passwd}@{host}:/{dst}"
             
         subprocess.run(["bash", "-lc", cmd], check=True)
         
@@ -532,7 +532,7 @@ class CMD_upload:
         passwd = subprocess.run(["bash", "-lc", f"echo 'U2FsdGVkX1+hqRcADWpr1Nk/5Ble1wUjLLYXmW3HlKCop5/DZ3v6OsdtlhNpWmNH' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{passwd_cipher}"], check=True, text=True, capture_output=True).stdout 
             
         if self.test(user, host, passwd):
-            return user, host 
+            return user, host, passwd 
 
         Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
         return self.get_windows_host() 
