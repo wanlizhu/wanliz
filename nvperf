@@ -275,20 +275,13 @@ class CMD_config:
             Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters' -Name 'AllowInsecureGuestAuth' -Type DWord -Value 1
             $ErrorActionPreference = 'Stop'
             Write-Host "Checking PATH environment variables"
-            $norm = {{ param($p) ($p -as [string]).Trim('"').TrimEnd('\') }}
-            $need = @('C:\Program Files', $env:LOCALAPPDATA) | ForEach-Object {{ & $norm $_ }}
-            $proc = ($env:Path -split ';') | Where-Object {{ $_ }} | ForEach-Object {{ & $norm $_ }}
-            $set = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-            $set.UnionWith($proc)
-            $added = $false
-            foreach ($p in $need) {{ if ($set.Add($p)) {{ $proc += $p; $added = $true }} }}
-            if ($added) {{
-                $newProc = ($proc -join ';')
-                $env:Path = $newProc
-                $user = ([Environment]::GetEnvironmentVariable('Path','User') -split ';') | Where-Object {{ $_ }} | ForEach-Object {{ & $norm $_ }}
-                $userSet = New-Object 'System.Collections.Generic.HashSet[string]' ($user, [StringComparer]::OrdinalIgnoreCase)
-                $userNew = ($user + ($proc | Where-Object {{ -not $userSet.Contains($_) }})) -join ';'
-                [Environment]::SetEnvironmentVariable('Path', $userNew, 'User')
+            $want = @('C:\Program Files', $env:LOCALAPPDATA.TrimEnd('\'))
+            $cur  = ($env:Path -split ';') | ? {{ $_ }} | % {{ $_.Trim('"').TrimEnd('\') }}
+            $miss = $want | % {{ $_.Trim('"').TrimEnd('\') }} | ? {{ $cur -notcontains $_ }}
+            if ($miss) {{
+                $env:Path = ($cur + $miss) -join ';'
+                $user = ([Environment]::GetEnvironmentVariable('Path','User') -split ';') | ? {{ $_ }} | % {{ $_.Trim('"').TrimEnd('\') }}
+                [Environment]::SetEnvironmentVariable('Path', ($user + ($miss | ? {{ $user -notcontains $_ }})) -join ';', 'User')
             }}
 
             Write-Host "`r`nChecking C:\Windows\System32\drivers\etc\hosts"
