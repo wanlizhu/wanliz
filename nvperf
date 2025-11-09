@@ -337,15 +337,12 @@ class CMD_config:
             $script = 'C:\Program Files\WhoLocks.ps1'
             $inner  = "Start-Process powershell.exe -Verb RunAs -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File','$script','`"%1`"')"
             $cmd    = "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command $inner"
-            foreach ($k in 'HKCU:\Software\Classes\*\shell\WhoLocks','HKCU:\Software\Classes\Directory\shell\WhoLocks') {{
-                if (-not (Test-Path -LiteralPath $k)) {{
-                    New-Item -LiteralPath $k -Force | Out-Null
-                    New-ItemProperty -LiteralPath $k MUIVerb      -Value 'Who locks this?' -PropertyType String -Force | Out-Null
-                    New-ItemProperty -LiteralPath $k Icon         -Value '%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe' -PropertyType String -Force | Out-Null
-                    New-ItemProperty -LiteralPath $k HasLUAShield -Value '' -PropertyType String -Force | Out-Null
-                    $c = Join-Path $k 'command'
-                    New-Item -LiteralPath $c -Force | Out-Null
-                    Set-Item -LiteralPath $c -Value $cmd
+            foreach ($key in 'HKCU:\Software\Classes\*\shell\WhoLocks','HKCU:\Software\Classes\Directory\shell\WhoLocks') {{
+                if (-not (Test-Path -LiteralPath $key)) {{
+                    reg add "$key" /f /v MUIVerb      /t REG_SZ /d "Who locks this?" >$null
+                    reg add "$key" /f /v Icon         /t REG_SZ /d "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" >$null
+                    reg add "$key" /f /v HasLUAShield /t REG_SZ /d "" >$null
+                    reg add "$key\command" /f /ve /t REG_SZ /d "$cmd" >$null
                 }}
             }}
         """], check=True)
