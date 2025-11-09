@@ -506,6 +506,8 @@ class CMD_upload:
 
         if src == f"{HOME}:no-recur":
             files = [str(p) for p in Path.home().iterdir() if p.is_file()]
+            size = sum(os.path.getsize(p) for p in files)
+            input(f"Press [Enter] to upload files of {1.0 * size / 1024 / 1024:.2f} MB: ")
             cmd = rf"""
                 rm -rf   /tmp/{socket.gethostname()}
                 mkdir -p /tmp/{socket.gethostname()}
