@@ -335,19 +335,13 @@ class CMD_config:
             $script = 'C:\Program Files\WhoLocks.ps1'
             $inner  = "Start-Process powershell.exe -Verb RunAs -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File','$script','`"%1`"')"
             $cmd    = "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command $inner"
-            $keys = @('HKCU:\Software\Classes\`*\shell\WhoLocks','HKCU:\Software\Classes\Directory\shell\WhoLocks')
-            foreach ($k in $keys) {{
-                if (-not (Test-Path -LiteralPath $k)) {{
-                    New-Item -Path $k -Force | Out-Null
-                }}
-                $c = Join-Path $k 'command'
-                if (-not (Test-Path -LiteralPath $c)) {{
-                    New-Item -Path $c -Force | Out-Null
-                }}
-                New-ItemProperty -Path $k -Name MUIVerb      -Value 'Who locks this?' -PropertyType String -Force | Out-Null
-                New-ItemProperty -Path $k -Name Icon         -Value '%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe' -PropertyType String -Force | Out-Null
-                New-ItemProperty -Path $k -Name HasLUAShield -Value '' -PropertyType String -Force | Out-Null
-                Set-Item -Path $c -Value $cmd
+            $root = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\Classes', $true)
+            foreach ($sub in @('*\shell\WhoLocks','Directory\shell\WhoLocks')) {{
+                $k = $root.CreateSubKey($sub)
+                $k.SetValue('MUIVerb','Who locks this?',[Microsoft.Win32.RegistryValueKind]::String)
+                $k.SetValue('Icon','%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe',[Microsoft.Win32.RegistryValueKind]::String)
+                $k.SetValue('HasLUAShield','',[Microsoft.Win32.RegistryValueKind]::String)
+                ($k.CreateSubKey('command')).SetValue('', $cmd, [Microsoft.Win32.RegistryValueKind]::String)
             }}
         """], check=True)
         
