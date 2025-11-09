@@ -548,7 +548,7 @@ class CMD_upload:
         
     def test(self, user, host, passwd):
         cmd = [
-            f"sshpass -p {passwd}" if passwd else "ssh",  
+            f"sshpass -p '{passwd}'" if passwd else "ssh",  
             "-o BatchMode=yes",
             "-o StrictHostKeyChecking=accept-new",
             "-o ConnectTimeout=3",
