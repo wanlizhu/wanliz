@@ -550,7 +550,7 @@ class CMD_upload:
         
     def test(self, user, host):
         output = subprocess.run(["bash", "-lc", rf"""
-            ssh -o StrictHostKeyChecking=accept-new f"{user}@{host} true
+            ssh -o StrictHostKeyChecking=accept-new {user}@{host} true
         """], check=False)
         if output.returncode != 0:
             return False
