@@ -522,23 +522,21 @@ class CMD_upload:
             text = Path(f"{HOME}/.upload_host").read_text(encoding="utf-8").rstrip("\n")
             user = text.split("@")[0]
             host = text.split("@")[1]
-            if self.test(user, host):
-                return user, host 
         else:
-            user, host = None, None 
+            host = horizontal_select("Host IP: ", [host, "<input>"] if host else ["<input>"], 0)
+            user = horizontal_select("User", [user if user else "WanliZhu", "<input>"], 0)
             
-        host = horizontal_select("Host IP: ", [host, "<input>"] if host else ["<input>"], 0)
-        user = horizontal_select("User", [user if user else "WanliZhu", "<input>"], 0)
-        
         if self.test(user, host):
-            subprocess.run(["bash", "-lc", rf"""
-                echo "Copying SSH key to remote server"
-                if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
-                    ssh-keygen -t ed25519 -N '' -f ~/.ssh/id_ed25519
-                fi 
-                ssh-copy-id -i ~/.ssh/id_ed25519.pub {user}@{host}
-                ssh -i ~/.ssh/id_ed25519 {user}@{host} true
-            """], check=False)
+            if not os.path.exists(f"{HOME}/.ssh/id_ed25519"):
+                subprocess.run(["bash", "-lc", rf"""
+                    echo "Copying SSH key to remote server"
+                    if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
+                        ssh-keygen -t ed25519 -N '' -f ~/.ssh/id_ed25519
+                    fi 
+                    ssh-copy-id -i ~/.ssh/id_ed25519.pub {user}@{host}
+                    ssh -i ~/.ssh/id_ed25519 {user}@{host} true
+                """], check=False)
+            return user, host 
 
         Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
         return self.get_windows_host() 
@@ -547,9 +545,7 @@ class CMD_upload:
         output = subprocess.run(["bash", "-lc", rf"""
             ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'echo OK'
         """], check=False)
-        if output.returncode != 0:
-            return False
-        return True
+        return output.returncode == 0 
 
 
 class CMD_share:
