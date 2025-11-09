@@ -1,6 +1,15 @@
 param([Parameter(Mandatory)][string]$Path)
-
 $Path = (Resolve-Path -LiteralPath $Path -ErrorAction Stop).Path
+$ErrorActionPreference = 'Stop'
+
+trap {
+    Write-Host "`nERROR: $($_.Exception.Message)" -ForegroundColor Red
+    if ($_.InvocationInfo.PositionMessage) { 
+        Write-Host "`n$($_.InvocationInfo.PositionMessage)" -ForegroundColor Yellow 
+    }
+    Read-Host "`nPress [Enter] to exit: "
+    exit 1
+}
 
 if (-not ('RM' -as [type])) {
     Add-Type @'
