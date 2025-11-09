@@ -342,7 +342,7 @@ class CMD_config:
             Write-Host "`r`nChecking context menu items"
             Invoke-WebRequest "https://raw.githubusercontent.com/wanlizhu/wanliz/main/WhoLocks.ps1" -OutFile "C:\Program Files\WhoLocks.ps1"
             $script = 'C:\Program Files\WhoLocks.ps1'
-            $inner = "Start-Process cmd.exe -Verb RunAs -ArgumentList @('/c','start','""Who locks me?""','powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File','$script','`"%1`"')"
+            $inner = "Start-Process cmd.exe -Verb RunAs -ArgumentList @('/c','start','""WhoLocks (Admin)""','powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File','$script','`"%1`"')"
             $cmd   = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command $inner"
             $root = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\Classes', $true)
             foreach ($sub in @('*\shell\WhoLocks','Directory\shell\WhoLocks')) {{
