@@ -272,21 +272,6 @@ class CMD_config:
         names = r"\b(" + "|".join(re.escape(k) for k in (*self.hosts, "wanliz")) + r")\b"
         mappings = "\n".join(f"{ip} {name}" for name, ip in self.hosts.items())
         subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
-                        Write-Host "`r`nChecking context menu items"
-            Invoke-WebRequest "https://raw.githubusercontent.com/wanlizhu/wanliz/main/WhoLocks.ps1" -OutFile "C:\Program Files\WhoLocks.ps1"
-            $root = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\Classes', $true)
-foreach ($sub in @('*\shell\WhoLocks','Directory\shell\WhoLocks')) {{
-    $k = $root.CreateSubKey($sub)
-    $k.SetValue('MUIVerb','Who locks this?',[Microsoft.Win32.RegistryValueKind]::String)
-    $k.SetValue('Icon','%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe',[Microsoft.Win32.RegistryValueKind]::String)
-    $k.SetValue('HasLUAShield','',[Microsoft.Win32.RegistryValueKind]::String)
-    $cmd = 'cmd.exe /c start "" "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\WhoLocks.ps1" "%1"'
-($k.CreateSubKey('command')).SetValue('', $cmd, [Microsoft.Win32.RegistryValueKind]::String)
-    $k.Close()
-}}
-$root.Close()
-                        exit(0)
-
             Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters' -Name 'AllowInsecureGuestAuth' -Type DWord -Value 1
             $ErrorActionPreference = 'Stop'
             Write-Host "Checking PATH environment variables"
@@ -356,15 +341,13 @@ $root.Close()
 
             Write-Host "`r`nChecking context menu items"
             Invoke-WebRequest "https://raw.githubusercontent.com/wanlizhu/wanliz/main/WhoLocks.ps1" -OutFile "C:\Program Files\WhoLocks.ps1"
-            $script = 'C:\Program Files\WhoLocks.ps1'
-            $inner  = "(New-Object -ComObject Shell.Application).ShellExecute('powershell.exe','-NoProfile -ExecutionPolicy Bypass -File ""$script"" ""`%1""','', 'runas', 1)"
-            $cmd    = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command $inner"
             $root = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\Classes', $true)
             foreach ($sub in @('*\shell\WhoLocks','Directory\shell\WhoLocks')) {{
                 $k = $root.CreateSubKey($sub)
                 $k.SetValue('MUIVerb','Who locks this?',[Microsoft.Win32.RegistryValueKind]::String)
                 $k.SetValue('Icon','%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe',[Microsoft.Win32.RegistryValueKind]::String)
                 $k.SetValue('HasLUAShield','',[Microsoft.Win32.RegistryValueKind]::String)
+                $cmd = 'cmd.exe /c start "" "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\WhoLocks.ps1" "%1"'
                 ($k.CreateSubKey('command')).SetValue('', $cmd, [Microsoft.Win32.RegistryValueKind]::String)
                 $k.Close()
             }}
