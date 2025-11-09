@@ -497,11 +497,11 @@ class CMD_upload:
     """Upload Linux local folder to Windows SSH host"""
     
     def run(self):
-        src = horizontal_select("Select local file/folder", [f"{HOME}:no-recur", "PerfInspector/output", "<input>"], 0, separator="|")
+        src = horizontal_select("Upload from", [f"{HOME}:no-recur", "PerfInspector/output", "<input>"], 0, separator="|")
         user, host = self.get_windows_host()
-        dst = horizontal_select(f"Select folder on {user}@{host}", ["D:/", f"C:/Users/{user}/Downloads/", "<input>"], 0, separator="|")
+        dst = horizontal_select(f"Save to", ["D:/", f"C:/Users/{user}/Downloads/", "<input>"], 0, separator="|")
 
-        if src == f"{HOME}:[no recur]":
+        if src == f"{HOME}:no-recur":
             files = [p for p in Path.home().iterdir() if p.is_file()]
             cmd = rf"""
                 rm -rf   /tmp/{socket.gethostname()}
