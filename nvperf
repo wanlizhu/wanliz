@@ -27,10 +27,11 @@ from time import perf_counter
 from statistics import mean, stdev
 from contextlib import suppress
 from itertools import zip_longest
-try:
-    import termios, tty, msvcrt
-except Exception:
-    pass 
+if platform.system() == "Linux":
+    import termios
+    import tty 
+elif platform.system() == "Windows":
+    import msvcrt
 
 def horizontal_select(prompt, options=None, index=None, separator="/"):
     """
