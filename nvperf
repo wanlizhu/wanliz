@@ -1371,7 +1371,7 @@ class CMD_gdb:
         self.run_in_gdb(exe=test.exe, arg=test.arg, workdir=test.workdir, env=test.env) 
 
     def run_in_gdb(self, exe, arg, workdir, env=None):
-        subprocess.run(["bash", "-lc", f"""
+        subprocess.run(["bash", "-lc", rf"""
             if ! command -v cgdb >/dev/null 2>&1; then
                 sudo apt install -y cgdb
             fi 
