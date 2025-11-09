@@ -537,9 +537,10 @@ class CMD_upload:
         Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
         return self.get_windows_host() 
         
-    def test(self, user, host):
+    def test(self, user, host, passwd):
+        sshpass = f"sshpass -p '{passwd}'" if passwd else ""
         output = subprocess.run(["bash", "-lc", rf"""
-            ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'echo OK'
+            {sshpass} ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'echo OK'
         """], check=False)
         return output.returncode == 0 
 
