@@ -350,9 +350,13 @@ class CMD_config:
         """], check=True)
         print("~/.bashrc \t [ UPDATED ]")
 
-        openssl_passwd = None 
+        if os.path.exists(f"{HOME}/.passwd"):
+            openssl_passwd = Path(f"{HOME}/.passwd").read_text(encoding="utf-8").rstrip("\n")
+        else:
+            openssl_passwd = getpass.getpass("OpenSSL Password: ")
+            Path(f"{HOME}/.passwd").write_text(openssl_passwd, encoding="utf-8")
+
         if not os.path.exists(HOME + "/.ssh/id_ed25519"):
-            if openssl_passwd is None: openssl_passwd = getpass.getpass("OpenSSL Password: ")
             cipher_prv = "U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo"
             subprocess.run("mkdir -p ~/.ssh", check=True, shell=True)
             subprocess.run(["bash", "-lc", f"echo '{cipher_prv}' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{openssl_passwd}' > $HOME/.ssh/id_ed25519"], check=True)
@@ -361,7 +365,6 @@ class CMD_config:
             subprocess.run("chmod 644 ~/.ssh/id_ed25519.pub", check=True, shell=True)
             print("~/.ssh/id_ed25519.pub \t [ ADDED ]")
         if not os.path.exists(HOME + "/.gtl_api_key"):
-            if openssl_passwd is None: openssl_passwd = getpass.getpass("OpenSSL Password: ")
             cipher = "U2FsdGVkX18BU0ZpoGynLWZBV16VNV2x85CjdpJfF+JF4HhpClt/vTyr6gs6GAq0lDVWvNk7L7s7eTFcJRhEnU4IpABfxIhfktMypWw85PuJCcDXOyZm396F02KjBRwunVfNkhfuinb5y2L6YR9wYbmrGDn1+DjodSWzt1NgoWotCEyYUz0xAIstEV6lF5zedcGwSzHDdFhj3hh5YxQFANL96BFhK9aSUs4Iqs9nQIT9evjinEh5ZKNq5aJsll91czHS2oOi++7mJ9v29sU/QjaqeSWDlneZj4nPYXhZRCw="
             subprocess.run(["bash", "-lc", f"echo '{cipher}' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{openssl_passwd}' > ~/.gtl_api_key"], check=True)
             subprocess.run("chmod 500 ~/.gtl_api_key", check=True, shell=True)
@@ -506,13 +509,13 @@ class CMD_upload:
             cmd = rf"""
                 rm -rf   /tmp/{socket.gethostname()}
                 mkdir -p /tmp/{socket.gethostname()}
-                scp -r   /tmp/{socket.gethostname()} {user}:{passwd}@{host}:/{dst}
-                scp -o Compression=no {" ".join(files)} {user}:{passwd}@{host}:/{dst}/{socket.gethostname()}
+                sshpass -p '{passwd}' scp -r   /tmp/{socket.gethostname()} {user}@{host}:/{dst}
+                sshpass -p '{passwd}' scp -o Compression=no {" ".join(files)} {user}@{host}:/{dst}/{socket.gethostname()}
             """
         elif src == "PerfInspector/output":
-            cmd = f"scp -r {HOME}/SinglePassCapture/PerfInspector/output {user}:{passwd}@{host}:/{dst}"
+            cmd = f"sshpass -p '{passwd}' scp -r {HOME}/SinglePassCapture/PerfInspector/output {user}@{host}:/{dst}"
         else:
-            cmd = f"scp -r {src} {user}:{passwd}@{host}:/{dst}"
+            cmd = f"sshpass -p '{passwd}' scp -r {src} {user}@{host}:/{dst}"
             
         subprocess.run(["bash", "-lc", cmd], check=True)
         
@@ -525,11 +528,11 @@ class CMD_upload:
             host = horizontal_select("Host IP: ", [host, "<input>"] if host else ["<input>"], 0)
             user = horizontal_select("User", [user if user else "WanliZhu", "<input>"], 0)
         
-        if os.path.exists("/tmp/.wanliz.passwd"):
-            passwd_cipher = Path("/tmp/.wanliz.passwd").read_text(encoding="utf-8").rstrip("\n")
+        if os.path.exists(f"{HOME}/.passwd"):
+            passwd_cipher = Path(f"{HOME}/.passwd").read_text(encoding="utf-8").rstrip("\n")
         else:
             passwd_cipher = getpass.getpass("OpenSSL Password: ")
-            Path("/tmp/.wanliz.passwd").write_text(passwd_cipher, encoding="utf-8")
+            Path(f"{HOME}/.passwd").write_text(passwd_cipher, encoding="utf-8")
         passwd = subprocess.run(["bash", "-lc", f"echo 'U2FsdGVkX1+hqRcADWpr1Nk/5Ble1wUjLLYXmW3HlKCop5/DZ3v6OsdtlhNpWmNH' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{passwd_cipher}'"], check=True, text=True, capture_output=True).stdout 
             
         if self.test(user, host, passwd):
