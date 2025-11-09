@@ -497,7 +497,7 @@ class CMD_upload:
     """Upload Linux local folder to Windows SSH host"""
     
     def run(self):
-        src = horizontal_select("Select local file/folder", [f"{HOME}:<no-recur>", "PerfInspector/output", "<input>"], 0, separator="|")
+        src = horizontal_select("Select local file/folder", [f"{HOME}:no-recur", "PerfInspector/output", "<input>"], 0, separator="|")
         user, host = self.get_windows_host()
         dst = horizontal_select("Select remote folder", [
             f"{user}@{host}:/D:/", 
