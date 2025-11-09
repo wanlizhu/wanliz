@@ -278,7 +278,8 @@ class CMD_config:
             $norm = {{ param($p) ($p -as [string]).Trim('"').TrimEnd('\') }}
             $need = @('C:\Program Files', $env:LOCALAPPDATA) | ForEach-Object {{ & $norm $_ }}
             $proc = ($env:Path -split ';') | Where-Object {{ $_ }} | ForEach-Object {{ & $norm $_ }}
-            $set  = New-Object 'System.Collections.Generic.HashSet[string]' ($proc, [StringComparer]::OrdinalIgnoreCase)
+            $set = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+            $set.UnionWith($proc)
             $added = $false
             foreach ($p in $need) {{ if ($set.Add($p)) {{ $proc += $p; $added = $true }} }}
             if ($added) {{
