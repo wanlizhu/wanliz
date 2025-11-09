@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
-from pathlib import Path 
-from importlib.util import spec_from_file_location, module_from_spec
 from perfins.PIFGfxReader import *
+from nvperf import * 
 
-nvperf_path = Path(__file__).with_name("nvperf")
-nvperf_spec = spec_from_file_location("nvperf", nvperf_path)
-nvperf = module_from_spec(nvperf_spec)
-nvperf_spec.loader.exec_module(nvperf)
-
-with nvperf.Timer():
-    spark_pi_reader = PIFGfxReader(r"C:\Users\WanliZhu\Downloads\PICapture_HW_CHI_on_spark\.pfm")
+with Timer():
+    spark_pi_reader = PIFGfxReader(r"D:\PICapture_HW_CHI_on_spark\.pfm")
     spark_frames  = spark_pi_reader.getSpanValues("frame_0")
     impact1_total_slowdown = 0
     impact1_chi_caused_slowdown = 0
