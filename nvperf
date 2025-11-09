@@ -352,7 +352,7 @@ class CMD_config:
 
         openssl_passwd = None 
         if not os.path.exists(HOME + "/.ssh/id_ed25519"):
-            if openssl_passwd is None: openssl_passwd = getpass.getpass("Enter OpenSSL password: ")
+            if openssl_passwd is None: openssl_passwd = getpass.getpass("OpenSSL Password: ")
             cipher_prv = "U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo"
             subprocess.run("mkdir -p ~/.ssh", check=True, shell=True)
             subprocess.run(["bash", "-lc", f"echo '{cipher_prv}' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{openssl_passwd}' > $HOME/.ssh/id_ed25519"], check=True)
@@ -361,7 +361,7 @@ class CMD_config:
             subprocess.run("chmod 644 ~/.ssh/id_ed25519.pub", check=True, shell=True)
             print("~/.ssh/id_ed25519.pub \t [ ADDED ]")
         if not os.path.exists(HOME + "/.gtl_api_key"):
-            if openssl_passwd is None: openssl_passwd = getpass.getpass("Enter OpenSSL password: ")
+            if openssl_passwd is None: openssl_passwd = getpass.getpass("OpenSSL Password: ")
             cipher = "U2FsdGVkX18BU0ZpoGynLWZBV16VNV2x85CjdpJfF+JF4HhpClt/vTyr6gs6GAq0lDVWvNk7L7s7eTFcJRhEnU4IpABfxIhfktMypWw85PuJCcDXOyZm396F02KjBRwunVfNkhfuinb5y2L6YR9wYbmrGDn1+DjodSWzt1NgoWotCEyYUz0xAIstEV6lF5zedcGwSzHDdFhj3hh5YxQFANL96BFhK9aSUs4Iqs9nQIT9evjinEh5ZKNq5aJsll91czHS2oOi++7mJ9v29sU/QjaqeSWDlneZj4nPYXhZRCw="
             subprocess.run(["bash", "-lc", f"echo '{cipher}' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{openssl_passwd}' > ~/.gtl_api_key"], check=True)
             subprocess.run("chmod 500 ~/.gtl_api_key", check=True, shell=True)
@@ -517,7 +517,6 @@ class CMD_upload:
         subprocess.run(["bash", "-lc", cmd], check=True)
         
     def get_windows_host(self):
-        success = False
         if os.path.exists(f"{HOME}/.upload_host"):
             text = Path(f"{HOME}/.upload_host").read_text(encoding="utf-8").rstrip("\n")
             user = text.split("@")[0]
@@ -525,17 +524,14 @@ class CMD_upload:
         else:
             host = horizontal_select("Host IP: ", [host, "<input>"] if host else ["<input>"], 0)
             user = horizontal_select("User", [user if user else "WanliZhu", "<input>"], 0)
+        
+        if os.path.exists("/tmp/.wanliz.passwd"):
+            passwd_cipher = Path("/tmp/.wanliz.passwd").read_text(encoding="utf-8").rstrip("\n")
+        else:
+            passwd_cipher = getpass.getpass("OpenSSL Password: ")
+        passwd = subprocess.run(["bash", "-lc", f"echo 'U2FsdGVkX1+hqRcADWpr1Nk/5Ble1wUjLLYXmW3HlKCop5/DZ3v6OsdtlhNpWmNH' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{passwd_cipher}"], check=True, text=True, capture_output=True).stdout 
             
-        if self.test(user, host):
-            if not os.path.exists(f"{HOME}/.ssh/id_ed25519"):
-                subprocess.run(["bash", "-lc", rf"""
-                    echo "Copying SSH key to remote server"
-                    if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
-                        ssh-keygen -t ed25519 -N '' -f ~/.ssh/id_ed25519
-                    fi 
-                    ssh-copy-id -i ~/.ssh/id_ed25519.pub {user}@{host}
-                    ssh -i ~/.ssh/id_ed25519 {user}@{host} true
-                """], check=False)
+        if self.test(user, host, passwd):
             return user, host 
 
         Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
