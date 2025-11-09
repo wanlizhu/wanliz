@@ -502,7 +502,7 @@ class CMD_upload:
         dst = horizontal_select(f"Save to", ["D:/", f"C:/Users/{user}/Downloads/", "<input>"], 0, separator="|")
 
         if src == f"{HOME}:no-recur":
-            files = [p for p in Path.home().iterdir() if p.is_file()]
+            files = [str(p) for p in Path.home().iterdir() if p.is_file()]
             cmd = rf"""
                 rm -rf   /tmp/{socket.gethostname()}
                 mkdir -p /tmp/{socket.gethostname()}
