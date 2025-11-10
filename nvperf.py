@@ -578,7 +578,10 @@ class CMD_upload:
             Path(f"{HOME}/.passwd").write_text(passwd_cipher, encoding="utf-8")
         passwd = subprocess.run(["bash", "-lc", f"echo 'U2FsdGVkX1+hqRcADWpr1Nk/5Ble1wUjLLYXmW3HlKCop5/DZ3v6OsdtlhNpWmNH' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{passwd_cipher}'"], check=True, text=True, capture_output=True).stdout 
             
-        if not self.test(user, host, passwd):
+        if self.test(user, host, passwd):
+            Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
+        else:
+            Path(f"{HOME}/.upload_host").unlink(missing_ok=True)
             raise RuntimeError("Authentication failed")
 
         return user, host, passwd 
