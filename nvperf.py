@@ -1063,25 +1063,25 @@ class CMD_download:
     def download_viewperf(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/viewperf2020v3.{UNAME_M}"):
             print(f"Downloading {HOME}/viewperf2020v3")
-            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/viewperf2020v3.{UNAME_M}/ $HOME/viewperf2020v3"])
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/viewperf2020v3.{UNAME_M}/ $HOME/viewperf2020v3"], check=False)
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/viewperf2020v3.{UNAME_M}")
 
     def download_gravitymark(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/gravity_mark.{UNAME_M}"):
             print(f"Downloading {HOME}/gravity_mark")
-            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/gravity_mark.{UNAME_M}/ $HOME/gravity_mark"])
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/gravity_mark.{UNAME_M}/ $HOME/gravity_mark"], check=False)
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/gravity_mark.{UNAME_M}") 
 
     def download_3dMark(self, name):
         if os.path.exists(f"/mnt/linuxqa/wanliz/3dMark_{name}.{UNAME_M}"):
             print(f"Downloading {HOME}/3dMark_{name}")
-            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/3dMark_{name}.{UNAME_M}/ $HOME/3dMark_{name}"])
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/3dMark_{name}.{UNAME_M}/ $HOME/3dMark_{name}"], check=False)
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/3dMark_{name}.{UNAME_M}")  
 
     def download_microbench(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}"):
             print(f"Downloading {HOME}/nvperf_vulkan.{UNAME_M}")
-            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M} {HOME}/nvperf_vulkan.{UNAME_M}"])
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M} {HOME}/nvperf_vulkan.{UNAME_M}"], check=False)
         else: raise RuntimeError(f"File not found: /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}")
 
 
@@ -1643,34 +1643,17 @@ class CMD_microbench:
         
     def print_csv(self, logpath, csvpath): 
         with open(csvpath, mode="w") as csvfile:
-            def flush_test_to_csv(test):
-                if test is not None:
-                    csvfile.write(f"{test['Name']},,,,\n")
-                    csvfile.write("\n".join([f",{c['Name']},{c['Tags']},{c['Unit']},{c['Value']}" for c in test["Test_case"]]) + "\n")
-            csvfile.write(f"Test,Test_case,Tags,Unit,Value\n")
+            csvfile.write(f"Test_case,Tags,Value\n")
             with open(logpath, mode="r") as logfile:
-                test = None
                 for line in logfile.readlines():
                     line = line.strip()
-                    if line.startswith("Running test:"):
-                        flush_test_to_csv(test)
-                        test = {}
-                        test["Name"] = line.split(": ")[1]
-                        test["Test_case"] = []
-                        continue 
                     if line.startswith("[Test_case:"):
                         middle = line[1:-1].split(": ")[1].split(" = ")[0]
                         name = middle.split("|")[0]  if "|" in middle else middle 
                         tags = middle.split("|")[1:] if "|" in middle else ""
                         result = line[1:-1].split(": ")[1].split(" = ")[1]
-                        test["Test_case"].append({
-                            "Name": name, 
-                            "Tags": " | ".join(tags), 
-                            "Unit": result.split()[1],
-                            "Value": result.split()[0]
-                        })
+                        csvfile.write(f"{name} ({result.split()[1]}),{' | '.join(tags)},{result.split()[0]}\n")
                         continue
-                flush_test_to_csv(test)
         print(f"Generated {csvpath}")
                     
                     
