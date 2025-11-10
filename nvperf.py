@@ -356,7 +356,7 @@ class CMD_config:
         
     def config_linux_host(self):
         # Enable no-password sudo
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
                 echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
             fi
@@ -384,7 +384,7 @@ class CMD_config:
         print("/etc/hosts \t [ UPDATED ]")
 
         # Add ~/wanliz to PATH
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             if [[ -z $(which nvperf) ]]; then 
                 echo -e '\nexport PATH="$PATH:$HOME/wanliz"' >> ~/.bashrc
             fi 
@@ -400,14 +400,14 @@ class CMD_config:
         if not os.path.exists(HOME + "/.ssh/id_ed25519"):
             cipher_prv = "U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo"
             subprocess.run("mkdir -p ~/.ssh", check=True, shell=True)
-            subprocess.run(["bash", "-lc", f"echo '{cipher_prv}' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{openssl_passwd}' > $HOME/.ssh/id_ed25519"], check=True)
+            subprocess.run(["bash", "-lic", f"echo '{cipher_prv}' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{openssl_passwd}' > $HOME/.ssh/id_ed25519"], check=True)
             subprocess.run("chmod 600 ~/.ssh/id_ed25519", check=True, shell=True)
             subprocess.run("echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > $HOME/.ssh/id_ed25519.pub", check=True, shell=True)
             subprocess.run("chmod 644 ~/.ssh/id_ed25519.pub", check=True, shell=True)
             print("~/.ssh/id_ed25519.pub \t [ ADDED ]")
         if not os.path.exists(HOME + "/.gtl_api_key"):
             cipher = "U2FsdGVkX18BU0ZpoGynLWZBV16VNV2x85CjdpJfF+JF4HhpClt/vTyr6gs6GAq0lDVWvNk7L7s7eTFcJRhEnU4IpABfxIhfktMypWw85PuJCcDXOyZm396F02KjBRwunVfNkhfuinb5y2L6YR9wYbmrGDn1+DjodSWzt1NgoWotCEyYUz0xAIstEV6lF5zedcGwSzHDdFhj3hh5YxQFANL96BFhK9aSUs4Iqs9nQIT9evjinEh5ZKNq5aJsll91czHS2oOi++7mJ9v29sU/QjaqeSWDlneZj4nPYXhZRCw="
-            subprocess.run(["bash", "-lc", f"echo '{cipher}' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{openssl_passwd}' > ~/.gtl_api_key"], check=True)
+            subprocess.run(["bash", "-lic", f"echo '{cipher}' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{openssl_passwd}' > ~/.gtl_api_key"], check=True)
             subprocess.run("chmod 500 ~/.gtl_api_key", check=True, shell=True)
             print("~/.gtl_api_key \t [ ADDED ]")
 
@@ -422,13 +422,24 @@ class CMD_info:
             self.windows_info()
 
     def linux_info(self):
-        subprocess.run(["bash", "-lc", "xrandr | grep current"], check=False)
-        subprocess.run(["bash", "-lc", "glxinfo | grep -i 'OpenGL renderer'"], check=False)
-        subprocess.run(["bash", "-lc", "nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total,clocks.gr | column -s, -t"], check=False)
-        subprocess.run(["bash", "-lc", "nvidia-smi -q | grep -i 'GSP Firmware Version'"], check=False)
+        subprocess.run(["bash", "-lic", "xrandr | grep current"], check=False)
+        subprocess.run(["bash", "-lic", "glxinfo | grep -i 'OpenGL renderer'"], check=False)
+        subprocess.run(["bash", "-lic", "nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total,clocks.gr | column -s, -t"], check=False)
+        subprocess.run(["bash", "-lic", "nvidia-smi -q | grep -i 'GSP Firmware Version'"], check=False)
         for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
             value = os.environ.get(key)
             print(f"{key}={value}") if value is not None else None 
+        subprocess.run(["bash", "-lic", rf"""
+            export DISPLAY=:0  
+            echo "DISPLAY=:$DISPLAY"
+            echo "XDG_SESSION_TYPE=:$XDG_SESSION_TYPE"
+            xrandr | grep current
+            glxinfo | grep -i 'OpenGL renderer'
+            nvidia-smi -q | grep -i 'GSP Firmware Version' | sed 's/^[[:space:]]*//'
+            sudo lsof -w -n /dev/nvidia* | awk 'NR>1{{print $2}}' | sort -un | while read -r pid; do
+                printf "PID=%-7s %s\n" "$pid" "$(tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null || ps -o args= -p "$pid")"
+            done
+        """], check=False)
 
     def windows_info(self):
         subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
@@ -451,7 +462,7 @@ class CMD_p4:
         p4user = "wanliz"
         p4root = "/wanliz_sw_linux" if p4client == "wanliz_sw_linux" else ""
         p4ignore = HOME + "/.p4ignore"
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             if [[ ! -f ~/.p4ignore ]]; then 
                 echo '_out' >> ~/.p4ignore
                 echo '.git' >> ~/.p4ignore
@@ -482,7 +493,7 @@ class CMD_p4:
 
     def status(self):
         reconcile = horizontal_select("Reconcile to check added/deleted files", ["yes", "no"], 1)
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             echo "=== Files Opened for Edit ==="
             ofiles=$(p4 opened -C $P4CLIENT //$P4CLIENT/...)
             if [[ ! -z $ofiles ]]; then
@@ -506,7 +517,7 @@ class CMD_p4:
 
     def pull(self):
         force = horizontal_select("Force pull", ["yes", "no"], 1)
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             time p4 sync {"-f" if force == "yes" else ""}
             resolve_files=$(p4 resolve -n $P4ROOT/... 2>/dev/null)
             if [[ ! -z $resolve_files ]]; then 
@@ -526,7 +537,7 @@ class CMD_p4:
 
     def stash(self):
         name = horizontal_select("Select stash name", [f"stash_{datetime.now().astimezone():%Y-%m-%d_%H-%M-%S}", "<input>"], 0)
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             p4 reconcile -e -a -d $P4ROOT/... >/dev/null || true
             p4 change -o /tmp/stash
             sed -i "s|<enter description here>|STASH: $(date '+%F %T')" /tmp/stash 
@@ -560,7 +571,7 @@ class CMD_upload:
         else:
             cmd = f"sshpass -p '{passwd}' scp -r {src} {user}@{host}:/{dst}"
             
-        subprocess.run(["bash", "-lc", cmd], check=True)
+        subprocess.run(["bash", "-lic", cmd], check=True)
         
     def get_windows_host(self):
         if os.path.exists(f"{HOME}/.upload_host"):
@@ -576,7 +587,7 @@ class CMD_upload:
         else:
             passwd_cipher = getpass.getpass("OpenSSL Password: ")
             Path(f"{HOME}/.passwd").write_text(passwd_cipher, encoding="utf-8")
-        passwd = subprocess.run(["bash", "-lc", f"echo 'U2FsdGVkX1+hqRcADWpr1Nk/5Ble1wUjLLYXmW3HlKCop5/DZ3v6OsdtlhNpWmNH' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{passwd_cipher}'"], check=True, text=True, capture_output=True).stdout 
+        passwd = subprocess.run(["bash", "-lic", f"echo 'U2FsdGVkX1+hqRcADWpr1Nk/5Ble1wUjLLYXmW3HlKCop5/DZ3v6OsdtlhNpWmNH' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{passwd_cipher}'"], check=True, text=True, capture_output=True).stdout 
             
         if self.test(user, host, passwd):
             Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
@@ -590,7 +601,7 @@ class CMD_upload:
     def test(self, user, host, passwd):
         sshpass = f"sshpass -p '{passwd}'" if passwd else ""
         print(f"Authenticating {user}@{host} with {'password' if passwd else 'keys'}")
-        output = subprocess.run(["bash", "-lc", rf"""
+        output = subprocess.run(["bash", "-lic", rf"""
             {sshpass} ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=3 {user}@{host} 'cmd /c exit 0'
         """], check=False)
         return output.returncode == 0 
@@ -609,7 +620,7 @@ class CMD_share:
             self.share_via_nfs(path)
             self.share_via_smb(path)
         else:
-            subprocess.run(["bash", "-lc", rf"""
+            subprocess.run(["bash", "-lic", rf"""
                 echo "=== NFS Exports ==="
                 sudo exportfs -v | awk '/^\/|^\.\// {{print $1}}' | sort -u
                 echo -e "\n=== SMB Exports ==="
@@ -622,10 +633,10 @@ class CMD_share:
             """], check=True)
 
     def share_via_smb(self, path: Path):
-        output = subprocess.run(["bash", "-lc", "testparm -s"], text=True, check=False, capture_output=True)
+        output = subprocess.run(["bash", "-lic", "testparm -s"], text=True, check=False, capture_output=True)
         if output.returncode != 0 and 'not found' in output.stderr:
-            subprocess.run(["bash", "-lc", "sudo apt install -y samba-common-bin samba"], check=True)
-            output = subprocess.run(["bash", "-lc", "testparm -s"], text=True, check=True, capture_output=True)
+            subprocess.run(["bash", "-lic", "sudo apt install -y samba-common-bin samba"], check=True)
+            output = subprocess.run(["bash", "-lic", "testparm -s"], text=True, check=True, capture_output=True)
 
         for line in output.stdout.splitlines():
             if str(path) in line:
@@ -633,7 +644,7 @@ class CMD_share:
                 return 
         
         shared_name = re.sub(r"[^A-Za-z0-9._-]","_", path.name) or "share"
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             if ! pdbedit -L -u {getpass.getuser()} >/dev/null 2>&1; then
                 sudo smbpasswd -a {getpass.getuser()}
             fi 
@@ -658,17 +669,17 @@ class CMD_share:
         print(f"Share {path} via SMB as {shared_name} \t [ OK ]")
 
     def share_via_nfs(self, path: Path):
-        output = subprocess.run(["bash", "-lc", "sudo exportfs -v"], text=True, check=False, capture_output=True)
+        output = subprocess.run(["bash", "-lic", "sudo exportfs -v"], text=True, check=False, capture_output=True)
         if output.returncode != 0 and 'not found' in output.stderr:
-            subprocess.run(["bash", "-lc", "sudo apt install -y nfs-kernel-server"], check=True)
-            output = subprocess.run(["bash", "-lc", "sudo exportfs -v"], text=True, check=True, capture_output=True)
+            subprocess.run(["bash", "-lic", "sudo apt install -y nfs-kernel-server"], check=True)
+            output = subprocess.run(["bash", "-lic", "sudo exportfs -v"], text=True, check=True, capture_output=True)
 
         for line in output.stdout.splitlines():
             if line.strip().startswith(str(path) + " "):
                 print(f"Share {path} via NFS \t [ SHARED ]")
                 return
         
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             echo '{path} *(rw,sync,insecure,no_subtree_check,no_root_squash)' | sudo tee -a /etc/exports >/dev/null 
             sudo exportfs -ra 
             sudo systemctl enable --now nfs-kernel-server
@@ -697,7 +708,7 @@ class CMD_mount:
             windows_folder = shlex.quote(windows_folder)
             mount_dir = f"/mnt/{Path(windows_folder).name}.cifs"
             user = horizontal_select("Target user", ["nvidia", "wanliz", "wzhu", "<input>"], 0)
-            subprocess.run(["bash", "-lc", f"""
+            subprocess.run(["bash", "-lic", f"""
                 if ! command -v mount.cifs >/dev/null 2>&1; then
                     sudo apt install -y cifs-utils
                 fi 
@@ -716,7 +727,7 @@ class CMD_startx:
         startWithVNC  = horizontal_select("Start with a VNC server", ["yes", "no"], 1)
 
         # Start a bare X server in GNU screen
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             export DISPLAY=:0 
             
             # Kill running X server before starting a new one
@@ -852,7 +863,7 @@ class CMD_nvmake:
                                 out.write(f"{_branch},{_config},{_arch},{_module},[ OK ]\n")
                             except Exception as e:
                                 out.write(f"{_branch},{_config},{_arch},{_module},[ FAILED ]\n")
-            subprocess.run(["bash", "-lc", f"column -s, -o ' | ' -t {out.name}"], check=True)
+            subprocess.run(["bash", "-lic", f"column -s, -o ' | ' -t {out.name}"], check=True)
 
     def branch_path(self, branch):
         if branch == "r580": return f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"
@@ -888,7 +899,7 @@ class CMD_nvmake:
             f"{arch}", 
             f"{config}"
         ] if x is not None and x != ""])
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             if [[ "{clean}" == "yes" ]]; then 
                 sudo mv _out /tmp || true  
             fi 
@@ -905,7 +916,7 @@ class CMD_rmmod:
     
     def run(self, retry=True):
         try:
-            subprocess.run(["bash", "-lc", r"""
+            subprocess.run(["bash", "-lic", r"""
                 sudo rm -f /tmp/nvidia_pids
                 sudo systemctl stop gdm sddm lightdm nvidia-persistenced nvidia-dcgm 2>/dev/null || true
                 sudo lsof  -t /dev/nvidia* /dev/dri/{card*,renderD*} 2>/dev/null >>/tmp/nvidia_pids
@@ -941,10 +952,10 @@ class CMD_install:
         automated = horizontal_select("Automated install", ["yes", "no"], 0)
         if automated == "yes":
             CMD_rmmod().run()
-            subprocess.run(["bash", "-lc", f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} -s --no-kernel-module-source --skip-module-load"], check=True)
+            subprocess.run(["bash", "-lic", f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} -s --no-kernel-module-source --skip-module-load"], check=True)
         else:
             CMD_rmmod().run()
-            subprocess.run(["bash", "-lc", f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver}"], check=True)
+            subprocess.run(["bash", "-lic", f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver}"], check=True)
         subprocess.run("nvidia-smi", check=True, shell=True)
 
         # Copy tests-Linux-***.tar to ~
@@ -1039,25 +1050,25 @@ class CMD_download:
     def download_viewperf(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M}"):
             print(f"Downloading {HOME}/viewperf2020v3")
-            subprocess.run(["bash", "-lc", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M}/ $HOME/viewperf2020v3"])
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M}/ $HOME/viewperf2020v3"])
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M}")
 
     def download_gravitymark(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/GravityMark/{UNAME_M}"):
             print(f"Downloading {HOME}/GravityMark")
-            subprocess.run(["bash", "-lc", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/GravityMark/{UNAME_M}/ $HOME/GravityMark"])
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/GravityMark/{UNAME_M}/ $HOME/GravityMark"])
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/GravityMark/{UNAME_M}") 
 
     def download_3dMark(self, name):
         if os.path.exists(f"/mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}"):
             print(f"Downloading {HOME}/3dMark_{name}")
-            subprocess.run(["bash", "-lc", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}/ $HOME/3dMark_{name}"])
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}/ $HOME/3dMark_{name}"])
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}")  
 
     def download_microbench(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}"):
             print(f"Downloading {HOME}/nvperf_vulkan.{UNAME_M}")
-            subprocess.run(["bash", "-lc", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M} {HOME}/nvperf_vulkan.{UNAME_M}"])
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M} {HOME}/nvperf_vulkan.{UNAME_M}"])
         else: raise RuntimeError(f"File not found: /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}")
 
 class CMD_cpu:
@@ -1066,7 +1077,7 @@ class CMD_cpu:
     def run(self):
         cmd = horizontal_select("Action", ["max freq"], 0)
         if cmd == "max freq":
-            subprocess.run(["bash", "-lc", rf"""
+            subprocess.run(["bash", "-lic", rf"""
                 for core in `seq 0 $(( $(nproc) - 1 ))`; do 
                     cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
                     sudo rm -rf /tmp/$cpufreq
@@ -1081,7 +1092,7 @@ class CMD_cpu:
 class CPU_freq_limiter:
     def scale_max_freq(self, scale):
         self.reset()
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             for core in `seq 0 $(( $(nproc) - 1 ))`; do 
                 cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
                 sudo rm -rf /tmp/$cpufreq
@@ -1095,7 +1106,7 @@ class CPU_freq_limiter:
         """], check=True)
         
     def reset(self):
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             for core in `seq 0 $(( $(nproc) - 1 ))`; do 
                 cpufreq="/sys/devices/system/cpu/cpu$core/cpufreq"
                 if [[ -d /tmp/$cpufreq ]]; then 
@@ -1188,7 +1199,7 @@ class CMD_pi:
         ] if len(x) > 0], check=True)
 
     def run_in_server_mode(self, api, frames, debug):
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             export LD_LIBRARY_PATH={self.pi_root}
             python3 {self.pi_root}/Scripts/VkLayerSetup/SetImplicitLayer.py --install
             sudo {self.pi_root}/pic-x --api={api} --check_clocks=0 {"--clean=0" if debug == "yes" else ""} --frames={frames} --trigger=1
@@ -1197,12 +1208,12 @@ class CMD_pi:
 
     def upload_report(self, name):
         if os.path.exists(self.pi_root+f"/PerfInspector/output/{name}"):
-            subprocess.run(["bash", "-lc", "NVM_GTLAPI_USER=wanliz NVM_GTLAPI_TOKEN='eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlODVjZDU4LTM2YWUtNGZkMS1iNzZkLTZkZmZhNDg2ZjIzYSIsInNlY3JldCI6IkpuMjN0RkJuNTVMc3JFOWZIZW9tWk56a1Qvc0hpZVoxTW9LYnVTSkxXZk09In0.NzUoZbUUPQbcwFooMEhG4O0nWjYJPjBiBi78nGkhUAQ' ./upload_report.sh"], 
+            subprocess.run(["bash", "-lic", "NVM_GTLAPI_USER=wanliz NVM_GTLAPI_TOKEN='eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlODVjZDU4LTM2YWUtNGZkMS1iNzZkLTZkZmZhNDg2ZjIzYSIsInNlY3JldCI6IkpuMjN0RkJuNTVMc3JFOWZIZW9tWk56a1Qvc0hpZVoxTW9LYnVTSkxXZk09In0.NzUoZbUUPQbcwFooMEhG4O0nWjYJPjBiBi78nGkhUAQ' ./upload_report.sh"], 
                             cwd=self.pi_root+f"/PerfInspector/output/{name}", 
                             check=True)
     
     def fix_me(self):
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             sudo apt autoremove 
             sudo apt install -y python3-venv python3-pip 
             sudo mv -f -t /tmp {self.pi_root}/PerfInspector/Python-venv  
@@ -1229,7 +1240,7 @@ class CMD_ngfx:
             self.get_ngfx_path()
         self.get_arch()
         self.get_metricset()
-        self.help_all = subprocess.run(["bash", "-lc", f"{self.ngfx} --help-all"], check=False, capture_output=True, text=True).stdout
+        self.help_all = subprocess.run(["bash", "-lic", f"{self.ngfx} --help-all"], check=False, capture_output=True, text=True).stdout
         
     def run(self):
         # for N1x: --architecture="T254 GB20B" --metric-set-name="Top-Level Triage"
@@ -1240,7 +1251,7 @@ class CMD_ngfx:
         self.capture(exe=test.exe, args=test.arg, workdir=test.workdir, env=None, startframe=startframe, frames=frames, time_all_actions=time_all_actions)
 
     def fix_me(self):
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             echo "Checking package dependencies of Nsight graphics..."
             for pkg in libxcb-dri2-0 libxcb-shape0 libxcb-xinerama0 libxcb-xfixes0 libxcb-render0 libxcb-shm0 libxcb1 libx11-xcb1 libxrender1 \
                 libxkbcommon0 libxkbcommon-x11-0 libxext6 libxi6 libglib2.0-0 libglib2.0-0t64 libegl1 libopengl0 \
@@ -1250,7 +1261,7 @@ class CMD_ngfx:
         """], check=True)
 
     def capture(self, exe, arg, workdir, env=None, startframe=100, frames=3, time_all_actions=False): 
-        subprocess.run(["bash", "-lc", ' '.join([line for line in [
+        subprocess.run(["bash", "-lic", ' '.join([line for line in [
             'sudo env DISPLAY=:0', self.ngfx,
             '--output-dir=$HOME',
             '--platform="Linux ($(uname -m))"',
@@ -1330,7 +1341,7 @@ class CMD_nsys:
         self.capture(exe=test.exe, arg=test.arg, workdir=test.workdir, startframe=startframe)
 
     def capture(self, exe, arg, workdir, startframe=100):
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             cd {workdir}
             echo "Nsight system exe: $(which nsys)"
             sudo "$(which nsys)" profile \
@@ -1430,7 +1441,7 @@ class CMD_gdb:
                 for kv in (env or []) if '=' in kv 
             ) 
         ])
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             if ! command -v cgdb >/dev/null 2>&1; then
                 sudo apt install -y cgdb
             fi 
@@ -1515,7 +1526,7 @@ class CMD_viewperf:
             return 0
         
     def run_in_stats(self):
-        subprocess.run(["bash", "-lc", "DISPLAY=:0 glxinfo -B | grep 'OpenGL renderer'"], check=True)
+        subprocess.run(["bash", "-lic", "DISPLAY=:0 glxinfo -B | grep 'OpenGL renderer'"], check=True)
         viewsets = ["catia", "creo", "energy", "maya", "medical", "snx", "sw"] if self.viewset == "all" else [self.viewset]
         subtest = None if self.viewset == "all" else self.subtest
         rounds = int(horizontal_select("Number of rounds", ["1", "3", "10", "30"], 0))
@@ -1550,7 +1561,7 @@ class CMD_viewperf:
             limiter = CPU_freq_limiter() if choice == "CPU" else GPU_freq_limiter()
             for scale in [x / 10 for x in range(lowest, 11, 1)]:
                 limiter.scale_max_freq(scale)
-                subprocess.run(["bash", "-lc", f"{self.exe} {self.arg}"], cwd=self.dir, check=True, capture_output=True)
+                subprocess.run(["bash", "-lic", f"{self.exe} {self.arg}"], cwd=self.dir, check=True, capture_output=True)
                 print(f"{self.viewset}{self.subtest}: {self.get_result_fps(self.viewset, self.subtest)} @ {scale:.1f}x cpu freq")
                 limiter.reset()
         finally:
@@ -1566,7 +1577,7 @@ class CMD_gmark:
             CMD_download().download_gravitymark()
     
     def fix_me(self):
-        subprocess.run(["bash", "-lc", """
+        subprocess.run(["bash", "-lic", """
             sudo apt install -y clang build-essential pkg-config libgtk2.0-dev libglib2.0-dev libpango1.0-dev libatk1.0-dev libgdk-pixbuf-2.0-dev 
         """], check=True) 
     
@@ -1574,7 +1585,7 @@ class CMD_gmark:
         self.exe = f"./GravityMark.{UNAME_M2}"
         self.args = "-temporal 1  -screen 0 -fps 1 -info 1 -sensors 1 -benchmark 1 -vk -fullscreen 1 -vsync 0 -close 1"
         self.workdir = f"{HOME}/GravityMark/bin"
-        subprocess.run(["bash", "-lc", f"{self.exe} {self.args}"], cwd=self.workdir, check=True) 
+        subprocess.run(["bash", "-lic", f"{self.exe} {self.args}"], cwd=self.workdir, check=True) 
 
 
 class CMD_3dmark:
@@ -1585,7 +1596,7 @@ class CMD_3dmark:
         if not os.path.exists(HOME + f"/3dMark_{test}"):
             CMD_download().download_3dMark(test)
 
-        subprocess.run(["bash", "-lc", rf"""
+        subprocess.run(["bash", "-lic", rf"""
             cd $HOME/3dMark_{test}/engine
             ./build/bin/dev_player --asset_root=../assets_desktop --config=configs/gt1.json
         """], check=True) 
@@ -1605,13 +1616,13 @@ class CMD_microbench:
         self.run_with_config(device=device, test=test)
 
     def get_device_list(self):
-        output = subprocess.run(["bash", "-lc", rf"""
+        output = subprocess.run(["bash", "-lic", rf"""
             {self.nvperf_vulkan} -h | grep 'VK device name' | grep -v 'llvmpipe' | awk -F'name' '{{print $2}}'
         """], check=True, text=True, capture_output=True).stdout
         return output.splitlines()
 
     def run_with_config(self, device, test):
-        subprocess.run(["bash", "-lc", f"rm -f {HOME}/microbench.raw.txt && {self.nvperf_vulkan} -nullDisplay -device {device} {test} | tee {HOME}/microbench.raw.txt"], check=True)
+        subprocess.run(["bash", "-lic", f"rm -f {HOME}/microbench.raw.txt && {self.nvperf_vulkan} -nullDisplay -device {device} {test} | tee {HOME}/microbench.raw.txt"], check=True)
         self.print_csv(f"{HOME}/microbench.raw.txt", f"{HOME}/microbench_{datetime.now().strftime('%Y_%m%d_%H%M')}.csv")
         
     def print_csv(self, logpath, csvpath): 
