@@ -568,8 +568,8 @@ class CMD_upload:
             user = text.split("@")[0]
             host = text.split("@")[1]
         else:
-            host = horizontal_select("Host IP: ", [host, "<input>"] if host else ["<input>"], 0)
-            user = horizontal_select("User", [user if user else "WanliZhu", "<input>"], 0)
+            host = input("Host IP: ")
+            user = horizontal_select("User", ["WanliZhu", "<input>"], 0)
         
         if os.path.exists(f"{HOME}/.passwd"):
             passwd_cipher = Path(f"{HOME}/.passwd").read_text(encoding="utf-8").rstrip("\n")
