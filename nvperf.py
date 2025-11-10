@@ -542,7 +542,7 @@ class CMD_upload:
     
     def run(self):
         user, host, passwd = self.get_windows_host()
-        dst = horizontal_select(f"Select dst folder on {host}", ["D:/", f"C:/Users/{user}/Downloads/", "<input>"], 0, separator="|")
+        dst = horizontal_select(f"Select dst folder on {host}", ["D:/", "<input>"], 0, separator="|")
         src = horizontal_select(f"Select src folder on local", [f"{HOME}:no-recur", "PerfInspector/output", "<input>"], 0, separator="|")
 
         if src == f"{HOME}:no-recur":
