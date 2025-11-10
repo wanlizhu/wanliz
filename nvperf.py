@@ -609,6 +609,7 @@ class CMD_upload:
         sshpass = f"sshpass -p '{passwd}'" if passwd else ""
         print(f"Authenticating {user}@{host} with {'password' if passwd else 'keys'}")
         output = subprocess.run(["bash", "-lic", rf"""
+            if [[ -z $(which sshpass) ]]; then sudo apt install -y sshpass &>/dev/null; fi 
             {sshpass} ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=3 {user}@{host} 'cmd /c exit 0'
         """], check=False)
         return output.returncode == 0 
@@ -1077,6 +1078,7 @@ class CMD_download:
             print(f"Downloading {HOME}/nvperf_vulkan.{UNAME_M}")
             subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M} {HOME}/nvperf_vulkan.{UNAME_M}"])
         else: raise RuntimeError(f"File not found: /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}")
+
 
 class CMD_cpu:
     """Configure CPU on host device"""
@@ -1629,7 +1631,7 @@ class CMD_microbench:
         return output.splitlines()
 
     def run_with_config(self, device, test):
-        subprocess.run(["bash", "-lic", f"rm -f {HOME}/microbench.raw.txt && {self.nvperf_vulkan} -nullDisplay -device {device} {test} | tee {HOME}/microbench.raw.txt"], check=True)
+        subprocess.run(["bash", "-lic", f"rm -f {HOME}/microbench.raw.txt; {self.nvperf_vulkan} -nullDisplay -device {device} {test} | tee {HOME}/microbench.raw.txt"], check=True)
         self.print_csv(f"{HOME}/microbench.raw.txt", f"{HOME}/microbench_{datetime.now().strftime('%Y_%m%d_%H%M')}.csv")
         
     def print_csv(self, logpath, csvpath): 
