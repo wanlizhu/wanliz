@@ -787,6 +787,7 @@ class CMD_spark:
             fi 
             cd ~
             if [[ $(uname -m) == "aarch64" ]]; then 
+                sudo chmod +x ./perfdebug
                 sudo ./perfdebug --lock_loose  set pstateId P0
                 sudo ./perfdebug --lock_strict set dramclkkHz  4266000
                 sudo ./perfdebug --lock_strict set gpcclkkHz   2000000
@@ -795,6 +796,7 @@ class CMD_spark:
                 sudo ./perfdebug --force_regime ffr
                 sudo ./perfdebug --getclocks
             elif [[ $(uname -m) == "x86_64" ]]; then 
+                sudo chmod +x ./perfdebug
                 sudo ./perfdebug --lock_loose  set pstateId P0
                 sudo ./perfdebug --lock_strict set dramclkkHz  8000000
                 sudo ./perfdebug --lock_strict set gpcclkkHz   1875000
