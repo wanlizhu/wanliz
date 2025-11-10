@@ -582,7 +582,8 @@ class CMD_upload:
             Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
         else:
             Path(f"{HOME}/.upload_host").unlink(missing_ok=True)
-            raise RuntimeError("Authentication failed")
+            print("Authentication failed")
+            return self.get_windows_host()
 
         return user, host, passwd 
         
