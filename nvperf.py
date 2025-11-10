@@ -469,10 +469,10 @@ class CMD_p4:
 
     @staticmethod
     def setup_env():
-        p4client = horizontal_select("P4 client", ["wanliz_sw_linux", "<input>"], 0)
+        p4client = "wanliz_sw_linux"  
         p4port = "p4proxy-sc.nvidia.com:2006"
         p4user = "wanliz"
-        p4root = "/wanliz_sw_linux" if p4client == "wanliz_sw_linux" else ""
+        p4root = "/wanliz_sw_linux"  
         p4ignore = HOME + "/.p4ignore"
         subprocess.run(["bash", "-lic", rf"""
             if [[ ! -f ~/.p4ignore ]]; then 
@@ -487,8 +487,6 @@ class CMD_p4:
                 echo '*.code-workspace' >> ~/.p4ignore
             fi 
         """], check=True)
-        if not os.path.exists(p4root):
-            raise RuntimeError("$P4ROOT not found")
         os.environ.update({
             "P4CLIENT": p4client,
             "P4PORT": p4port,
