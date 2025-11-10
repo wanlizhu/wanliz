@@ -430,6 +430,7 @@ class CMD_info:
     def linux_info(self):
         subprocess.run(["bash", "-lic", rf"""
             export DISPLAY=:0  
+            echo "X server info:"
             if timeout 2s bash -lc 'command -v xdpyinfo >/dev/null && xdpyinfo >/dev/null 2>&1 || xset q >/dev/null 2>&1'; then 
                 echo "X(:0) is online"
                 echo "DISPLAY=:$DISPLAY"
@@ -439,7 +440,14 @@ class CMD_info:
             else 
                 echo "X(:0) is down or unauthorized"
             fi 
+            echo -e "\nList GPU devices:"
+            if [[ -f /mnt/linuxqa/wanliz/vk-physdev-info.$(uname -m) ]]; then 
+                /mnt/linuxqa/wanliz/vk-physdev-info.$(uname -m) | jq -s .
+            fi 
+            echo -e "\nDriver info:"
+            nvidia-smi | grep "Driver Version"
             nvidia-smi -q | grep -i 'GSP Firmware Version' | sed 's/^[[:space:]]*//'
+            echo -e "\nList PIDs using nvidia module:"
             sudo lsof -w -n /dev/nvidia* | awk 'NR>1{{print $2}}' | sort -un | while read -r pid; do
                 printf "PID=%-7s %s\n" "$pid" "$(tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null || ps -o args= -p "$pid")"
             done
