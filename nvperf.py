@@ -32,7 +32,7 @@ if platform.system() == "Linux":
 elif platform.system() == "Windows":
     import msvcrt
 
-def horizontal_select(prompt, options=None, index=None, separator="/"):
+def horizontal_select(prompt, options=None, index=None, separator="/", return_bool=False):
     """
     Arrow key horizontal selector that works in TTY, GNU screen, tmux,
     Windows terminal and Powershell.
@@ -53,6 +53,10 @@ def horizontal_select(prompt, options=None, index=None, separator="/"):
     RESET = globals().get("RESET", "")
     DIM   = globals().get("DIM", "")
     RED   = globals().get("RED", "")
+
+    def cast_to(val: str):
+        if return_bool:  return val.lower() in ["yes", "y", "true", "t", "on", "1"]
+        else: return val 
     
     global ARGPOS 
     if "ARGPOS" not in globals():
@@ -61,9 +65,9 @@ def horizontal_select(prompt, options=None, index=None, separator="/"):
         value = sys.argv[ARGPOS]
         ARGPOS += 1
         print(f"{BOLD}{CYAN}{prompt} : {RESET}<< {RED}{value}{RESET}")
-        return value 
+        return cast_to(value) 
     if options is None or index is None:
-        return input(f"{BOLD}{CYAN}{prompt} : {RESET}")
+        return cast_to(input(f"{BOLD}{CYAN}{prompt} : {RESET}"))
     if not (0 <= index < len(options)):
         raise RuntimeError(f"Index {index} out of range [0, {len(options)})")
     
@@ -75,7 +79,7 @@ def horizontal_select(prompt, options=None, index=None, separator="/"):
     # Fallback if no interactive terminal (e.g. IDE, redirected IO)
     if not (is_posix or is_windows):
         print("[non-interactive terminal detected]")
-        return input(f"{BOLD}{CYAN}{prompt} : {RESET}")
+        return cast_to(input(f"{BOLD}{CYAN}{prompt} : {RESET}"))
 
     # Print prompt message
     def print_prompt(idx: int):
@@ -142,7 +146,8 @@ def horizontal_select(prompt, options=None, index=None, separator="/"):
             elif key == "ctrl-c":
                 sys.stdout.write("\r\n"); sys.stdout.flush()
                 raise KeyboardInterrupt
-    return input(": ") if selected == "<input>" else selected
+    value = input(": ") if selected == "<input>" else selected
+    return cast_to(value)
 
 
 def check_global_env():
@@ -499,14 +504,14 @@ class CMD_p4:
         elif subcmd == "stash": self.stash()
 
     def status(self):
-        reconcile = horizontal_select("Reconcile to check added/deleted files", ["yes", "no"], 1)
+        reconcile = horizontal_select("Reconcile to check added/deleted files", ["yes", "no"], 1, return_bool=True)
         subprocess.run(["bash", "-lic", rf"""
             echo "=== Files Opened for Edit ==="
             ofiles=$(p4 opened -C $P4CLIENT //$P4CLIENT/...)
             if [[ ! -z $ofiles ]]; then
                 echo $ofiles
             fi 
-            if [[ "{reconcile}" == "yes" ]]; then 
+            if (( {1 if reconcile else 0} )); then 
                 echo 
                 echo "=== Files Not Tracked ==="
                 afiles=$(p4 reconcile -n -a $P4ROOT/... 2>/dev/null || true)
@@ -523,9 +528,9 @@ class CMD_p4:
         """], cwd=self.p4root, check=True)
 
     def pull(self):
-        force = horizontal_select("Force pull", ["yes", "no"], 1)
+        force = horizontal_select("Force pull", ["yes", "no"], 1, return_bool=True)
         subprocess.run(["bash", "-lic", rf"""
-            time p4 sync {"-f" if force == "yes" else ""}
+            time p4 sync {"-f" if force else ""}
             resolve_files=$(p4 resolve -n $P4ROOT/... 2>/dev/null)
             if [[ ! -z $resolve_files ]]; then 
                 echo "Need resolve, trying auto-merge"
@@ -729,10 +734,10 @@ class CMD_startx:
     """Start a bare X server"""
     
     def run(self):
-        spark    = horizontal_select("Is this a DGX spark system", ["yes", "no"], 1)
-        headless = horizontal_select("Is this a headless system", ["yes", "no"], 1)
-        startWithDM   = horizontal_select("Start with a display manager", ["yes", "no"], 1)
-        startWithVNC  = horizontal_select("Start with a VNC server", ["yes", "no"], 1)
+        spark    = horizontal_select("Is this a DGX spark system", ["yes", "no"], 1, return_bool=True)
+        headless = horizontal_select("Is this a headless system", ["yes", "no"], 1, return_bool=True)
+        startWithDM   = horizontal_select("Start with a display manager", ["yes", "no"], 1, return_bool=True)
+        startWithVNC  = horizontal_select("Start with a VNC server", ["yes", "no"], 1, return_bool=True)
 
         # Start a bare X server in GNU screen
         subprocess.run(["bash", "-lic", rf"""
@@ -759,7 +764,7 @@ class CMD_startx:
                 sudo apt install -y x11vnc        
             fi
             
-            if [[ "{headless}" == "yes" ]]; then 
+            if (( {1 if headless else 0} )); then 
                 # Mount linuxqa folder for emulated EDID file
                 if [[ ! -d /mnt/linuxqa/nvtest ]]; then 
                     sudo mkdir -p /mnt/linuxqa
@@ -796,12 +801,12 @@ class CMD_startx:
             xrandr --current
                         
             # Start a simple display manager for windowing 
-            if [[ "{startWithDM}" == "yes" ]]; then 
+            if (( {1 if startWithDM else 0} )); then 
                 screen -S openbox -dm openbox
             fi
 
             # Start a VNC server mirroring the new X server
-            if [[ "{startWithVNC}" == "yes" ]]; then 
+            if (( {1 if startWithVNC else 0} )); then 
                 if [[ -z $(sudo cat /etc/gdm3/custom.conf | grep -v '^#' | grep "WaylandEnable=false") ]]; then 
                     echo "{RED}Disable wayland before starting VNC server{RESET}"
                     exit 0
@@ -810,7 +815,7 @@ class CMD_startx:
             fi
 
             # This is only needed for DGX spark systems 
-            if [[ "{spark}" == "yes" ]]; then 
+            if (( {1 if spark else 0} )); then 
                 if [[ -f $HOME/sandbag-tool ]]; then 
                     $HOME/sandbag-tool -unsandbag 
                 else
@@ -819,7 +824,7 @@ class CMD_startx:
             fi
 
             # This is only needed for DGX spark systems 
-            if [[ "{spark}" == "yes" ]]; then 
+            if (( {1 if spark else 0} )); then 
                 perfdebug="/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug"
                 if [[ -f $perfdebug ]]; then 
                     sudo $perfdebug --lock_loose    set pstateId   P0
@@ -846,12 +851,12 @@ class CMD_nvmake:
         config = horizontal_select("[2/7] Target config", ["develop", "debug", "release", "<input>"], 0)
         arch   = horizontal_select("[3/7] Target architecture", ["amd64", "aarch64", "<input>"], 0)
         module = horizontal_select("[4/7] Target module", ["microbench", "<input>"] if branch == "apps" else ["drivers", "opengl", "<input>"], 0)
-        regen  = horizontal_select("[5/7] Regen opengl code", ["yes", "no"], 1) if module == "opengl" else "no"
+        regen  = horizontal_select("[5/7] Regen opengl code", ["yes", "no"], 1, return_bool=True) if module == "opengl" else "no"
         jobs   = horizontal_select("[6/7] Number of compiling threads", [str(os.cpu_count()), "1"], 0)
-        clean  = horizontal_select("[7/7] Make a clean build", ["yes", "no"], 1)
+        clean  = horizontal_select("[7/7] Make a clean build", ["yes", "no"], 1, return_bool=True)
 
         # Clean previous builds
-        if clean == "yes" and module == "drivers":
+        if clean and module == "drivers":
             subprocess.run([
                 f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
                 "--unshare-namespaces", 
@@ -902,13 +907,13 @@ class CMD_nvmake:
             f"NV_TRACE_CODE={1 if config == 'release' else 0}",
             module, 
             "dist" if module == "drivers" else "", 
-            "@generate" if regen == "yes" else "",
+            "@generate" if regen else "",
             "linux", 
             f"{arch}", 
             f"{config}"
         ] if x is not None and x != ""])
         subprocess.run(["bash", "-lic", rf"""
-            if [[ "{clean}" == "yes" ]]; then 
+            if (( {1 if clean else 0} )); then 
                 sudo mv _out /tmp || true  
             fi 
             {nvmake_cmd} -j{jobs} || {{
@@ -957,8 +962,8 @@ class CMD_install:
         if not os.path.exists(driver):
             raise RuntimeError(f"File doesn't exist: {driver}")
         
-        automated = horizontal_select("Automated install", ["yes", "no"], 0)
-        if automated == "yes":
+        automated = horizontal_select("Automated install", ["yes", "no"], 0, return_bool=True)
+        if automated:
             CMD_rmmod().run()
             subprocess.run(["bash", "-lic", f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} -s --no-kernel-module-source --skip-module-load"], check=True)
         else:
@@ -1178,12 +1183,12 @@ class CMD_pi:
             test = Test_info().input()
             startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
             frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-            debug = horizontal_select("[3/3] Enable pic-x debugging", ["yes", "no"], 1)
+            debug = horizontal_select("[3/3] Enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
             self.launch_and_capture(exe=test.exe, arg=test.arg, workdir=test.workdir, api=test.api, startframe=startframe, frames=frames, debug=debug)
         elif subcmd == "server mode":
             api = horizontal_select("[1/3] Capture graphics API", ["ogl", "vk"], 0)
             frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-            debug = horizontal_select("[3/3] Enable pic-x debugging", ["yes", "no"], 1)
+            debug = horizontal_select("[3/3] Enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
             self.run_in_server_mode(api=api, frames=frames, debug=debug)
         elif subcmd == "upload report":
             reports = sorted([p.name for p in Path(self.pi_root + "/PerfInspector/output").iterdir() 
@@ -1198,7 +1203,7 @@ class CMD_pi:
             "sudo", "env", "DISPLAY=:0",
             self.pi_root + "/pic-x",
             "--check_clocks=0",
-            "--clean=0" if debug == "yes" else "",
+            "--clean=0" if debug else "",
             f"--api={api}",
             f"--startframe={startframe}",
             f"--frames={frames}",
@@ -1207,11 +1212,11 @@ class CMD_pi:
             f"--workdir={workdir}"
         ] if len(x) > 0], check=True)
 
-    def run_in_server_mode(self, api, frames, debug):
+    def run_in_server_mode(self, api, frames, debug=False):
         subprocess.run(["bash", "-lic", rf"""
             export LD_LIBRARY_PATH={self.pi_root}
             python3 {self.pi_root}/Scripts/VkLayerSetup/SetImplicitLayer.py --install
-            sudo {self.pi_root}/pic-x --api={api} --check_clocks=0 {"--clean=0" if debug == "yes" else ""} --frames={frames} --trigger=1
+            sudo {self.pi_root}/pic-x --api={api} --check_clocks=0 {"--clean=0" if debug else ""} --frames={frames} --trigger=1
             python3 {self.pi_root}/Scripts/VkLayerSetup/SetImplicitLayer.py --uninstall
         """], check=True)
 
@@ -1256,7 +1261,7 @@ class CMD_ngfx:
         test = Test_info().input()
         startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
         frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-        time_all_actions = horizontal_select("[3/3] Time all API calls separately", ["yes", "no"], 1)
+        time_all_actions = horizontal_select("[3/3] Time all API calls separately", ["yes", "no"], 1, return_bool=True)
         self.capture(exe=test.exe, args=test.arg, workdir=test.workdir, env=None, startframe=startframe, frames=frames, time_all_actions=time_all_actions)
 
     def fix_me(self):
@@ -1286,7 +1291,7 @@ class CMD_ngfx:
             f'--metric-set-name="{self.metricset}"',
             '--multi-pass-metrics',
             '--real-time-shader-profiler',
-            '--time-every-action' if time_all_actions == "yes" else ""
+            '--time-every-action' if time_all_actions else ""
         ] if len(line) > 0])], check=True) 
 
     def get_ngfx_path(self):
@@ -1501,12 +1506,12 @@ class CMD_viewperf:
         elif env == "picx":
             startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
             frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-            debug = horizontal_select("[3/3] Enable pic-x debugging", ["yes", "no"], 1)
+            debug = horizontal_select("[3/3] Enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
             CMD_pi().launch_and_capture(exe=self.exe, arg=self.arg, workdir=self.dir, api="ogl", startframe=startframe, frames=frames, debug=debug)
         elif env == "ngfx":
             startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
             frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-            time_all_actions = horizontal_select("[3/3] Time all API calls separately", ["yes", "no"], 1)
+            time_all_actions = horizontal_select("[3/3] Time all API calls separately", ["yes", "no"], 1, return_bool=True)
             CMD_ngfx().capture(exe=self.exe, arg=self.arg, workdir=self.dir, startframe=startframe, frames=frames, time_all_actions=time_all_actions)
         elif env == "nsys":
             CMD_nsys.capture(exe=self.exe, arg=self.arg, workdir=self.dir)
@@ -1604,10 +1609,12 @@ class CMD_3dmark:
         test = horizontal_select("Select 3dMark test", ["steelNomad"], 0)
         if not os.path.exists(HOME + f"/3dMark_{test}"):
             CMD_download().download_3dMark(test)
-        headless = horizontal_select("Is this a headless system", ["yes", "no"], 1)
+        headless = horizontal_select("Is this a headless system", ["yes", "no"], 1, return_bool=True)
         subprocess.run(["bash", "-lic", rf"""
             cd $HOME/3dMark_{test}/engine
-            ./build/bin/dev_player --asset_root=../assets_desktop --config=configs/gt1.json {"--headless" if headless == "yes" else ""} 
+            ./build/bin/dev_player --asset_root=../assets_desktop --config=configs/gt1.json {"--headless" if headless else ""} | tee /tmp/log 
+            fps=$(cat /tmp/log | grep 'FPS result:' | awk -F': ' '{{ print $2 }}')
+            echo "$fps FPS"
         """], check=True) 
 
 
