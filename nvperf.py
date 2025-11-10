@@ -777,9 +777,11 @@ class CMD_spark:
             cd /tmp
             sudo rm -rf /tmp/tests-Linux-$(uname -m)
             cp "$tests_tarball" /tmp 
-            cd /tmp && tar -xf ./tests-Linux-$(uname -m).tar && cd ~
-            cp -vf /tmp/tests-Linux-$(uname -m)/sandbag-tool/sandbag-tool ~
-            cp -vf /tmp/tests-Linux-$(uname -m)/LockToRatedTdp/LockToRatedTdp ~
+            cd /tmp && tar -xf ./tests-Linux-$(uname -m).tar 
+            cp -f /tmp/tests-Linux-$(uname -m)/sandbag-tool/sandbag-tool ~
+            cp -f /tmp/tests-Linux-$(uname -m)/LockToRatedTdp/LockToRatedTdp ~
+            cd ~
+            sudo chmod +x ./sandbag-tool ./LockToRatedTdp
             sudo ./sandbag-tool -unsandbag && echo "Unsandbag - [OK]"
             sudo ./LockToRatedTdp -lock && echo "LockToRatedTdp - [OK]"
             if [[ ! -f ~/perfdebug ]]; then 
