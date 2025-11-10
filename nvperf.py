@@ -771,6 +771,7 @@ class CMD_spark:
             else
                 tests_tarball="$(dirname $(cat ~/.driver))/tests-Linux-$(uname -m).tar"
             fi 
+            cd /tmp
             sudo rm -rf /tmp/tests-Linux-$(uname -m)
             cp "$tests_tarball" /tmp 
             cd /tmp && tar -xf ./tests-Linux-$(uname -m).tar && cd ~
