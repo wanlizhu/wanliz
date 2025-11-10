@@ -1604,10 +1604,10 @@ class CMD_3dmark:
         test = horizontal_select("Select 3dMark test", ["steelNomad"], 0)
         if not os.path.exists(HOME + f"/3dMark_{test}"):
             CMD_download().download_3dMark(test)
-
+        headless = horizontal_select("Is this a headless system", ["yes", "no"], 1)
         subprocess.run(["bash", "-lic", rf"""
             cd $HOME/3dMark_{test}/engine
-            ./build/bin/dev_player --asset_root=../assets_desktop --config=configs/gt1.json
+            ./build/bin/dev_player --asset_root=../assets_desktop --config=configs/gt1.json {"--headless" if headless == "yes" else ""} 
         """], check=True) 
 
 
