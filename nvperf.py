@@ -766,6 +766,10 @@ class CMD_spark:
 
     def run(self):
         subprocess.run(["bash", "-lic", rf"""
+            if [[ ! -f /opt/nvidia/update.sh ]]; then 
+                echo "Download spark OTA setup script"
+                curl -kL https://nv/spark-eng/eng.sh | bash
+            fi 
             if [[ ! -f ~/.driver || ! -f $(cat ~/.driver) ]]; then 
                 read -rp "Location of tests-Linux-$(uname -m).tar: " tests_tarball
             else
