@@ -15,7 +15,6 @@ import ctypes
 import tempfile
 import importlib
 import traceback
-import psutil
 import select
 import math 
 import socket
@@ -355,20 +354,51 @@ class CMD_config:
         """], check=True)
         
     def config_linux_host(self):
-        # Enable no-password sudo
         subprocess.run(["bash", "-lic", rf"""
+            if [[ ! -f ~/.screenrc ]]; then 
+                printf '%s\n' \
+                    'hardstatus alwaysfirstline' \
+                    'hardstatus string %{{= kB}}[SCREEN TOP] %H %Y-%m-%d %c %=%-w%{{= BW}}%n:%t%{{-}}%+w' \
+                >> ~/.screenrc
+                echo "Added ~/.screenrc"
+            fi 
+                        
+            if [[ -z $(which nvperf) ]]; then 
+                echo -e '\nexport PATH="$PATH:$HOME/wanliz"' >> ~/.bashrc
+                echo "Updated ~/.bashrc"
+            fi 
+                        
+            if [[ ! -f ~/.passwd ]]; then 
+                read -r -s -p "OpenSSL Password: " passwd; echo
+                echo -n "$passwd" > ~/.passwd           
+            fi
+            if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
+                cipher_prv='U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo'  
+                mkdir -p ~/.ssh
+                echo "$cipher_prv" | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass "pass:$(cat ~/.passwd)" > ~/.ssh/id_ed25519
+                chmod 600 ~/.ssh/id_ed25519
+                echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > ~/.ssh/id_ed25519.pub
+                chmod 644 ~/.ssh/id_ed25519.pub
+                echo "Added ~/.ssh/id_ed25519"
+            fi 
+            if [[ ! -f ~/.gtl_api_key ]]; then 
+                cipher='U2FsdGVkX18BU0ZpoGynLWZBV16VNV2x85CjdpJfF+JF4HhpClt/vTyr6gs6GAq0lDVWvNk7L7s7eTFcJRhEnU4IpABfxIhfktMypWw85PuJCcDXOyZm396F02KjBRwunVfNkhfuinb5y2L6YR9wYbmrGDn1+DjodSWzt1NgoWotCEyYUz0xAIstEV6lF5zedcGwSzHDdFhj3hh5YxQFANL96BFhK9aSUs4Iqs9nQIT9evjinEh5ZKNq5aJsll91czHS2oOi++7mJ9v29sU/QjaqeSWDlneZj4nPYXhZRCw='
+                echo "$cipher" | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass "pass:$(cat ~/.passwd)" > ~/.gtl_api_key"
+                chmod 500 ~/.gtl_api_key
+                echo "Added ~/.gtl_api_key"
+            fi 
+                        
             if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
                 echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
             fi
+                        
+            if [[ ! -d /mnt/linuxqa/wanliz ]]; then 
+                sudo mkdir -p /mnt/linuxqa
+                sudo apt install -y nfs-common cifs-utils &>/dev/null
+                sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa
+                echo "Mounted /mnt/linuxqa"
+            fi 
         """], check=True)
-        print("No-password sudo \t [ ENABLED ]")
-
-        # Mount required folders
-        if not any(p.mountpoint == "/mnt/linuxqa" for p in psutil.disk_partitions(all=True)):
-            subprocess.run("sudo mkdir -p /mnt/linuxqa", check=True, shell=True)
-            subprocess.run("sudo apt install -y nfs-common cifs-utils &>/dev/null", check=True, shell=True)
-            subprocess.run("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa", check=True, shell=True)
-        print("/mnt/linuxqa \t [ MOUNTED ]")
 
         # Add known host IPs (hostname -> IP)
         hosts_out = []
@@ -381,35 +411,6 @@ class CMD_config:
         hosts_out += [f"{ip}\t{name}" for name, ip in self.hosts.items()]
         Path("/tmp/hosts").write_text("\n".join(hosts_out) + "\n")
         subprocess.run("sudo install -m 644 /tmp/hosts /etc/hosts", check=True, shell=True)
-        print("/etc/hosts \t [ UPDATED ]")
-
-        # Add ~/wanliz to PATH
-        subprocess.run(["bash", "-lic", rf"""
-            if [[ -z $(which nvperf) ]]; then 
-                echo -e '\nexport PATH="$PATH:$HOME/wanliz"' >> ~/.bashrc
-            fi 
-        """], check=True)
-        print("~/.bashrc \t [ UPDATED ]")
-
-        if os.path.exists(f"{HOME}/.passwd"):
-            openssl_passwd = Path(f"{HOME}/.passwd").read_text(encoding="utf-8").rstrip("\n")
-        else:
-            openssl_passwd = getpass.getpass("OpenSSL Password: ")
-            Path(f"{HOME}/.passwd").write_text(openssl_passwd, encoding="utf-8")
-
-        if not os.path.exists(HOME + "/.ssh/id_ed25519"):
-            cipher_prv = "U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo"
-            subprocess.run("mkdir -p ~/.ssh", check=True, shell=True)
-            subprocess.run(["bash", "-lic", f"echo '{cipher_prv}' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{openssl_passwd}' > $HOME/.ssh/id_ed25519"], check=True)
-            subprocess.run("chmod 600 ~/.ssh/id_ed25519", check=True, shell=True)
-            subprocess.run("echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > $HOME/.ssh/id_ed25519.pub", check=True, shell=True)
-            subprocess.run("chmod 644 ~/.ssh/id_ed25519.pub", check=True, shell=True)
-            print("~/.ssh/id_ed25519.pub \t [ ADDED ]")
-        if not os.path.exists(HOME + "/.gtl_api_key"):
-            cipher = "U2FsdGVkX18BU0ZpoGynLWZBV16VNV2x85CjdpJfF+JF4HhpClt/vTyr6gs6GAq0lDVWvNk7L7s7eTFcJRhEnU4IpABfxIhfktMypWw85PuJCcDXOyZm396F02KjBRwunVfNkhfuinb5y2L6YR9wYbmrGDn1+DjodSWzt1NgoWotCEyYUz0xAIstEV6lF5zedcGwSzHDdFhj3hh5YxQFANL96BFhK9aSUs4Iqs9nQIT9evjinEh5ZKNq5aJsll91czHS2oOi++7mJ9v29sU/QjaqeSWDlneZj4nPYXhZRCw="
-            subprocess.run(["bash", "-lic", f"echo '{cipher}' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{openssl_passwd}' > ~/.gtl_api_key"], check=True)
-            subprocess.run("chmod 500 ~/.gtl_api_key", check=True, shell=True)
-            print("~/.gtl_api_key \t [ ADDED ]")
 
 
 class CMD_info:
@@ -1021,7 +1022,7 @@ class CMD_download:
     """Download packages or resources"""
 
     def __init__(self):
-        if not any(p.mountpoint == "/mnt/linuxqa" for p in psutil.disk_partitions(all=True)):
+        if not os.path.exists("/mnt/linuxqa/wanliz"):
             subprocess.run("sudo mkdir -p /mnt/linuxqa", check=True, shell=True)
             subprocess.run("sudo apt install -y nfs-common cifs-utils &>/dev/null", check=True, shell=True)
             subprocess.run("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa", check=True, shell=True)
