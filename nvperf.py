@@ -588,7 +588,7 @@ class CMD_upload:
         
     def test(self, user, host, passwd):
         sshpass = f"sshpass -p '{passwd}'" if passwd else ""
-        print(f"Authenticating {user}@{host} with {"password" if passwd else "keys"}")
+        print(f"Authenticating {user}@{host} with {'password' if passwd else 'keys'}")
         output = subprocess.run(["bash", "-lc", rf"""
             {sshpass} ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 {user}@{host} 'cmd /c exit 0'
         """], check=False)
