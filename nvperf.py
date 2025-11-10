@@ -548,7 +548,7 @@ class CMD_upload:
         if src == f"{HOME}:no-recur":
             files = [str(p) for p in Path.home().iterdir() if p.is_file()]
             size = sum(os.path.getsize(p) for p in files)
-            horizontal_select(f"Press [Enter] to upload {1.0 * size / 1024 / 1024:.2f} MB: ")
+            horizontal_select(f"Press [Enter] to upload {1.0 * size / 1024 / 1024:.2f} MB")
             cmd = rf"""
                 rm -rf   /tmp/{socket.gethostname()}
                 mkdir -p /tmp/{socket.gethostname()}
@@ -568,7 +568,7 @@ class CMD_upload:
             user = text.split("@")[0]
             host = text.split("@")[1]
         else:
-            host = horizontal_select("Host IP: ")
+            host = horizontal_select("Host IP")
             user = horizontal_select("User", ["WanliZhu", "<input>"], 0)
         
         if os.path.exists(f"{HOME}/.passwd"):
@@ -1136,8 +1136,8 @@ class Test_info:
             self.env = None 
             self.api = "vk"
         else:
-            self.arg = horizontal_select("Target arguments (optional): ")
-            self.workdir = horizontal_select("Target workdir (optional): ")
+            self.arg = horizontal_select("Target arguments (optional)")
+            self.workdir = horizontal_select("Target workdir (optional)")
             self.env = None 
             self.api = horizontal_select("Target graphics API", ["ogl", "vk"], 0)
         if not os.path.exists(self.exe):
