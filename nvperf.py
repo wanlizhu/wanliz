@@ -421,6 +421,12 @@ class CMD_info:
         elif platform.system() == "Windows":
             self.windows_info()
 
+    def windows_info(self):
+        subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
+            nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total,clocks.gr --format=csv | ConvertFrom-Csv |  Format-Table -AutoSize
+            nvidia-smi -q | Select-String 'GSP Firmware Version'
+        """], check=True)
+
     def linux_info(self):
         subprocess.run(["bash", "-lic", "xrandr | grep current"], check=False)
         subprocess.run(["bash", "-lic", "glxinfo | grep -i 'OpenGL renderer'"], check=False)
@@ -431,23 +437,22 @@ class CMD_info:
             print(f"{key}={value}") if value is not None else None 
         subprocess.run(["bash", "-lic", rf"""
             export DISPLAY=:0  
-            echo "DISPLAY=:$DISPLAY"
-            echo "XDG_SESSION_TYPE=:$XDG_SESSION_TYPE"
-            xrandr | grep current
-            glxinfo | grep -i 'OpenGL renderer'
+            if timeout 2s bash -lc 'command -v xdpyinfo >/dev/null && xdpyinfo >/dev/null 2>&1 || xset q >/dev/null 2>&1'; then 
+                echo "X(:0) is online"
+                echo "DISPLAY=:$DISPLAY"
+                echo "XDG_SESSION_TYPE=:$XDG_SESSION_TYPE"
+                xrandr | grep current
+                glxinfo | grep -i 'OpenGL renderer'
+            else 
+                echo "X(:0) is down or unauthorized"
+            fi 
             nvidia-smi -q | grep -i 'GSP Firmware Version' | sed 's/^[[:space:]]*//'
             sudo lsof -w -n /dev/nvidia* | awk 'NR>1{{print $2}}' | sort -un | while read -r pid; do
                 printf "PID=%-7s %s\n" "$pid" "$(tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null || ps -o args= -p "$pid")"
             done
         """], check=False)
 
-    def windows_info(self):
-        subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
-            nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total,clocks.gr --format=csv | ConvertFrom-Csv |  Format-Table -AutoSize
-            nvidia-smi -q | Select-String 'GSP Firmware Version'
-        """], check=True)
-
-
+    
 class CMD_p4:
     """Perforce command tool"""
 
