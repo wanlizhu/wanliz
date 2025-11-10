@@ -383,7 +383,7 @@ class CMD_config:
             fi 
             if [[ ! -f ~/.gtl_api_key ]]; then 
                 cipher='U2FsdGVkX18BU0ZpoGynLWZBV16VNV2x85CjdpJfF+JF4HhpClt/vTyr6gs6GAq0lDVWvNk7L7s7eTFcJRhEnU4IpABfxIhfktMypWw85PuJCcDXOyZm396F02KjBRwunVfNkhfuinb5y2L6YR9wYbmrGDn1+DjodSWzt1NgoWotCEyYUz0xAIstEV6lF5zedcGwSzHDdFhj3hh5YxQFANL96BFhK9aSUs4Iqs9nQIT9evjinEh5ZKNq5aJsll91czHS2oOi++7mJ9v29sU/QjaqeSWDlneZj4nPYXhZRCw='
-                echo "$cipher" | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass "pass:$(cat ~/.passwd)" > ~/.gtl_api_key"
+                echo "$cipher" | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass "pass:$(cat ~/.passwd)" > ~/.gtl_api_key
                 chmod 500 ~/.gtl_api_key
                 echo "Added ~/.gtl_api_key"
             fi 
