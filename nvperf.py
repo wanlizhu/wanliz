@@ -1041,7 +1041,7 @@ class CMD_install:
         if not os.path.exists(driver):
             raise RuntimeError(f"File not found: {driver}")
         
-        interactive = horizontal_select("Start interactive mode", ["yes", "no"], 0, return_bool=True)
+        interactive = horizontal_select("Install in interactive mode", ["yes", "no"], 0, return_bool=True)
         CMD_rmmod().run()
         subprocess.run(["bash", "-lic", rf"""
             chmod +x {driver}
