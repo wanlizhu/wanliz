@@ -1061,22 +1061,22 @@ class CMD_download:
         webbrowser.open("https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk")
 
     def download_viewperf(self):
-        if os.path.exists(f"/mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M}"):
+        if os.path.exists(f"/mnt/linuxqa/wanliz/viewperf2020v3.{UNAME_M}"):
             print(f"Downloading {HOME}/viewperf2020v3")
-            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M}/ $HOME/viewperf2020v3"])
-        else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/viewperf2020v3/{UNAME_M}")
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/viewperf2020v3.{UNAME_M}/ $HOME/viewperf2020v3"])
+        else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/viewperf2020v3.{UNAME_M}")
 
     def download_gravitymark(self):
-        if os.path.exists(f"/mnt/linuxqa/wanliz/GravityMark/{UNAME_M}"):
-            print(f"Downloading {HOME}/GravityMark")
-            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/GravityMark/{UNAME_M}/ $HOME/GravityMark"])
-        else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/GravityMark/{UNAME_M}") 
+        if os.path.exists(f"/mnt/linuxqa/wanliz/gravity_mark.{UNAME_M}"):
+            print(f"Downloading {HOME}/gravity_mark")
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/gravity_mark.{UNAME_M}/ $HOME/gravity_mark"])
+        else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/gravity_mark.{UNAME_M}") 
 
     def download_3dMark(self, name):
-        if os.path.exists(f"/mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}"):
+        if os.path.exists(f"/mnt/linuxqa/wanliz/3dMark_{name}.{UNAME_M}"):
             print(f"Downloading {HOME}/3dMark_{name}")
-            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}/ $HOME/3dMark_{name}"])
-        else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/3dMark_{name}/{UNAME_M}")  
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/3dMark_{name}.{UNAME_M}/ $HOME/3dMark_{name}"])
+        else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/3dMark_{name}.{UNAME_M}")  
 
     def download_microbench(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}"):
@@ -1586,7 +1586,7 @@ class CMD_gmark:
     """GravityMark benchmark for OpenGL and Vulkan on all platforms"""
 
     def __init__(self):
-        self.gmark_root = HOME + "/GravityMark"
+        self.gmark_root = HOME + "/gravity_mark"
         if not os.path.exists(self.gmark_root):
             CMD_download().download_gravitymark()
     
@@ -1598,7 +1598,7 @@ class CMD_gmark:
     def run(self):
         self.exe = f"./GravityMark.{UNAME_M2}"
         self.args = "-temporal 1  -screen 0 -fps 1 -info 1 -sensors 1 -benchmark 1 -vk -fullscreen 1 -vsync 0 -close 1"
-        self.workdir = f"{HOME}/GravityMark/bin"
+        self.workdir = f"{HOME}/gravity_mark/bin"
         subprocess.run(["bash", "-lic", f"{self.exe} {self.args}"], cwd=self.workdir, check=True) 
 
 
@@ -1611,7 +1611,7 @@ class CMD_3dmark:
             CMD_download().download_3dMark(test)
         headless = horizontal_select("Is this a headless system", ["yes", "no"], 1, return_bool=True)
         subprocess.run(["bash", "-lic", rf"""
-            cd $HOME/3dMark_{test}/engine
+            cd $HOME/3dMark_{test}/engine 
             ./build/bin/dev_player --asset_root=../assets_desktop --config=configs/gt1.json {"--headless" if headless else ""} | tee /tmp/log 
             fps=$(cat /tmp/log | grep 'FPS result:' | awk -F': ' '{{ print $2 }}')
             echo "$fps FPS"
