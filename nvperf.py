@@ -428,13 +428,6 @@ class CMD_info:
         """], check=True)
 
     def linux_info(self):
-        subprocess.run(["bash", "-lic", "xrandr | grep current"], check=False)
-        subprocess.run(["bash", "-lic", "glxinfo | grep -i 'OpenGL renderer'"], check=False)
-        subprocess.run(["bash", "-lic", "nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total,clocks.gr | column -s, -t"], check=False)
-        subprocess.run(["bash", "-lic", "nvidia-smi -q | grep -i 'GSP Firmware Version'"], check=False)
-        for key in ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "LD_PRELOAD", "LD_LIBRARY_PATH"] + sorted([k for k in os.environ if k.startswith("__GL_") or k.startswith("VK_")]):
-            value = os.environ.get(key)
-            print(f"{key}={value}") if value is not None else None 
         subprocess.run(["bash", "-lic", rf"""
             export DISPLAY=:0  
             if timeout 2s bash -lc 'command -v xdpyinfo >/dev/null && xdpyinfo >/dev/null 2>&1 || xset q >/dev/null 2>&1'; then 
