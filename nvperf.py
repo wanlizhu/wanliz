@@ -705,29 +705,101 @@ class CMD_mount:
     """Mount Windows or Linux shared folder"""
     
     def run(self):
-        if platform.system() == "Windows":
+        share_folder  = horizontal_select("Select shared folder", ["linuxqa", "builds", "office:wanliz_sw_linux", "<input>"], 0)
+        self.mount_one(share_folder)
+
+    def mount_all(self, folders):
+        for folder in folders:
+            self.mount_one(folder)
+        
+    def mount_one(self, shared_folder):
+        if platform.system() == "Linux":
+            if shared_folder == "linuxqa": 
+                fstype = "nfs"
+                login_user = "wanliz"
+                shared_folder = "linuxqa.nvidia.com:/storage/people"
+                local_folder = "/mnt/linuxqa"
+            elif shared_folder == "builds":
+                fstype = "nfs"
+                login_user = "wanliz"
+                shared_folder = "linuxqa.nvidia.com:/qa/builds"
+                local_folder = "/mnt/builds"
+            elif shared_folder == "office:wanliz_sw_linux":
+                CMD_p4.setup_env()
+                fstype = "nfs"
+                login_user = "wanliz"
+                shared_folder = f"office:{os.environ['P4ROOT']}"
+                local_folder = f"/mnt{os.environ['P4ROOT']}"
+            else:
+                if shared_folder.startswith("//"): fstype = "cifs"  
+                elif ":" in shared_folder: fstype = "nfs"
+                login_user = horizontal_select("Select login user", ["wanliz", "WanliZhu", "<input>"], 0)
+                local_folder = "/mnt/" + Path(shared_folder).name
+            subprocess.run(["bash", "-lic", f"""
+                if ! command -v mount.cifs >/dev/null 2>&1; then
+                    sudo apt install -y cifs-utils 2>/dev/null 
+                fi
+                if ! command -v mount.nfs >/dev/null 2>&1; then
+                    sudo apt install -y nfs-common 2>/dev/null 
+                fi 
+                if ! mountpoint -q {local_folder}; then  
+                    sudo mkdir -p {local_folder} &&
+                    sudo mount -t {fstype} {f"-o username={login_user}" if login_user else ""} {shared_folder} {local_folder}
+                fi
+            """], check=True)
+        elif platform.system() == "Windows":
             if ctypes.windll.shell32.IsUserAnAdmin() == 0:
                 cmdline = subprocess.list2cmdline([os.path.abspath(sys.argv[0])] + [arg for arg in sys.argv[1:] if arg != "--admin"])
                 ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmdline, None, 1)
                 sys.exit(0)
-            linux_folder = horizontal_select("Linux shared folder", None, None).strip().replace("/", "\\")
-            linux_folder = linux_folder.rstrip("\\")
-            unc_path = linux_folder if linux_folder.startswith("\\\\") else ("\\\\" + linux_folder.lstrip("\\")) 
+            shared_folder = shared_folder.strip().replace("/", "\\")
+            shared_folder = shared_folder.rstrip("\\")
+            unc_path = shared_folder if shared_folder.startswith("\\\\") else ("\\\\" + shared_folder.lstrip("\\")) 
             drive = horizontal_select("Mount to drive", ["N", "X", "Y", "Z"], 3)
             user = horizontal_select("Target user", ["nvidia", "wanliz", "wzhu", "<input>"], 0)
             subprocess.run(f'cmd /k net use {drive}: "{unc_path}" /persistent:yes {str("/user:" + user + " *") if user else ""}', check=True, shell=True)
-        elif platform.system() == "Linux":
-            windows_folder = horizontal_select("Windows shared folder", None, None).strip().replace("\\", "/")
-            windows_folder = shlex.quote(windows_folder)
-            mount_dir = f"/mnt/{Path(windows_folder).name}.cifs"
-            user = horizontal_select("Target user", ["nvidia", "wanliz", "wzhu", "<input>"], 0)
-            subprocess.run(["bash", "-lic", f"""
-                if ! command -v mount.cifs >/dev/null 2>&1; then
-                    sudo apt install -y cifs-utils
-                fi 
-                sudo mkdir -p {mount_dir} &&
-                sudo mount -t cifs {windows_folder} {mount_dir} {str("-o username=" + user) if user else ""}
-            """], check=True)
+
+
+class CMD_spark:
+    """Configure profiling env on DGX spark"""
+    # https://confluence.nvidia.com/pages/viewpage.action?spaceKey=linux&title=Digits+board+setup+for+performance
+
+    def run(self):
+        subprocess.run(["bash", "-lic", rf"""
+            if [[ ! -f ~/.driver || ! -f $(cat ~/.driver) ]]; then 
+                read -rp "Location of tests-Linux-$(uname -m).tar: " tests_tarball
+            else
+                tests_tarball="$(dirname $(cat ~/.driver))/tests-Linux-$(uname -m).tar"
+            fi 
+            sudo rm -rf /tmp/tests-Linux-$(uname -m)
+            cp "$tests_tarball" /tmp 
+            cd /tmp && tar -xf ./tests-Linux-$(uname -m).tar && cd ~
+            cp -vf /tmp/tests-Linux-$(uname -m)/sandbag-tool/sandbag-tool ~
+            cp -vf /tmp/tests-Linux-$(uname -m)/LockToRatedTdp/LockToRatedTdp ~
+            sudo ./sandbag-tool -unsandbag && echo "Unsandbag - [OK]"
+            sudo ./LockToRatedTdp -lock && echo "LockToRatedTdp - [OK]"
+            if [[ ! -f ~/perfdebug ]]; then 
+                cp -vf /mnt/linuxqa/wanliz/perfdebug.$(uname -m) ~/perfdebug
+            fi 
+            cd ~
+            if [[ $(uname -m) == "aarch64" ]]; then 
+                sudo ./perfdebug --lock_loose  set pstateId P0
+                sudo ./perfdebug --lock_strict set dramclkkHz  4266000
+                sudo ./perfdebug --lock_strict set gpcclkkHz   2000000
+                sudo ./perfdebug --lock_loose  set xbarclkkHz  1800000
+                sudo ./perfdebug --lock_loose  set sysclkkHz   1800000
+                sudo ./perfdebug --force_regime ffr
+                sudo ./perfdebug --getclocks
+            elif [[ $(uname -m) == "x86_64" ]]; then 
+                sudo ./perfdebug --lock_loose  set pstateId P0
+                sudo ./perfdebug --lock_strict set dramclkkHz  8000000
+                sudo ./perfdebug --lock_strict set gpcclkkHz   1875000
+                sudo ./perfdebug --lock_loose  set xbarclkkHz  2250000
+                sudo ./perfdebug --lock_loose  set sysclkkHz   1695000
+                sudo ./perfdebug --force_regime ffr
+                sudo ./perfdebug --getclocks
+            fi 
+        """], check=True)
 
 
 class CMD_startx:
@@ -811,7 +883,7 @@ class CMD_startx:
                     echo "{RED}Disable wayland before starting VNC server{RESET}"
                     exit 0
                 fi 
-                x11vnc -display :0  -rfbport 5900 -noshm -forever -noxdamage -repeat -shared -bg -o $HOME/x11vnc.log && echo "Start VNC server on :5900    [ OK ]" || cat $HOME/x11vnc.log
+                x11vnc -display :0  -rfbport 5900 -noshm -forever -noxdamage -repeat -shared -bg -o $HOME/x11vnc.log && echo "Start VNC server on :5900 - [OK]" || cat $HOME/x11vnc.log
             fi
 
             # This is only needed for DGX spark systems 
@@ -873,9 +945,9 @@ class CMD_nvmake:
                             try:
                                 _branch, _module = self.override_branch_and_module(_branch, _module)
                                 self.unix_build_nvmake(_branch, _config, _arch, _module, regen, jobs, clean)
-                                out.write(f"{_branch},{_config},{_arch},{_module},[ OK ]\n")
+                                out.write(f"{_branch},{_config},{_arch},{_module},[OK]\n")
                             except Exception as e:
-                                out.write(f"{_branch},{_config},{_arch},{_module},[ FAILED ]\n")
+                                out.write(f"{_branch},{_config},{_arch},{_module},[FAILED]\n")
             subprocess.run(["bash", "-lic", f"column -s, -o ' | ' -t {out.name}"], check=True)
 
     def branch_path(self, branch):
@@ -949,79 +1021,59 @@ class CMD_install:
     """Install nvidia driver or other packages"""
     
     def run(self):
-        driver = horizontal_select("Driver path", ["office", "local", "precompiled"], 0)
-        if driver == "local":
-            branch, config, arch, version = self.select_nvidia_driver("local")
-            driver = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
-        elif driver == "office":
-            branch, config, arch, version = self.select_nvidia_driver("office") # The entire output folder to be synced to /tmp/office/
-            driver = f"/tmp/office/_out/Linux_{arch}_{config}/NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run"
-        elif driver == "precompiled": 
-            raise RuntimeError("Not implemented yet")
-        
-        if not os.path.exists(driver):
-            raise RuntimeError(f"File doesn't exist: {driver}")
-        
-        automated = horizontal_select("Automated install", ["yes", "no"], 0, return_bool=True)
-        if automated:
-            CMD_rmmod().run()
-            subprocess.run(["bash", "-lic", f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} -s --no-kernel-module-source --skip-module-load"], check=True)
+        CMD_p4.setup_env()
+        p4root = os.environ["P4ROOT"]
+
+        location = horizontal_select("Select driver location", ["office build", "local build", "<input>"], 0)
+        if location == "local build":
+            branch, config, arch, version = self.select_nvidia_driver(p4root)
+            driver = os.path.join(p4root, branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
+        elif location == "office build":
+            CMD_mount().mount_one("office:wanliz_sw_linux")
+            branch, config, arch, version = self.select_nvidia_driver(p4root)  
+            driver = f"/mnt{p4root}/_out/Linux_{arch}_{config}/NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run"
         else:
-            CMD_rmmod().run()
-            subprocess.run(["bash", "-lic", f"sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver}"], check=True)
-        subprocess.run("nvidia-smi", check=True, shell=True)
+            driver = location 
+        if not os.path.exists(driver):
+            raise RuntimeError(f"File not found: {driver}")
+        
+        interactive = horizontal_select("Start interactive mode", ["yes", "no"], 0, return_bool=True)
+        CMD_rmmod().run()
+        subprocess.run(["bash", "-lic", rf"""
+            chmod +x {driver}
+            sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} {'' if interactive else '-s --no-kernel-module-source --skip-module-load'} && nvidia-smi
+            echo "{driver}" > ~/.driver
+            echo "Updated ~/.driver"
+        """], check=True)
 
-        # Copy tests-Linux-***.tar to ~
-        tests = Path(driver).parent / f"tests-Linux-{'x86_64' if arch == 'amd64' else arch}.tar"
-        if tests.is_file():
-            subprocess.run(f"tar -xf {tests} -C {Path(driver).parent}", check=True, shell=True)
-            subprocess.run(f"cp -vf {Path(driver).parent}/tests-Linux-{'x86_64' if arch == 'amd64' else arch}/sandbag-tool/sandbag-tool ~", check=True, shell=True)
-
-
-    def select_nvidia_driver(self, host):
+    def select_nvidia_driver(self, p4root):
         branch  = horizontal_select("[1/4] Target branch", ["r580", "bugfix_main"], 0)
         branch  = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
         branch  = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
         config  = horizontal_select("[2/4] Target config", ["develop", "debug", "release"], 0)
         arch    = horizontal_select("[3/4] Target architecture", ["amd64", "aarch64"], 1 if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e") else 0)
-        version = self.select_nvidia_driver_version(host, branch, config, arch)
+        version = self.select_nvidia_driver_version(p4root, branch, config, arch)
         return branch, config, arch, version 
     
-    def select_nvidia_driver_version(self, host, branch, config, arch):
+    def select_nvidia_driver_version(self, p4root, branch, config, arch):
         if "P4ROOT" not in os.environ: 
             raise RuntimeError("P4ROOT is not defined")
         
-        if host == "local":
-            output_dir = os.path.join(os.environ["P4ROOT"], branch, "_out", f"Linux_{arch}_{config}")
-        else:
-            output_dir = f"/tmp/office/_out/Linux_{arch}_{config}"
-            remote_dir = os.path.join(os.environ['P4ROOT'], branch, '_out', f'Linux_{arch}_{config}')
-            subprocess.run(f"mkdir -p {output_dir}", check=True, shell=True)
-            subprocess.run(f"rsync -ah --progress wanliz@{host}:{remote_dir}/ {output_dir}", check=True, shell=True)
-
-        # Collect versions of all driver packages 
+        output_dir = os.path.join(p4root, branch, "_out", f"Linux_{arch}_{config}")
         pattern = re.compile(r'^NVIDIA-Linux-(?:x86_64|aarch64)-(?P<ver>\d+\.\d+(?:\.\d+)?)-internal\.run$')
         versions = [
             match.group('ver') for path in Path(output_dir).iterdir()
             if path.is_file() and (match := pattern.match(path.name))
         ]
-
         maxlen = max(v.count(".") + 1 for v in versions)
         versions.sort(
             key=lambda s: list(map(int, s.split("."))) + [0] * (maxlen - (s.count(".") + 1)),
             reverse=True,
         ) # versions[0] is the latest
 
-        # Skip selection if there is only one version available 
-        if len(versions) > 1:
-            selected = horizontal_select("[4/4] Target driver version", versions, 0)
-        elif len(versions) == 1:
-            selected = versions[0]
-            print(f"[4/4] Target driver version {selected} [ONLY]")
-        else: 
-            raise RuntimeError("No version found")
-
-        return versions[0] if selected == "" else selected 
+        if len(versions) > 1: return horizontal_select("[4/4] Target driver version", versions, 0)
+        elif len(versions) == 1: return versions[0]
+        else: raise RuntimeError("No version found")
     
 
 class CMD_download:
@@ -1029,10 +1081,8 @@ class CMD_download:
 
     def __init__(self):
         if not os.path.exists("/mnt/linuxqa/wanliz"):
-            subprocess.run("sudo mkdir -p /mnt/linuxqa", check=True, shell=True)
-            subprocess.run("sudo apt install -y nfs-common cifs-utils &>/dev/null", check=True, shell=True)
-            subprocess.run("sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa", check=True, shell=True)
-    
+            CMD_mount().mount_one("linuxqa")
+
     def run(self):
         src = horizontal_select("Download", [
             "Perf Inspector",
