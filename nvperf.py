@@ -1721,7 +1721,7 @@ if __name__ == "__main__":
             cmd = globals().get(f"CMD_{cmd}")()
             cmd.run()
     except InterruptedError:
-        print("[canceled (ctrl-c) by user]")
+        sys.exit(0)
     except Exception:
         traceback.print_exc()
     horizontal_select("Press [Enter] to exit")
