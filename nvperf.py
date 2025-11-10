@@ -769,6 +769,7 @@ class CMD_spark:
             if [[ ! -f /opt/nvidia/update.sh ]]; then 
                 echo "Download spark OTA setup script"
                 curl -kL https://nv/spark-eng/eng.sh | bash
+                echo "[install new driver if OTA script failed to do so]"
             fi 
             if [[ ! -f ~/.driver || ! -f $(cat ~/.driver) ]]; then 
                 read -rp "Location of tests-Linux-$(uname -m).tar: " tests_tarball
