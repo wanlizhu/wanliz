@@ -541,14 +541,14 @@ class CMD_upload:
     """Upload Linux local folder to Windows SSH host"""
     
     def run(self):
-        src = horizontal_select("Upload from", [f"{HOME}:no-recur", "PerfInspector/output", "<input>"], 0, separator="|")
         user, host, passwd = self.get_windows_host()
-        dst = horizontal_select(f"Save to", ["D:/", f"C:/Users/{user}/Downloads/", "<input>"], 0, separator="|")
+        dst = horizontal_select(f"Select dst folder on {host}", ["D:/", f"C:/Users/{user}/Downloads/", "<input>"], 0, separator="|")
+        src = horizontal_select(f"Select src folder on local", [f"{HOME}:no-recur", "PerfInspector/output", "<input>"], 0, separator="|")
 
         if src == f"{HOME}:no-recur":
             files = [str(p) for p in Path.home().iterdir() if p.is_file()]
             size = sum(os.path.getsize(p) for p in files)
-            input(f"Press [Enter] to upload files of {1.0 * size / 1024 / 1024:.2f} MB: ")
+            input(f"Press [Enter] to upload {1.0 * size / 1024 / 1024:.2f} MB: ")
             cmd = rf"""
                 rm -rf   /tmp/{socket.gethostname()}
                 mkdir -p /tmp/{socket.gethostname()}
@@ -578,14 +578,14 @@ class CMD_upload:
             Path(f"{HOME}/.passwd").write_text(passwd_cipher, encoding="utf-8")
         passwd = subprocess.run(["bash", "-lc", f"echo 'U2FsdGVkX1+hqRcADWpr1Nk/5Ble1wUjLLYXmW3HlKCop5/DZ3v6OsdtlhNpWmNH' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{passwd_cipher}'"], check=True, text=True, capture_output=True).stdout 
             
-        if self.test(user, host, passwd):
-            return user, host, passwd 
+        if not self.test(user, host, passwd):
+            raise RuntimeError("Authentication failed")
 
-        Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
-        return self.get_windows_host() 
+        return user, host, passwd 
         
     def test(self, user, host, passwd):
         sshpass = f"sshpass -p '{passwd}'" if passwd else ""
+        print(f"Authenticating {user}@{host}")
         output = subprocess.run(["bash", "-lc", rf"""
             {sshpass} ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'cmd /c exit 0'
         """], check=False)

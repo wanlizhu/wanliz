@@ -97,3 +97,4 @@ with Timer():
     print(f"HW CHI limiter impact on spark")
     print(f"  - Formula 1: {impact1:.2%}")
     print(f"  - Formula 2: {impact2:.2%}")
+    input("Press [Enter] to exit: ")
