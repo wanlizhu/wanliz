@@ -648,7 +648,7 @@ class CMD_share:
 
         for line in output.stdout.splitlines():
             if str(path) in line:
-                print(f"Share {path} via SMB \t [ SHARED ]")
+                print(f"{path} is sharing via SMB")
                 return 
         
         shared_name = re.sub(r"[^A-Za-z0-9._-]","_", path.name) or "share"
@@ -674,7 +674,7 @@ class CMD_share:
             sudo systemctl enable --now smbd
             sudo systemctl restart smbd
         """], check=True)
-        print(f"Share {path} via SMB as {shared_name} \t [ OK ]")
+        print(f"{path} is sharing via SMB as {shared_name}")
 
     def share_via_nfs(self, path: Path):
         output = subprocess.run(["bash", "-lic", "sudo exportfs -v"], text=True, check=False, capture_output=True)
@@ -684,7 +684,7 @@ class CMD_share:
 
         for line in output.stdout.splitlines():
             if line.strip().startswith(str(path) + " "):
-                print(f"Share {path} via NFS \t [ SHARED ]")
+                print(f"{path} is sharing via NFS")
                 return
         
         subprocess.run(["bash", "-lic", rf"""
@@ -693,7 +693,7 @@ class CMD_share:
             sudo systemctl enable --now nfs-kernel-server
             sudo systemctl restart nfs-kernel-server
         """], check=True)
-        print(f"Share {path} via NFS \t [ OK ]")
+        print(f"{path} is sharing via NFS")
 
 
 class CMD_mount:
