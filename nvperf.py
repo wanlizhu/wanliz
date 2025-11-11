@@ -439,6 +439,9 @@ class CMD_info:
     def linux_info(self):
         subprocess.run(["bash", "-lic", rf"""
             export DISPLAY=:0  
+            if [[ -z $(which jq) ]]; then 
+                sudo apt install -y jq &>/dev/null 
+            fi 
             echo "X server info:"
             if timeout 2s bash -lc 'command -v xdpyinfo >/dev/null && xdpyinfo >/dev/null 2>&1 || xset q >/dev/null 2>&1'; then 
                 echo "X(:0) is online"
