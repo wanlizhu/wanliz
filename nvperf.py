@@ -571,12 +571,12 @@ class CMD_upload:
         home_files = [str(p) for p in Path.home().iterdir() if p.is_file()]
         home_files_size = sum(os.path.getsize(p) for p in home_files)
         user, host, passwd = self.get_windows_host()
-        dst = horizontal_select(f"Select dst folder on {host}", ["D:/", "E:/", "F:/", "<input>"], 0, separator="|")
+        dst = horizontal_select(f"Select dst folder on {host}", ["D:", "E:", "F:", "<input>"], 0, separator="|")
         src = horizontal_select(f"Select src folder on local", [f"{HOME}:files ({1.0 * home_files_size / 1024 / 1024:.2f}MB)", "PerfInspector/output", "<input>"], 0, separator="|")
 
         if src.startswith(f"{HOME}:files"):
             subprocess.run(["bash", "-lic", rf"""
-                rm -rf   /tmp/{socket.gethostname()}
+                rm   -rf /tmp/{socket.gethostname()}
                 mkdir -p /tmp/{socket.gethostname()}
                 sshpass -p '{passwd}' scp -r /tmp/{socket.gethostname()} {user}@{host}:/{dst}
                 sshpass -p '{passwd}' scp -p -o Compression=no {" ".join(home_files)} {user}@{host}:/{dst}/{socket.gethostname()}
