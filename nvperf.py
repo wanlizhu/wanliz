@@ -145,7 +145,6 @@ def horizontal_select(prompt, options=None, index=None, separator="/", return_bo
             elif key == "right": index = (index + 1) % len(options)
             elif key == "ctrl-c":
                 sys.stdout.write("\r\n"); sys.stdout.flush()
-                raise KeyboardInterrupt
     value = input(": ") if selected == "<input>" else selected
     return cast_to(value)
 
@@ -1055,6 +1054,7 @@ class CMD_install:
             driver = location 
         if not os.path.exists(driver):
             raise RuntimeError(f"File not found: {driver}")
+        print(driver)
         
         interactive = horizontal_select("Install in interactive mode", ["yes", "no"], 0, return_bool=True)
         CMD_rmmod().run()
