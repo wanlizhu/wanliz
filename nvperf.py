@@ -1050,7 +1050,7 @@ class CMD_install:
         CMD_rmmod().run()
         subprocess.run(["bash", "-lic", rf"""
             chmod +x {driver}
-            sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} {'' if interactive else '-s --no-kernel-module-source --skip-module-load'} && nvidia-smi
+            sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 {driver} {'' if interactive else '-s --no-kernel-module-source --skip-module-load'} && sleep 3 &&  nvidia-smi
             echo "{driver}" > ~/.driver
             echo "Updated ~/.driver"
         """], check=True)
