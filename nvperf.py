@@ -573,13 +573,12 @@ class CMD_upload:
         user, host, passwd = self.get_windows_host()
         dst = horizontal_select(f"Select dst folder on {host}", ["D:", "E:", "F:", "<input>"], 0, separator="|")
         src = horizontal_select(f"Select src folder on local", [f"{HOME}:files ({1.0 * home_files_size / 1024 / 1024:.2f}MB)", "PerfInspector/output", "<input>"], 0, separator="|")
-
         if src.startswith(f"{HOME}:files"):
+            hostname = socket.gethostbyname() 
+            home_files_quoted = " ".join(map(shlex.quote, home_files))
             subprocess.run(["bash", "-lic", rf"""
-                rm   -rf /tmp/{socket.gethostname()}
-                mkdir -p /tmp/{socket.gethostname()}
-                sshpass -p '{passwd}' scp -r /tmp/{socket.gethostname()} {user}@{host}:/{dst}
-                sshpass -p '{passwd}' scp -p -o Compression=no {" ".join(home_files)} {user}@{host}:/{dst}/{socket.gethostname()}
+                sshpass -p '{passwd}' ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'cmd /c "if not exist {dst}\\{hostname} mkdir {dst}\\{hostname}"'
+                sshpass -p '{passwd}' scp -o StrictHostKeyChecking=accept-new -o Compression=no -p {home_files_quoted} {user}@{host}:/{dst}/{hostname}
             """], check=True)
         elif src == "PerfInspector/output":
             subprocess.run(["bash", "-lic", f"sshpass -p '{passwd}' scp -p -r {HOME}/SinglePassCapture/PerfInspector/output {user}@{host}:/{dst}"], check=True)
