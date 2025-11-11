@@ -772,9 +772,10 @@ class CMD_spark:
     def run(self):
         subprocess.run(["bash", "-lic", rf"""
             echo "if [[ ! -f /root/nvt/environ_vars && -d /root/nvt ]]; then cp -vf /mnt/linuxqa/wlueking/n1x-bringup/environ_vars /root/nvt/environ_vars; else echo 'Found file: /root/nvt/environ_vars'; fi" | sudo bash
-            if [[ ! -f /opt/nvidia/update.sh ]]; then 
+            if [[ $(uname -m) == "aarch64" && ! -f /opt/nvidia/update.sh ]]; then 
                 echo "Download spark OTA setup script"
-                curl -kL https://nv/spark-eng/eng.sh | bash
+                curl -kL https://nv/spark-eng/eng.sh | sudo bash
+                sudo /opt/nvidia/update.sh
                 echo "[install new driver if OTA script failed to do so]"
             fi 
             if [[ ! -f ~/.driver || ! -f $(cat ~/.driver) ]]; then 
