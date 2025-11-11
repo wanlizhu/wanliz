@@ -579,8 +579,8 @@ class CMD_upload:
             cmd = rf"""
                 rm -rf   /tmp/{socket.gethostname()}
                 mkdir -p /tmp/{socket.gethostname()}
-                sshpass -p '{passwd}' scp -r   /tmp/{socket.gethostname()} {user}@{host}:/{dst}
-                sshpass -p '{passwd}' scp -o Compression=no {" ".join(files)} {user}@{host}:/{dst}/{socket.gethostname()}
+                sshpass -p '{passwd}' scp -r /tmp/{socket.gethostname()} {user}@{host}:/{dst}
+                sshpass -p '{passwd}' scp -p -o Compression=no {" ".join(files)} {user}@{host}:/{dst}/{socket.gethostname()}
             """
         elif src == "PerfInspector/output":
             cmd = f"sshpass -p '{passwd}' scp -r {HOME}/SinglePassCapture/PerfInspector/output {user}@{host}:/{dst}"
