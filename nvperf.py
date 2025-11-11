@@ -793,8 +793,8 @@ class CMD_spark:
             fi 
             cd ~
             sudo chmod +x ./sandbag-tool ./LockToRatedTdp
-            sudo ./sandbag-tool -unsandbag && echo "Unsandbag - [OK]"
-            sudo ./LockToRatedTdp -lock && echo "LockToRatedTdp - [OK]"
+            sudo ./sandbag-tool -unsandbag && echo "Unsandbag - [OK]" || echo "Unsandbag - [FAILED]"
+            sudo ./LockToRatedTdp -lock && echo "LockToRatedTdp - [OK]" || echo "LockToRatedTdp - [FAILED]"
             if [[ ! -f ~/perfdebug ]]; then 
                 cp -vf /mnt/linuxqa/wanliz/perfdebug.$(uname -m) ~/perfdebug
             fi 
