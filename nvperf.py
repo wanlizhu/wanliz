@@ -772,11 +772,11 @@ class CMD_spark:
     def run(self):
         subprocess.run(["bash", "-lic", rf"""
             if [[ $(uname -m) == "aarch64" ]]; then 
-                sudo cp -vf /mnt/linuxqa/wlueking/n1x-bringup/environ_vars /root/nvt/environ_vars
+                sudo cp -vf /mnt/linuxqa/wlueking/n1x-bringup/environ_vars /root/nvt/environ_vars || true
                 if [[ ! -f /opt/nvidia/update.sh ]]; then 
                     echo "Download spark OTA setup script"
-                    curl -kL https://nv/spark-eng/eng.sh | sudo bash
-                    sudo /opt/nvidia/update.sh
+                    curl -kL https://nv/spark-eng/eng.sh | sudo bash  || true
+                    sudo /opt/nvidia/update.sh  || true
                     echo "[install new driver if OTA script failed to do so]"
                 fi 
             fi 
@@ -800,23 +800,23 @@ class CMD_spark:
             fi 
             cd ~
             if [[ $(uname -m) == "aarch64" ]]; then 
-                sudo chmod +x ./perfdebug
-                sudo ./perfdebug --lock_loose  set pstateId P0
-                sudo ./perfdebug --lock_strict set dramclkkHz  4266000
-                sudo ./perfdebug --lock_strict set gpcclkkHz   2000000
-                sudo ./perfdebug --lock_loose  set xbarclkkHz  1800000
-                sudo ./perfdebug --lock_loose  set sysclkkHz   1800000
-                sudo ./perfdebug --force_regime ffr
-                sudo ./perfdebug --getclocks
+                sudo chmod +x ./perfdebug || true 
+                sudo ./perfdebug --lock_loose  set pstateId P0 || true
+                sudo ./perfdebug --lock_strict set dramclkkHz  4266000 || true
+                sudo ./perfdebug --lock_strict set gpcclkkHz   2000000 || true
+                sudo ./perfdebug --lock_loose  set xbarclkkHz  1800000 || true
+                sudo ./perfdebug --lock_loose  set sysclkkHz   1800000 || true
+                sudo ./perfdebug --force_regime ffr || true
+                sudo ./perfdebug --getclocks || true
             elif [[ $(uname -m) == "x86_64" ]]; then 
-                sudo chmod +x ./perfdebug
-                sudo ./perfdebug --lock_loose  set pstateId P0
-                sudo ./perfdebug --lock_strict set dramclkkHz  8000000
-                sudo ./perfdebug --lock_strict set gpcclkkHz   1875000
-                sudo ./perfdebug --lock_loose  set xbarclkkHz  2250000
-                sudo ./perfdebug --lock_loose  set sysclkkHz   1695000
-                sudo ./perfdebug --force_regime ffr
-                sudo ./perfdebug --getclocks
+                sudo chmod +x ./perfdebug || true
+                sudo ./perfdebug --lock_loose  set pstateId P0 || true
+                sudo ./perfdebug --lock_strict set dramclkkHz  8000000 || true
+                sudo ./perfdebug --lock_strict set gpcclkkHz   1875000 || true
+                sudo ./perfdebug --lock_loose  set xbarclkkHz  2250000 || true
+                sudo ./perfdebug --lock_loose  set sysclkkHz   1695000 || true
+                sudo ./perfdebug --force_regime ffr || true
+                sudo ./perfdebug --getclocks || true
             fi 
         """], check=True)
 
