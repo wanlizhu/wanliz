@@ -402,6 +402,9 @@ class CMD_config:
                 sudo apt install -y nfs-common cifs-utils &>/dev/null
                 sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa
                 echo "Mounted /mnt/linuxqa"
+                sudo mkdir -p /mnt/data
+                sudo mount linuxqa.nvidia.com:/qa/data /mnt/data   
+                echo "Mounted /mnt/data"
             fi 
         """], check=True)
 
@@ -703,7 +706,7 @@ class CMD_mount:
     """Mount Windows or Linux shared folder"""
     
     def run(self):
-        share_folder  = horizontal_select("Select shared folder", ["linuxqa", "builds", "office:wanliz_sw_linux", "<input>"], 0)
+        share_folder  = horizontal_select("Select shared folder", ["linuxqa", "builds", "data", "office:wanliz_sw_linux", "<input>"], 0)
         self.mount_one(share_folder)
 
     def mount_all(self, folders):
@@ -722,6 +725,11 @@ class CMD_mount:
                 login_user = "wanliz"
                 shared_folder = "linuxqa.nvidia.com:/qa/builds"
                 local_folder = "/mnt/builds"
+            elif shared_folder == "data":
+                fstype = "nfs"
+                login_user = "wanliz"
+                shared_folder = "linuxqa.nvidia.com:/qa/data"
+                local_folder = "/mnt/data"
             elif shared_folder == "office:wanliz_sw_linux":
                 CMD_p4.setup_env()
                 fstype = "nfs"
