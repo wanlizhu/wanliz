@@ -764,7 +764,7 @@ class CMD_spark:
 
     def run(self):
         subprocess.run(["bash", "-lic", rf"""
-            echo "if [[ ! -f /root/nvt/environ_vars && -d /root/nvt ]]; then cp -vf /mnt/linuxqa/wlueking/n1x-bringup/environ_vars /root/nvt/environ_vars; fi" | sudo bash
+            echo "if [[ ! -f /root/nvt/environ_vars && -d /root/nvt ]]; then cp -vf /mnt/linuxqa/wlueking/n1x-bringup/environ_vars /root/nvt/environ_vars; else echo 'Found file: /root/nvt/environ_vars'; fi" | sudo bash
             if [[ ! -f /opt/nvidia/update.sh ]]; then 
                 echo "Download spark OTA setup script"
                 curl -kL https://nv/spark-eng/eng.sh | bash
