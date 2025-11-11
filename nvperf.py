@@ -796,7 +796,7 @@ class CMD_spark:
                 sudo ./LockToRatedTdp -lock && echo "LockToRatedTdp - [OK]" || echo "LockToRatedTdp - [FAILED]"
             fi 
             cd ~
-            nvidia-smi -pm 1
+            sudo nvidia-smi -pm 1
             if [[ $(uname -m) == "aarch64" ]]; then 
                 cp -vf /mnt/linuxqa/wanliz/perfdebug.aarch64 ~/perfdebug
                 sudo chmod +x ./perfdebug  
