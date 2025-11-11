@@ -905,27 +905,9 @@ class CMD_startx:
                 fi 
                 x11vnc -display :0  -rfbport 5900 -noshm -forever -noxdamage -repeat -shared -bg -o $HOME/x11vnc.log && echo "Start VNC server on :5900 - [OK]" || cat $HOME/x11vnc.log
             fi
-
-            # This is only needed for DGX spark systems 
-            if (( {1 if spark else 0} )); then 
-                if [[ -f $HOME/sandbag-tool ]]; then 
-                    $HOME/sandbag-tool -unsandbag 
-                else
-                    echo "File doesn't exist: $HOME/sandbag-tool"
-                fi 
-            fi
-
-            # This is only needed for DGX spark systems 
-            if (( {1 if spark else 0} )); then 
-                perfdebug="/mnt/linuxqa/wanliz/iGPU_vfmax_scripts/perfdebug"
-                if [[ -f $perfdebug ]]; then 
-                    sudo $perfdebug --lock_loose    set pstateId   P0
-                    sudo $perfdebug --lock_strict   set gpcclkkHz  2000000
-                    sudo $perfdebug --lock_loose    set xbarclkkHz 1800000
-                    sudo $perfdebug --force_regime  ffr
-                fi 
-            fi
         """], check=True)
+
+        if spark: CMD_spark().run()
 
 
 class CMD_nvmake:
