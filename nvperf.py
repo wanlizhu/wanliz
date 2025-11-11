@@ -797,6 +797,7 @@ class CMD_spark:
             fi 
             cd ~
             sudo nvidia-smi -pm 1
+            sudo nvidia-persistenced
             if [[ $(uname -m) == "aarch64" ]]; then 
                 cp -vf /mnt/linuxqa/wanliz/perfdebug.aarch64 ~/perfdebug
                 sudo chmod +x ./perfdebug  
