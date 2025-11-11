@@ -574,7 +574,7 @@ class CMD_upload:
         dst = horizontal_select(f"Select dst folder on {host}", ["D:", "E:", "F:", "<input>"], 0, separator="|")
         src = horizontal_select(f"Select src folder on local", [f"{HOME}:files ({1.0 * home_files_size / 1024 / 1024:.2f}MB)", "PerfInspector/output", "<input>"], 0, separator="|")
         if src.startswith(f"{HOME}:files"):
-            hostname = socket.gethostbyname() 
+            hostname = socket.gethostname() 
             home_files_quoted = " ".join(map(shlex.quote, home_files))
             subprocess.run(["bash", "-lic", rf"""
                 sshpass -p '{passwd}' ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'cmd /c "if not exist {dst}\\{hostname} mkdir {dst}\\{hostname}"'
