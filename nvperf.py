@@ -801,20 +801,20 @@ class CMD_spark:
                 cp -vf /mnt/linuxqa/wanliz/perfdebug.aarch64 ~/perfdebug
                 sudo chmod +x ./perfdebug  
                 sudo ./perfdebug --lock_loose  set pstateId P0         && echo "set pstateId P0 [OK]" || echo "set pstateId P0 [OK]"
-                sudo ./perfdebug --lock_strict set dramclkkHz  4266000 && echo "set dramclkkHz  4266000 [OK]" || echo "set dramclkkHz  4266000 [FAILED]"
-                sudo ./perfdebug --lock_strict set gpcclkkHz   2000000 && echo "set gpcclkkHz   2000000 [OK]" || echo "set gpcclkkHz   2000000 [FAILED]"
-                sudo ./perfdebug --lock_loose  set xbarclkkHz  1800000 && echo "set xbarclkkHz  1800000 [OK]" || echo "set xbarclkkHz  1800000 [FAILED]"
-                sudo ./perfdebug --lock_loose  set sysclkkHz   1800000 && echo "set sysclkkHz   1800000 [OK]" || echo "set sysclkkHz   1800000 [FAILED]"
+                sudo ./perfdebug --lock_strict set dramclkkHz  4266000 && echo "set dramclkkHz  4266000 - [OK]" || echo "set dramclkkHz  4266000 - [FAILED]"
+                sudo ./perfdebug --lock_strict set gpcclkkHz   2000000 && echo "set gpcclkkHz   2000000 - [OK]" || echo "set gpcclkkHz   2000000 - [FAILED]"
+                sudo ./perfdebug --lock_loose  set xbarclkkHz  1800000 && echo "set xbarclkkHz  1800000 - [OK]" || echo "set xbarclkkHz  1800000 - [FAILED]"
+                sudo ./perfdebug --lock_loose  set sysclkkHz   1800000 && echo "set sysclkkHz   1800000 - [OK]" || echo "set sysclkkHz   1800000 - [FAILED]"
                 sudo ./perfdebug --force_regime ffr  
                 sudo ./perfdebug --getclocks 
             elif [[ $(uname -m) == "x86_64" ]]; then 
                 cp -vf /mnt/linuxqa/wanliz/perfdebug.x86_64 ~/perfdebug
                 sudo chmod +x ./perfdebug 
                 sudo ./perfdebug --lock_loose  set pstateId P0         && echo "set pstateId P0 [OK]" || echo "set pstateId P0 [OK]"
-                sudo ./perfdebug --lock_strict set dramclkkHz  8000000 && echo "set dramclkkHz  8000000 [OK]" || echo "set dramclkkHz  8000000 [FAILED]"
-                sudo ./perfdebug --lock_strict set gpcclkkHz   1875000 && echo "set gpcclkkHz   1875000 [OK]" || echo "set gpcclkkHz   1875000 [FAILED]"
-                sudo ./perfdebug --lock_loose  set xbarclkkHz  2250000 && echo "set xbarclkkHz  2250000 [OK]" || echo "set xbarclkkHz  2250000 [FAILED]"
-                sudo ./perfdebug --lock_loose  set sysclkkHz   1695000 && echo "set sysclkkHz   1695000 [OK]" || echo "set sysclkkHz   1695000 [FAILED]"
+                sudo ./perfdebug --lock_strict set dramclkkHz  8000000 && echo "set dramclkkHz  8000000 - [OK]" || echo "set dramclkkHz  8000000 - [FAILED]"
+                sudo ./perfdebug --lock_strict set gpcclkkHz   1875000 && echo "set gpcclkkHz   1875000 - [OK]" || echo "set gpcclkkHz   1875000 - [FAILED]"
+                sudo ./perfdebug --lock_loose  set xbarclkkHz  2250000 && echo "set xbarclkkHz  2250000 - [OK]" || echo "set xbarclkkHz  2250000 - [FAILED]"
+                sudo ./perfdebug --lock_loose  set sysclkkHz   1695000 && echo "set sysclkkHz   1695000 - [OK]" || echo "set sysclkkHz   1695000 - [FAILED]"
                 sudo ./perfdebug --force_regime ffr  
                 sudo ./perfdebug --getclocks 
             fi 
