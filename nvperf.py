@@ -771,6 +771,8 @@ class CMD_spark:
 
     def run(self):
         subprocess.run(["bash", "-lic", rf"""
+            sudo nvidia-smi -pm 1
+            sudo nvidia-persistenced
             if [[ $(uname -m) == "aarch64" ]]; then 
                 sudo cp -vf /mnt/linuxqa/wlueking/n1x-bringup/environ_vars /root/nvt/environ_vars || true
                 if [[ ! -f /opt/nvidia/update.sh ]]; then 
@@ -796,8 +798,6 @@ class CMD_spark:
                 sudo ./LockToRatedTdp -lock && echo "LockToRatedTdp - [OK]" || echo "LockToRatedTdp - [FAILED]"
             fi 
             cd ~
-            sudo nvidia-smi -pm 1
-            sudo nvidia-persistenced
             if [[ $(uname -m) == "aarch64" ]]; then 
                 cp -vf /mnt/linuxqa/wanliz/perfdebug.aarch64 ~/perfdebug
                 sudo chmod +x ./perfdebug  
