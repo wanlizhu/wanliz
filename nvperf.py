@@ -1137,7 +1137,7 @@ class CMD_download:
     def download_microbench(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}"):
             print(f"Downloading {HOME}/nvperf_vulkan.{UNAME_M}")
-            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M} {HOME}/nvperf_vulkan.{UNAME_M}"], check=False)
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M} {HOME}/nvperf_vulkan"], check=False)
         else: raise RuntimeError(f"File not found: /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}")
 
 
@@ -1678,7 +1678,7 @@ class CMD_microbench:
     """Nvidia's Vulkan Microbenchmark"""
 
     def __init__(self):
-        self.nvperf_vulkan = f"{HOME}/nvperf_vulkan.{UNAME_M}"
+        self.nvperf_vulkan = f"{HOME}/nvperf_vulkan"
         if not os.path.exists(self.nvperf_vulkan):
             CMD_download().download_microbench() 
     
