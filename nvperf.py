@@ -145,6 +145,7 @@ def horizontal_select(prompt, options=None, index=None, separator="/", return_bo
             elif key == "right": index = (index + 1) % len(options)
             elif key == "ctrl-c":
                 sys.stdout.write("\r\n"); sys.stdout.flush()
+                sys.exit(0)
     value = input(": ") if selected == "<input>" else selected
     return cast_to(value)
 
