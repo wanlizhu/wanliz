@@ -771,6 +771,7 @@ class CMD_spark:
 
     def run(self):
         subprocess.run(["bash", "-lic", rf"""
+            nvidia-smi -pm 1
             if [[ $(uname -m) == "aarch64" ]]; then 
                 sudo cp -vf /mnt/linuxqa/wlueking/n1x-bringup/environ_vars /root/nvt/environ_vars || true
                 if [[ ! -f /opt/nvidia/update.sh ]]; then 
@@ -779,27 +780,25 @@ class CMD_spark:
                     sudo /opt/nvidia/update.sh  || true
                     echo "[install new driver if OTA script failed to do so]"
                 fi 
-            fi 
-            if [[ ! -f ~/.driver || ! -f $(cat ~/.driver) ]]; then 
-                read -rp "Location of tests-Linux-$(uname -m).tar: " tests_tarball
-            else
-                tests_tarball="$(dirname $(cat ~/.driver))/tests-Linux-$(uname -m).tar"
-            fi 
-            if [[ -f $test_tarball ]]; then 
-                sudo rm -rf /tmp/tests-Linux-$(uname -m)
-                tar -xf $tests_tarball -C /tmp
-                cp -f /tmp/tests-Linux-$(uname -m)/sandbag-tool/sandbag-tool ~
-                cp -f /tmp/tests-Linux-$(uname -m)/LockToRatedTdp/LockToRatedTdp ~
-            fi 
-            cd ~
-            sudo chmod +x ./sandbag-tool ./LockToRatedTdp
-            sudo ./sandbag-tool -unsandbag && echo "Unsandbag - [OK]" || echo "Unsandbag - [FAILED]"
-            sudo ./LockToRatedTdp -lock && echo "LockToRatedTdp - [OK]" || echo "LockToRatedTdp - [FAILED]"
-            if [[ ! -f ~/perfdebug ]]; then 
-                cp -vf /mnt/linuxqa/wanliz/perfdebug.$(uname -m) ~/perfdebug
+                if [[ ! -f ~/.driver || ! -f $(cat ~/.driver) ]]; then 
+                    read -rp "Location of tests-Linux-$(uname -m).tar: " tests_tarball
+                else
+                    tests_tarball="$(dirname $(cat ~/.driver))/tests-Linux-$(uname -m).tar"
+                fi 
+                if [[ -f $test_tarball ]]; then 
+                    sudo rm -rf /tmp/tests-Linux-$(uname -m)
+                    tar -xf $tests_tarball -C /tmp
+                    cp -f /tmp/tests-Linux-$(uname -m)/sandbag-tool/sandbag-tool ~
+                    cp -f /tmp/tests-Linux-$(uname -m)/LockToRatedTdp/LockToRatedTdp ~
+                fi 
+                cd ~
+                sudo chmod +x ./sandbag-tool ./LockToRatedTdp
+                sudo ./sandbag-tool -unsandbag && echo "Unsandbag - [OK]" || echo "Unsandbag - [FAILED]"
+                sudo ./LockToRatedTdp -lock && echo "LockToRatedTdp - [OK]" || echo "LockToRatedTdp - [FAILED]"
             fi 
             cd ~
             if [[ $(uname -m) == "aarch64" ]]; then 
+                cp -vf /mnt/linuxqa/wanliz/perfdebug.aarch64 ~/perfdebug
                 sudo chmod +x ./perfdebug || true 
                 sudo ./perfdebug --lock_loose  set pstateId P0 || true
                 sudo ./perfdebug --lock_strict set dramclkkHz  4266000 || true
@@ -809,6 +808,7 @@ class CMD_spark:
                 sudo ./perfdebug --force_regime ffr || true
                 sudo ./perfdebug --getclocks || true
             elif [[ $(uname -m) == "x86_64" ]]; then 
+                cp -vf /mnt/linuxqa/wanliz/perfdebug.x86_64 ~/perfdebug
                 sudo chmod +x ./perfdebug || true
                 sudo ./perfdebug --lock_loose  set pstateId P0 || true
                 sudo ./perfdebug --lock_strict set dramclkkHz  8000000 || true
