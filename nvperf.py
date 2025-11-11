@@ -568,26 +568,23 @@ class CMD_upload:
     """Upload Linux local folder to Windows SSH host"""
     
     def run(self):
+        home_files = [str(p) for p in Path.home().iterdir() if p.is_file()]
+        home_files_size = sum(os.path.getsize(p) for p in home_files)
         user, host, passwd = self.get_windows_host()
         dst = horizontal_select(f"Select dst folder on {host}", ["D:/", "E:/", "F:/", "<input>"], 0, separator="|")
-        src = horizontal_select(f"Select src folder on local", [f"{HOME}:no-recur", "PerfInspector/output", "<input>"], 0, separator="|")
+        src = horizontal_select(f"Select src folder on local", [f"{HOME}:files ({1.0 * home_files_size / 1024 / 1024:.2f}MB)", "PerfInspector/output", "<input>"], 0, separator="|")
 
-        if src == f"{HOME}:no-recur":
-            files = [str(p) for p in Path.home().iterdir() if p.is_file()]
-            size = sum(os.path.getsize(p) for p in files)
-            horizontal_select(f"Press [Enter] to upload {1.0 * size / 1024 / 1024:.2f} MB")
-            cmd = rf"""
+        if src.startswith(f"{HOME}:files"):
+            subprocess.run(["bash", "-lic", rf"""
                 rm -rf   /tmp/{socket.gethostname()}
                 mkdir -p /tmp/{socket.gethostname()}
                 sshpass -p '{passwd}' scp -r /tmp/{socket.gethostname()} {user}@{host}:/{dst}
-                sshpass -p '{passwd}' scp -p -o Compression=no {" ".join(files)} {user}@{host}:/{dst}/{socket.gethostname()}
-            """
+                sshpass -p '{passwd}' scp -p -o Compression=no {" ".join(home_files)} {user}@{host}:/{dst}/{socket.gethostname()}
+            """], check=True)
         elif src == "PerfInspector/output":
-            cmd = f"sshpass -p '{passwd}' scp -r {HOME}/SinglePassCapture/PerfInspector/output {user}@{host}:/{dst}"
+            subprocess.run(["bash", "-lic", f"sshpass -p '{passwd}' scp -p -r {HOME}/SinglePassCapture/PerfInspector/output {user}@{host}:/{dst}"], check=True)
         else:
-            cmd = f"sshpass -p '{passwd}' scp -r {src} {user}@{host}:/{dst}"
-            
-        subprocess.run(["bash", "-lic", cmd], check=True)
+            subprocess.run(["bash", "-lic", f"sshpass -p '{passwd}' scp -p -r {src} {user}@{host}:/{dst}"], check=True)
         
     def get_windows_host(self):
         if os.path.exists(f"{HOME}/.upload_host"):
