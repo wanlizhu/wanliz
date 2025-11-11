@@ -569,7 +569,7 @@ class CMD_upload:
     
     def run(self):
         home_files_ignored = ["nvperf_vulkan", "perfdebug", "sandbag-tool", "LockToRatedTdp"]
-        home_files = [str(p) for p in Path.home().iterdir() if p.is_file() and p not in home_files_ignored]
+        home_files = [str(p) for p in Path.home().iterdir() if p.is_file() and p.name not in home_files_ignored]
         home_files_size = sum(os.path.getsize(p) for p in home_files)
         user, host, passwd = self.get_windows_host()
         dst = horizontal_select(f"Select dst folder on {host}", ["D:", "E:", "F:", "<input>"], 0, separator="|")
