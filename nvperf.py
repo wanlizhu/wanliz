@@ -578,12 +578,12 @@ class CMD_upload:
             home_files_quoted = " ".join(map(shlex.quote, home_files))
             subprocess.run(["bash", "-lic", rf"""
                 sshpass -p '{passwd}' ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'cmd /c "if not exist {dst}\\{hostname} mkdir {dst}\\{hostname}"'
-                sshpass -p '{passwd}' scp -o StrictHostKeyChecking=accept-new -o Compression=no -p {home_files_quoted} {user}@{host}:/{dst}/{hostname}
+                sshpass -p '{passwd}' scp -o StrictHostKeyChecking=accept-new -o Compression=no {home_files_quoted} {user}@{host}:/{dst}/{hostname}
             """], check=True)
         elif src == "PerfInspector/output":
-            subprocess.run(["bash", "-lic", f"sshpass -p '{passwd}' scp -p -r {HOME}/SinglePassCapture/PerfInspector/output {user}@{host}:/{dst}"], check=True)
+            subprocess.run(["bash", "-lic", f"sshpass -p '{passwd}' scp -r {HOME}/SinglePassCapture/PerfInspector/output {user}@{host}:/{dst}"], check=True)
         else:
-            subprocess.run(["bash", "-lic", f"sshpass -p '{passwd}' scp -p -r {src} {user}@{host}:/{dst}"], check=True)
+            subprocess.run(["bash", "-lic", f"sshpass -p '{passwd}' scp -r {src} {user}@{host}:/{dst}"], check=True)
         
     def get_windows_host(self):
         if os.path.exists(f"{HOME}/.upload_host"):
