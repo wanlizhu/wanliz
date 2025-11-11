@@ -1049,6 +1049,8 @@ class CMD_install:
             CMD_mount().mount_one("office:wanliz_sw_linux")
             branch, config, arch, version = self.select_nvidia_driver(p4root)  
             driver = f"/mnt{p4root}/_out/Linux_{arch}_{config}/NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run"
+        elif location == "redo":
+            driver = Path(f"{HOME}/.driver").read_text(encoding="utf-8").rstrip("\n")
         else:
             driver = location 
         if not os.path.exists(driver):
