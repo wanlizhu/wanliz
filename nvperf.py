@@ -1649,6 +1649,26 @@ class CMD_viewperf:
             if limiter is not None: limiter.reset()
 
 
+class CMD_gmark:
+    """GravityMark benchmark for OpenGL and Vulkan on all platforms"""
+
+    def __init__(self):
+        self.gmark_root = HOME + "/gravity_mark"
+        if not os.path.exists(self.gmark_root):
+            CMD_download().download_gravitymark()
+    
+    def fix_me(self):
+        subprocess.run(["bash", "-lic", """
+            sudo apt install -y clang build-essential pkg-config libgtk2.0-dev libglib2.0-dev libpango1.0-dev libatk1.0-dev libgdk-pixbuf-2.0-dev 
+        """], check=True) 
+    
+    def run(self):
+        self.exe = f"./GravityMark.{UNAME_M2}"
+        self.args = "-temporal 1  -screen 0 -fps 1 -info 1 -sensors 1 -benchmark 1 -vk -fullscreen 1 -vsync 0 -close 1"
+        self.workdir = f"{HOME}/gravity_mark/bin"
+        subprocess.run(["bash", "-lic", f"{self.exe} {self.args}"], cwd=self.workdir, check=True) 
+
+
 class CMD_3dmark:
     """3dMark benchmarks"""
     
