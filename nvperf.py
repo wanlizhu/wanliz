@@ -771,24 +771,26 @@ class CMD_spark:
 
     def run(self):
         subprocess.run(["bash", "-lic", rf"""
-            echo "if [[ ! -f /root/nvt/environ_vars && -d /root/nvt ]]; then cp -vf /mnt/linuxqa/wlueking/n1x-bringup/environ_vars /root/nvt/environ_vars; else echo 'Found file: /root/nvt/environ_vars'; fi" | sudo bash
-            if [[ $(uname -m) == "aarch64" && ! -f /opt/nvidia/update.sh ]]; then 
-                echo "Download spark OTA setup script"
-                curl -kL https://nv/spark-eng/eng.sh | sudo bash
-                sudo /opt/nvidia/update.sh
-                echo "[install new driver if OTA script failed to do so]"
+            if [[ $(uname -m) == "aarch64" ]]; then 
+                sudo cp -vf /mnt/linuxqa/wlueking/n1x-bringup/environ_vars /root/nvt/environ_vars
+                if [[ ! -f /opt/nvidia/update.sh ]]; then 
+                    echo "Download spark OTA setup script"
+                    curl -kL https://nv/spark-eng/eng.sh | sudo bash
+                    sudo /opt/nvidia/update.sh
+                    echo "[install new driver if OTA script failed to do so]"
+                fi 
             fi 
             if [[ ! -f ~/.driver || ! -f $(cat ~/.driver) ]]; then 
                 read -rp "Location of tests-Linux-$(uname -m).tar: " tests_tarball
             else
                 tests_tarball="$(dirname $(cat ~/.driver))/tests-Linux-$(uname -m).tar"
             fi 
-            cd /tmp
-            sudo rm -rf /tmp/tests-Linux-$(uname -m)
-            cp "$tests_tarball" /tmp 
-            cd /tmp && tar -xf ./tests-Linux-$(uname -m).tar 
-            cp -f /tmp/tests-Linux-$(uname -m)/sandbag-tool/sandbag-tool ~
-            cp -f /tmp/tests-Linux-$(uname -m)/LockToRatedTdp/LockToRatedTdp ~
+            if [[ -f $test_tarball ]]; then 
+                sudo rm -rf /tmp/tests-Linux-$(uname -m)
+                tar -xf $tests_tarball -C /tmp
+                cp -f /tmp/tests-Linux-$(uname -m)/sandbag-tool/sandbag-tool ~
+                cp -f /tmp/tests-Linux-$(uname -m)/LockToRatedTdp/LockToRatedTdp ~
+            fi 
             cd ~
             sudo chmod +x ./sandbag-tool ./LockToRatedTdp
             sudo ./sandbag-tool -unsandbag && echo "Unsandbag - [OK]"
