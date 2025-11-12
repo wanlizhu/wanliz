@@ -285,7 +285,14 @@ class CMD_config:
         subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
             Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters' -Name 'AllowInsecureGuestAuth' -Type DWord -Value 1
             $ErrorActionPreference = 'Stop'
-            Write-Host "Checking PATH environment variables"
+                        
+            Write-Host "Checking WSL2 status"
+            if (wsl -l -v 2>$null | Select-Object -Skip 1 | ForEach-Object {{ ($_ -replace '\x00','' -split '\s+')[-1] }} | Where-Object {{ $_ -eq '2' }} | Select-Object -First 1) {{ "WSL2 present" }} else {{ 
+                "No WSL2 distros, install it first" 
+                exit(1)
+            }}
+
+            Write-Host "`r`nChecking PATH environment variables"
             $want = @('C:\Program Files', $env:LOCALAPPDATA.TrimEnd('\'))
             $cur  = ($env:Path -split ';') | ? {{ $_ }} | % {{ $_.Trim('"').TrimEnd('\') }}
             $miss = $want | % {{ $_.Trim('"').TrimEnd('\') }} | ? {{ $cur -notcontains $_ }}
