@@ -407,6 +407,7 @@ class CMD_config:
             if [[ -z $(which sudo) ]]; then 
                 apt install -y sudo 
             fi 
+                        
             if ! dpkg -s openssh-server >/dev/null 2>&1; then
                 sudo apt-get update -y
                 sudo apt-get install -y openssh-server
