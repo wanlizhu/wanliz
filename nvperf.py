@@ -446,7 +446,11 @@ class CMD_config:
             for cmd in "${{!package_list[@]}}"; do
                 if ! command -v "$cmd" &>/dev/null; then
                     pkg="${{package_list[$cmd]}}"
-                    sudo apt install -y "$pkg"
+                    echo -n "Installing $pkg ... "
+                    sudo apt install -y "$pkg" >/dev/null 2>/tmp/err && echo "[OK]" || {{ 
+                        echo "[FAILED]"
+                        cat /tmp/err 
+                    }}
                 fi
             done
 
