@@ -675,7 +675,7 @@ class CMD_upload:
         print(f"Authenticating {user}@{host} with {'password' if passwd else 'keys'}")
         output = subprocess.run(["bash", "-lic", rf"""
             if [[ -z $(which sshpass) ]]; then sudo apt install -y sshpass &>/dev/null; fi 
-            {sshpass} ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=3 {user}@{host} 'cmd /c exit 0'
+            {sshpass} ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=3 {user}@{host} true
         """], check=False)
         return output.returncode == 0 
 
