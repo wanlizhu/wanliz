@@ -288,8 +288,17 @@ class CMD_config:
                         
             Write-Host "Checking WSL2 status"
             if (wsl -l -v 2>$null | Select-Object -Skip 1 | ForEach-Object {{ ($_ -replace '\x00','' -split '\s+')[-1] }} | Where-Object {{ $_ -eq '2' }} | Select-Object -First 1) {{ "WSL2 present" }} else {{ 
-                "No WSL2 distros, install it first" 
+                Write-Host "No WSL2 distros, install it first" -ForegroundColor Yellow
                 exit(1)
+            }}
+            $wsl_cfg="$env:USERPROFILE\.wslconfig"
+            if (Test-Path $wsl_cfg) {{
+                if (-not (Select-String -Path $wsl_cfg -SimpleMatch -Pattern 'networkingMode=mirrored' -Quiet)) {{
+                    Write-Host "Please add 'networkingMode=mirrored' to $wsl_cfg first" -ForegroundColor Yellow
+                    exit(1)
+                }}
+            }} else {{ 
+                "[wsl2]`r`nnetworkingMode=mirrored" | Set-Content $wsl_cfg 
             }}
 
             Write-Host "`r`nChecking PATH environment variables"
