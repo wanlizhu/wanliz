@@ -337,9 +337,7 @@ class CMD_config:
                 Write-Host "`r`nChecking SSH server on WSL (ensure Auto-Start)"
                 $Action  = New-ScheduledTaskAction -Execute "wsl.exe" -Argument "-d Ubuntu -u root -- true"
                 $Trigger = New-ScheduledTaskTrigger -AtStartup
-                if (Get-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -ErrorAction SilentlyContinue) {{
-                    Set-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -Action $Action -Trigger $Trigger
-                }} else {{
+                if (-not (Get-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -ErrorAction SilentlyContinue)) {{
                     Register-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -Action $Action -Trigger $Trigger -RunLevel Highest
                 }}
             }}
