@@ -577,17 +577,17 @@ class CMD_upload:
         if src.startswith(f"{HOME}:files"):
             hostname = socket.gethostname() 
             output = subprocess.run(["bash", "-lc", ('''
-                sshpass -p '%(passwd)s' ssh -o StrictHostKeyChecking=accept-new %(user)s@%(host)s '
-                    powershell -NoProfile -ExecutionPolicy Bypass -Command "
-                        $root = `"%(dst)s\\%(hostname)s`";
-                        if (Test-Path -LiteralPath $root) {
-                            Get-ChildItem -LiteralPath $root -File -Recurse | ForEach-Object {
-                                $hash = (Get-FileHash -Algorithm MD5 -LiteralPath $_.FullName).Hash.ToLower();
-                                `"md5:{0} file:{1}`" -f $hash, $_.Name
+                sshpass -p '%(passwd)s' ssh -o StrictHostKeyChecking=accept-new %(user)s@%(host)s "
+                    powershell -NoProfile -ExecutionPolicy Bypass -Command \"
+                        \$root = '%(dst)s\\%(hostname)s';
+                        if (Test-Path -LiteralPath \$root) {
+                            Get-ChildItem -LiteralPath \$root -File -Recurse | ForEach-Object {
+                                \$hash = (Get-FileHash -Algorithm MD5 -LiteralPath \$_.FullName).Hash.ToLower();
+                                'md5:{0} file:{1}' -f \$hash, \$_.Name
                             }
                         }
-                    " 
-                ' 
+                    \"
+                "
             ''' % {"passwd": passwd, "user": user, "host": host, "dst": dst, "hostname": socket.gethostname()})], check=False, text=True, capture_output=True)
             if output.returncode != 0:
                 print(output.stderr)
