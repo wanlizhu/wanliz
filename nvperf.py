@@ -403,18 +403,63 @@ class CMD_config:
         """], check=True)
         
     def config_linux_host(self):
-        subprocess.run(["bash", "-lic", rf"""
+        subprocess.run([
+            "bash", "-lic", rf"""
             if [[ -z $(which sudo) ]]; then 
                 apt update -y
                 apt install -y sudo 
             fi 
                         
+            if [[ ! -z $USER ]]; then 
+                if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
+                    echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
+                fi
+            fi 
+                        
+            declare -A package_list=(
+                [jq]=jq
+                [rsync]=rsync
+                [vim]=vim
+                [curl]=curl
+                [screen]=screen
+                [sshpass]=sshpass
+                [lsof]=lsof
+                [xhost]=x11-xserver-utils
+                [xrandr]=x11-xserver-utils
+                [xset]=x11-utils
+                [xdpyinfo]=x11-utils
+                [openbox]=openbox
+                [obconf]=obconf
+                [x11vnc]=x11vnc
+                [glxinfo]=mesa-utils
+                [X]=xserver-xorg-core
+                [mount.nfs]=nfs-common
+                [showmount]=nfs-common
+                [mount.cifs]=cifs-utils
+                [exportfs]=nfs-kernel-server
+                [smbd]=samba
+                [testparm]=samba-common-bin
+                [pdbedit]=samba-common-bin
+                [smbpasswd]=samba-common-bin
+            )
+            sudo apt update
+            for cmd in "${{!package_list[@]}}"; do
+                if ! command -v "$cmd" &>/dev/null; then
+                    pkg="${{package_list[$cmd]}}"
+                    sudo apt install -y "$pkg"
+                fi
+            done
+
+            
             if ! dpkg -s openssh-server >/dev/null 2>&1; then
-                sudo apt update -y
-                sudo apt install -y openssh-server
-                if [[ "$(cat /proc/1/comm 2>/dev/null)" == "systemd" ]] && command -v systemctl >/dev/null 2>&1; then
-                    sudo systemctl enable ssh || true
-                    sudo systemctl restart ssh || true
+                read -p "Install SSH server? (Y/n): " install_ssh
+                if [[ -z $install_ssh || "$install_ssh" == "y" ]]; then 
+                    sudo apt update -y
+                    sudo apt install -y openssh-server
+                    if [[ "$(cat /proc/1/comm 2>/dev/null)" == "systemd" ]] && command -v systemctl >/dev/null 2>&1; then
+                        sudo systemctl enable ssh || true
+                        sudo systemctl restart ssh || true
+                    fi
                 fi
             fi
                         
@@ -424,7 +469,7 @@ class CMD_config:
                     "hardstatus alwaysfirstline" \
                     "hardstatus string '%{{= bW}} [SCREEN %H] %=%-Lw %n:%t %+Lw %=%Y-%m-%d %c '" \
                 >> ~/.screenrc
-                echo "Added ~/.screenrc"
+                echo "Updated ~/.screenrc"
             fi 
                         
             if [[ -z $(which nvperf.py) ]]; then 
@@ -434,8 +479,10 @@ class CMD_config:
                         
             if [[ ! -f ~/.passwd ]]; then 
                 read -r -s -p "OpenSSL Password: " passwd; echo
-                echo -n "$passwd" > ~/.passwd           
+                echo -n "$passwd" > ~/.passwd    
+                echo "Updated ~/.passwd"       
             fi
+                        
             if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
                 cipher_prv='U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo'  
                 mkdir -p ~/.ssh
@@ -443,19 +490,14 @@ class CMD_config:
                 chmod 600 ~/.ssh/id_ed25519
                 echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > ~/.ssh/id_ed25519.pub
                 chmod 644 ~/.ssh/id_ed25519.pub
-                echo "Added ~/.ssh/id_ed25519"
+                echo "Updated ~/.ssh/id_ed25519"
             fi 
+                        
             if [[ ! -f ~/.gtl_api_key ]]; then 
                 cipher='U2FsdGVkX18BU0ZpoGynLWZBV16VNV2x85CjdpJfF+JF4HhpClt/vTyr6gs6GAq0lDVWvNk7L7s7eTFcJRhEnU4IpABfxIhfktMypWw85PuJCcDXOyZm396F02KjBRwunVfNkhfuinb5y2L6YR9wYbmrGDn1+DjodSWzt1NgoWotCEyYUz0xAIstEV6lF5zedcGwSzHDdFhj3hh5YxQFANL96BFhK9aSUs4Iqs9nQIT9evjinEh5ZKNq5aJsll91czHS2oOi++7mJ9v29sU/QjaqeSWDlneZj4nPYXhZRCw='
                 echo "$cipher" | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass "pass:$(cat ~/.passwd)" > ~/.gtl_api_key
                 chmod 500 ~/.gtl_api_key
-                echo "Added ~/.gtl_api_key"
-            fi 
-                        
-            if [[ ! -z $USER ]]; then 
-                if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
-                    echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
-                fi
+                echo "Updated ~/.gtl_api_key"
             fi 
                         
             if [[ ! -d /mnt/linuxqa/wanliz ]]; then 
@@ -470,16 +512,18 @@ class CMD_config:
         """], check=True)
 
         # Add known host IPs (hostname -> IP)
-        hosts_out = []
-        for line in Path("/etc/hosts").read_text().splitlines():
-            if line.strip().startswith("#"): 
-                continue
-            if any(name in self.hosts for name in line.split()[1:]):
-                continue 
-            hosts_out.append(line)
-        hosts_out += [f"{ip}\t{name}" for name, ip in self.hosts.items()]
-        Path("/tmp/hosts").write_text("\n".join(hosts_out) + "\n")
-        subprocess.run("sudo install -m 644 /tmp/hosts /etc/hosts", check=True, shell=True)
+        update_hosts = horizontal_select("Do you want to update /etc/hosts", ["yes", "no"], 1, return_bool=True)
+        if update_hosts:
+            hosts_out = []
+            for line in Path("/etc/hosts").read_text().splitlines():
+                if line.strip().startswith("#"): 
+                    continue
+                if any(name in self.hosts for name in line.split()[1:]):
+                    continue 
+                hosts_out.append(line)
+            hosts_out += [f"{ip}\t{name}" for name, ip in self.hosts.items()]
+            Path("/tmp/hosts").write_text("\n".join(hosts_out) + "\n")
+            subprocess.run("sudo install -m 644 /tmp/hosts /etc/hosts", check=True, shell=True)
 
 
 class CMD_info:
