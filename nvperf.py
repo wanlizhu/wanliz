@@ -634,10 +634,16 @@ class CMD_upload:
     def run(self):
         hostname = socket.gethostname()
         user, host, passwd = self.get_windows_host()
-        publicIP = CMD_ip().public_ip_to(host, missing_OK=False)
-        subprocess.run(["bash", "-lic", rf"""
-            sshpass -p '{passwd}' ssh -o StrictHostKeyChecking=accept-new {user}@{host} "wsl rsync -e \"ssh -o StrictHostKeyChecking=accept-new\" -lth --info=progress2 {USER}@{publicIP}:{HOME}/ /mnt/d/{hostname}/"
-        """], check=True)
+        src = horizontal_select("Select local folder", [f"{HOME}:NoRecur", "<input>"], 0)
+        if src == f"{HOME}:NoRecur":
+            excludes = ["*/", ".*", "*.deb", "*.run", "*.tar", "*.tar.gz", "*.tgz", "*.zip", "*.so", "perfdebug", "sandbag-tool", "LockToRatedTdp"]
+            subprocess.run(["bash", "-lic", rf"""
+                sshpass -p '{passwd}' rsync -lth --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' {" ".join(f"--exclude='{x}'" for x in excludes)} {HOME}/ {user}@{host}:/mnt/d/{hostname}/
+            """], check=True)
+        else:
+            subprocess.run(["bash", "-lic", rf"""
+                sshpass -p '{passwd}' rsync -lth --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' {src} {user}@{host}:/mnt/d/
+            """], check=True)
         
     def get_windows_host(self):
         if os.path.exists(f"{HOME}/.upload_host"):
