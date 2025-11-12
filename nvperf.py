@@ -405,14 +405,15 @@ class CMD_config:
     def config_linux_host(self):
         subprocess.run(["bash", "-lic", rf"""
             if [[ -z $(which sudo) ]]; then 
+                apt update -y
                 apt install -y sudo 
             fi 
                         
             if ! dpkg -s openssh-server >/dev/null 2>&1; then
-                sudo apt-get update -y
-                sudo apt-get install -y openssh-server
-                sudo systemctl enable ssh
-                sudo systemctl restart ssh
+                sudo apt update -y
+                sudo apt install -y openssh-server
+                sudo systemctl enable ssh || true 
+                sudo systemctl restart ssh || true
             fi
                         
             if [[ ! -f ~/.screenrc ]]; then 
@@ -449,9 +450,11 @@ class CMD_config:
                 echo "Added ~/.gtl_api_key"
             fi 
                         
-            if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
-                echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
-            fi
+            if [[ ! -z $USER ]]; then 
+                if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
+                    echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
+                fi
+            fi 
                         
             if [[ ! -d /mnt/linuxqa/wanliz ]]; then 
                 sudo mkdir -p /mnt/linuxqa
