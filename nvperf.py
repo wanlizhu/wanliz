@@ -591,7 +591,7 @@ class CMD_upload:
     def run(self):
         hostname = socket.gethostname()
         user, host, passwd = self.get_windows_host()
-        publicIP = CMD_ip().public_ip_to(host)
+        publicIP = CMD_ip().public_ip_to(host, missing_OK=False)
         subprocess.run(["bash", "-lic", rf"""
             sshpass -p '{passwd}' ssh -o StrictHostKeyChecking=accept-new {user}@{host} "wsl rsync -e \"ssh -o StrictHostKeyChecking=accept-new\" -lth --info=progress2 {USER}@{publicIP}:{HOME}/ /mnt/d/{hostname}/"
         """], check=True)
@@ -610,7 +610,7 @@ class CMD_upload:
         else:
             passwd_cipher = getpass.getpass("OpenSSL Password: ")
             Path(f"{HOME}/.passwd").write_text(passwd_cipher, encoding="utf-8")
-        passwd = subprocess.run(["bash", "-lic", f"echo 'U2FsdGVkX1+hqRcADWpr1Nk/5Ble1wUjLLYXmW3HlKCop5/DZ3v6OsdtlhNpWmNH' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{passwd_cipher}'"], check=True, text=True, capture_output=True).stdout 
+        passwd = subprocess.run(["bash", "-lic", f"echo 'U2FsdGVkX1+hqRcADWpr1Nk/5Ble1wUjLLYXmW3HlKCop5/DZ3v6OsdtlhNpWmNH' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{passwd_cipher}'"], check=True, text=True, capture_output=True).stdout.strip() 
             
         if self.test(user, host, passwd):
             Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
