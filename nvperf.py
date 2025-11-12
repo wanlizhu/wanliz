@@ -659,7 +659,7 @@ class CMD_upload:
         else:
             passwd_cipher = getpass.getpass("OpenSSL Password: ")
             Path(f"{HOME}/.passwd").write_text(passwd_cipher, encoding="utf-8")
-        passwd = subprocess.run(["bash", "-lic", f"echo 'U2FsdGVkX1+hqRcADWpr1Nk/5Ble1wUjLLYXmW3HlKCop5/DZ3v6OsdtlhNpWmNH' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{passwd_cipher}'"], check=True, text=True, capture_output=True).stdout.strip() 
+        passwd = subprocess.run(["bash", "-lic", f"echo 'U2FsdGVkX1+IEr9ZsDc2GYELpFbB5p2PQ7wdcJ4O1FI=' | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass 'pass:{passwd_cipher}'"], check=True, text=True, capture_output=True).stdout.strip() 
             
         if self.test(user, host, passwd):
             Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
