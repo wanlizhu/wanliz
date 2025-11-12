@@ -697,6 +697,35 @@ class CMD_p4:
         """], cwd=self.p4root, check=True)
 
 
+class CMD_sshkey:
+    """Set up SSH key and copy to remote"""
+
+    def run(self):
+        host = horizontal_select("Host IP")
+        user = horizontal_select("User", ["WanliZhu", "wanliz", "nvidia", "<input>"], 0)
+        self.copy_to(host, user)
+
+    def copy_to(self, host, user):
+        subprocess.run(["bash", "-lic", rf"""
+            if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
+                if [[ ! -f ~/.passwd ]]; then 
+                    read -r -s -p "OpenSSL Password: " passwd; echo
+                    echo -n "$passwd" > ~/.passwd    
+                    echo "Updated ~/.passwd"       
+                fi
+                cipher_prv='U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo'  
+                mkdir -p ~/.ssh
+                echo "$cipher_prv" | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass "pass:$(cat ~/.passwd)" > ~/.ssh/id_ed25519
+                chmod 600 ~/.ssh/id_ed25519
+                echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > ~/.ssh/id_ed25519.pub
+                chmod 644 ~/.ssh/id_ed25519.pub
+                echo "Updated ~/.ssh/id_ed25519"
+            fi 
+            ssh-copy-id -i ~/.ssh/id_ed25519.pub -o StrictHostKeyChecking=accept-new {user}@{host}
+            ssh {user}@{host} "echo '~/.ssh/id_ed25519 works'"
+        """])
+
+
 class CMD_upload:
     """Upload Linux local folder to Windows SSH host"""
     
@@ -732,6 +761,7 @@ class CMD_upload:
         passwd = getpass.getpass("SSH Password: ")
         if self.test(user, host, passwd):
             Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
+
         else:
             Path(f"{HOME}/.upload_host").unlink(missing_ok=True)
             print("Authentication failed")
