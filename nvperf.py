@@ -19,6 +19,7 @@ import select
 import math 
 import socket
 import xml.etree.ElementTree as ET 
+from hashlib import md5
 from pathlib import Path 
 from datetime import timedelta
 from datetime import datetime 
@@ -568,15 +569,31 @@ class CMD_upload:
     """Upload Linux local folder to Windows SSH host"""
     
     def run(self):
-        home_files_ignored = ["nvperf_vulkan", "perfdebug", "sandbag-tool", "LockToRatedTdp"]
-        home_files = [str(p) for p in Path.home().iterdir() if p.is_file() and p.name not in home_files_ignored]
+        home_files = [str(p) for p in Path.home().iterdir() if p.is_file() and p.name.startswith(".")]
         home_files_size = sum(os.path.getsize(p) for p in home_files)
         user, host, passwd = self.get_windows_host()
         dst = horizontal_select(f"Select dst folder on {host}", ["D:", "E:", "F:", "<input>"], 0, separator="|")
         src = horizontal_select(f"Select src folder on local", [f"{HOME}:files ({1.0 * home_files_size / 1024 / 1024:.2f}MB)", "PerfInspector/output", "<input>"], 0, separator="|")
         if src.startswith(f"{HOME}:files"):
             hostname = socket.gethostname() 
+            powershell_script = rf"""
+                $root = "{dst}\\{hostname}"
+                if (Test-Path -LiteralPath $root) {{
+                    Get-ChildItem -LiteralPath $root -File -Recurse | ForEach-Object {{
+                        $hash = (Get-FileHash -Algorithm MD5 -LiteralPath $_.FullName).Hash.ToLower()
+                        "md5:{{0}} file:{{1}}" -f $hash, $_.Name 
+                    }}
+                }}
+            """
+            powershell_script = powershell_script.replace('"', '`"')
+            remote_hash = subprocess.run(["bash", "-lic", f"sshpass -p '{passwd}' ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'powershell -NoProfile -ExecutionPolicy Bypass -Command \"{powershell_script}\"'"], check=True, text=True, capture_output=True).stdout
+            home_files = [file for file in home_files if f"md5:{md5(Path(file).read_bytes()).hexdigest().lower()} file:{Path(file).name}" not in remote_hash]
             home_files_quoted = " ".join(map(shlex.quote, home_files))
+            print(rf"""
+                sshpass -p '{passwd}' ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'cmd /c "if not exist {dst}\\{hostname} mkdir {dst}\\{hostname}"'
+                sshpass -p '{passwd}' scp -o StrictHostKeyChecking=accept-new -o Compression=no {home_files_quoted} {user}@{host}:/{dst}/{hostname}
+            """)
+            sys.exit(0)
             subprocess.run(["bash", "-lic", rf"""
                 sshpass -p '{passwd}' ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'cmd /c "if not exist {dst}\\{hostname} mkdir {dst}\\{hostname}"'
                 sshpass -p '{passwd}' scp -o StrictHostKeyChecking=accept-new -o Compression=no {home_files_quoted} {user}@{host}:/{dst}/{hostname}
