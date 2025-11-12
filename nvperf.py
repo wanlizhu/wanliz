@@ -1254,7 +1254,7 @@ class CMD_download:
 
     def download_microbench(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}"):
-            print(f"Downloading {HOME}/nvperf_vulkan.{UNAME_M}")
+            print(f"Downloading {HOME}/nvperf_vulkan")
             subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M} {HOME}/nvperf_vulkan"], check=True)
         else: raise RuntimeError(f"File not found: /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}")
 
