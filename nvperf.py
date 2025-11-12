@@ -412,9 +412,10 @@ class CMD_config:
             fi
                         
             if [[ ! -f ~/.screenrc ]]; then 
-                printf '%s\n' \
-                    'hardstatus alwaysfirstline' \
-                    'hardstatus string %{{= kB}}[SCREEN TOP] %H %Y-%m-%d %c %=%-w%{{= BW}}%n:%t%{{-}}%+w' \
+                printf "%s\n" \
+                    "startup_message off" \
+                    "hardstatus alwaysfirstline" \
+                    "hardstatus string '%{{= kB}}[SCREEN] %H %Y-%m-%d %c %=%-w%{{= BW}}%n:%t%{{-}}%+w'" \
                 >> ~/.screenrc
                 echo "Added ~/.screenrc"
             fi 
