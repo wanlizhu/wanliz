@@ -190,8 +190,8 @@ def check_global_env():
         HOME = HOME[:-1] if HOME.endswith("/") else HOME 
         USER = os.environ["USER"]
     else:
-        HOME = os.environ["$env:USERPROFILE"]
-        USER = os.environ["$env:USERNAME"]
+        HOME = os.environ["USERPROFILE"]
+        USER = os.environ["USERNAME"]
 
     ARGPOS = 1
     INSIDE_WSL = False
