@@ -300,6 +300,47 @@ class CMD_config:
             }} else {{ 
                 "[wsl2]`r`nnetworkingMode=mirrored" | Set-Content $wsl_cfg 
             }}
+                        
+            function Enable-SSH-Server-on-Windows {{ 
+                Write-Host "`r`nChecking SSH server status"
+                $cap = Get-WindowsCapability -Online -Name OpenSSH.Server* | Select-Object -First 1
+                if ($cap.State -ne 'Installed') {{ 
+                    Add-WindowsCapability -Online -Name $cap.Name 
+                    Set-Service -Name sshd -StartupType Automatic
+                }}
+                $cap = Get-WindowsCapability -Online -Name OpenSSH.Client* | Select-Object -First 1
+                if (-not $cap -or $cap.State -ne 'Installed') {{ 
+                    Add-WindowsCapability -Online -Name $cap.Name 
+                    Set-Service -Name ssh-agent -StartupType Automatic
+                }}
+                if ((Get-Service sshd).Status -ne 'Running') {{ Start-Service sshd }}
+                if ((Get-Service ssh-agent -ErrorAction Stop).Status -ne 'Running') {{ Start-Service ssh-agent }}
+                if (-not ((Get-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name DefaultShell -ErrorAction SilentlyContinue).DefaultShell -match '\\(powershell|pwsh)\.exe$')) {{
+                    New-Item -Path 'HKLM:\SOFTWARE\OpenSSH' -Force | Out-Null
+                    New-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -PropertyType String -Value 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -Force | Out-Null
+                    Restart-Service sshd -Force
+                }}
+                Start-Sleep -Seconds 1
+                $tcp   = Test-NetConnection -ComputerName localhost -Port 22 -WarningAction SilentlyContinue
+                $sshd  = Get-Service sshd
+                $state = if ($tcp.TcpTestSucceeded) {{ 'LISTENING' }} else {{ 'NOT LISTENING' }}
+                "SSH server status: {{0}} | Startup: {{1}} | Port 22: {{2}}" -f $sshd.Status, $sshd.StartType, $state
+            }}
+                        
+            function Disable-SSH-Server-on-Windows-and-Enable-on-WSL {{
+                $svc = Get-Service -Name sshd -ErrorAction SilentlyContinue
+                if ($svc -and $svc.Status -eq 'Running') {{
+                    Write-Host "`r`nDisable SSH server on Windows"
+                    Stop-Service -Name sshd -Force
+                    Set-Service -Name sshd -StartupType Disabled
+                }}
+                Write-Host "`r`nChecking SSH server on WSL (ensure Auto-Start)"
+                $Action  = New-ScheduledTaskAction -Execute "wsl.exe" -Argument "-d Ubuntu -u root -- true"
+                $Trigger = New-ScheduledTaskTrigger -AtStartup
+                Register-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -Action $Action -Trigger $Trigger -RunLevel Highest
+            }}
+            
+            Disable-SSH-Server-on-Windows-and-Enable-on-WSL
 
             Write-Host "`r`nChecking PATH environment variables"
             $want = @('C:\Program Files', $env:LOCALAPPDATA.TrimEnd('\'))
@@ -341,30 +382,6 @@ class CMD_config:
             Write-Host "`r`nDisable Windows Firewall for all profiles"
             Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled False
             Get-NetFirewallProfile | Select-Object Name, Enabled
-
-            Write-Host "`r`nChecking SSH server status"
-            $cap = Get-WindowsCapability -Online -Name OpenSSH.Server* | Select-Object -First 1
-            if ($cap.State -ne 'Installed') {{ 
-                Add-WindowsCapability -Online -Name $cap.Name 
-                Set-Service -Name sshd -StartupType Automatic
-            }}
-            $cap = Get-WindowsCapability -Online -Name OpenSSH.Client* | Select-Object -First 1
-            if (-not $cap -or $cap.State -ne 'Installed') {{ 
-                Add-WindowsCapability -Online -Name $cap.Name 
-                Set-Service -Name ssh-agent -StartupType Automatic
-            }}
-            if ((Get-Service sshd).Status -ne 'Running') {{ Start-Service sshd }}
-            if ((Get-Service ssh-agent -ErrorAction Stop).Status -ne 'Running') {{ Start-Service ssh-agent }}
-            if (-not ((Get-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name DefaultShell -ErrorAction SilentlyContinue).DefaultShell -match '\\(powershell|pwsh)\.exe$')) {{
-                New-Item -Path 'HKLM:\SOFTWARE\OpenSSH' -Force | Out-Null
-                New-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -PropertyType String -Value 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -Force | Out-Null
-                Restart-Service sshd -Force
-            }}
-            Start-Sleep -Seconds 1
-            $tcp   = Test-NetConnection -ComputerName localhost -Port 22 -WarningAction SilentlyContinue
-            $sshd  = Get-Service sshd
-            $state = if ($tcp.TcpTestSucceeded) {{ 'LISTENING' }} else {{ 'NOT LISTENING' }}
-            "SSH server status: {{0}} | Startup: {{1}} | Port 22: {{2}}" -f $sshd.Status, $sshd.StartType, $state
 
             Write-Host "`r`nChecking context menu items"
             Invoke-WebRequest "https://raw.githubusercontent.com/wanlizhu/wanliz/main/WhoLocks.ps1" -OutFile "C:\Program Files\WhoLocks.ps1"
