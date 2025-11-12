@@ -562,6 +562,7 @@ class CMD_info:
                 echo "X(:0) is down or unauthorized"
             fi 
             echo -e "\nList GPU devices:"
+            nvidia-smi -L 
             if [[ -f /mnt/linuxqa/wanliz/vk-physdev-info.$(uname -m) ]]; then 
                 /mnt/linuxqa/wanliz/vk-physdev-info.$(uname -m) | jq -s .
             fi 
