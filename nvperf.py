@@ -1733,5 +1733,5 @@ if __name__ == "__main__":
     except InterruptedError:
         sys.exit(0)
     except Exception:
-        sys.stderr.write(traceback.format_exc()) 
+        sys.stderr.write(traceback.format_exc().encode().decode('unicode_escape')) 
     horizontal_select("Press [Enter] to exit")
