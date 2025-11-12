@@ -1189,25 +1189,25 @@ class CMD_download:
     def download_viewperf(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/viewperf2020v3.{UNAME_M}"):
             print(f"Downloading {HOME}/viewperf2020v3")
-            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/viewperf2020v3.{UNAME_M}/ $HOME/viewperf2020v3"], check=False)
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/viewperf2020v3.{UNAME_M}/ $HOME/viewperf2020v3"], check=True)
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/viewperf2020v3.{UNAME_M}")
 
     def download_gravitymark(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/gravity_mark.{UNAME_M}"):
             print(f"Downloading {HOME}/gravity_mark")
-            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/gravity_mark.{UNAME_M}/ $HOME/gravity_mark"], check=False)
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/gravity_mark.{UNAME_M}/ $HOME/gravity_mark"], check=True)
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/gravity_mark.{UNAME_M}") 
 
     def download_3dMark(self, name):
         if os.path.exists(f"/mnt/linuxqa/wanliz/3dMark_{name}.{UNAME_M}"):
             print(f"Downloading {HOME}/3dMark_{name}")
-            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/3dMark_{name}.{UNAME_M}/ $HOME/3dMark_{name}"], check=False)
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/3dMark_{name}.{UNAME_M}/ $HOME/3dMark_{name}"], check=True)
         else: raise RuntimeError(f"Folder not found: /mnt/linuxqa/wanliz/3dMark_{name}.{UNAME_M}")  
 
     def download_microbench(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}"):
             print(f"Downloading {HOME}/nvperf_vulkan.{UNAME_M}")
-            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M} {HOME}/nvperf_vulkan"], check=False)
+            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M} {HOME}/nvperf_vulkan"], check=True)
         else: raise RuntimeError(f"File not found: /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}")
 
 
