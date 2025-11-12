@@ -212,8 +212,6 @@ def check_global_env():
         os.environ["DISPLAY"] = ":0"
         print(f"export DISPLAY={os.environ['DISPLAY']}")
 
-    signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
-
 
 def main_cmd_prompt():
     print(f"{RED}[use left/right arrow key to select from options]{RESET}")
@@ -1256,8 +1254,12 @@ class CMD_download:
     def download_microbench(self):
         if os.path.exists(f"/mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}"):
             print(f"Downloading {HOME}/nvperf_vulkan")
-            subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M} {HOME}/nvperf_vulkan"], check=True)
+            out = subprocess.run(["bash", "-lic", f"rsync -ah --info=progress2 /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M} {HOME}/nvperf_vulkan"], check=False, text=True, capture_output=True)
+            print(out.stdout)
+            print(out.stderr)
+            print("11")
         else: raise RuntimeError(f"File not found: /mnt/linuxqa/wanliz/nvperf_vulkan.{UNAME_M}")
+        print("22")
 
 
 class CMD_cpu:
@@ -1800,8 +1802,10 @@ class CMD_microbench:
         self.nvperf_vulkan = f"{HOME}/nvperf_vulkan"
         if not os.path.exists(self.nvperf_vulkan):
             CMD_download().download_microbench() 
+            print("xx")
     
     def run(self):
+        print("33")
         device = horizontal_select("Select GPU device", ["0", "1", "2", "<input>"], 0)
         test = horizontal_select("Select test", ["all", "subset", "<input>"], 0)
         self.run_with_config(device=device, test=test)
@@ -1838,9 +1842,12 @@ if __name__ == "__main__":
             check_global_env() 
             cmd = main_cmd_prompt()
             cmd = globals().get(f"CMD_{cmd}")()
+            print("44")
             cmd.run()
     except InterruptedError:
+        print("55")
         sys.exit(0)
     except Exception:
+        print("66")
         sys.stderr.write(traceback.format_exc()) 
     horizontal_select("Press [Enter] to exit")
