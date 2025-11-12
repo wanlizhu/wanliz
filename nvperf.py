@@ -337,7 +337,11 @@ class CMD_config:
                 Write-Host "`r`nChecking SSH server on WSL (ensure Auto-Start)"
                 $Action  = New-ScheduledTaskAction -Execute "wsl.exe" -Argument "-d Ubuntu -u root -- true"
                 $Trigger = New-ScheduledTaskTrigger -AtStartup
-                Register-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -Action $Action -Trigger $Trigger -RunLevel Highest
+                if (Get-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -ErrorAction SilentlyContinue) {{
+                    Set-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -Action $Action -Trigger $Trigger
+                }} else {{
+                    Register-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -Action $Action -Trigger $Trigger -RunLevel Highest
+                }}
             }}
             
             Disable-SSH-Server-on-Windows-and-Enable-on-WSL
@@ -1773,5 +1777,5 @@ if __name__ == "__main__":
     except InterruptedError:
         sys.exit(0)
     except Exception:
-        sys.stderr.write(traceback.format_exc().encode().decode('unicode_escape')) 
+        sys.stderr.write(traceback.format_exc()) 
     horizontal_select("Press [Enter] to exit")
