@@ -586,11 +586,16 @@ class CMD_upload:
                 }}
             """
             powershell_script = powershell_script.replace('"', '`"')
-            remote_hash = subprocess.run(["bash", "-lic", f"sshpass -p '{passwd}' ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'powershell -NoProfile -ExecutionPolicy Bypass -Command \"{powershell_script}\"'"], check=True, text=True, capture_output=True).stdout
-            home_files = [file for file in home_files if f"md5:{md5(Path(file).read_bytes()).hexdigest().lower()} file:{Path(file).name}" not in remote_hash]
+            output = subprocess.run(["bash", "-lic", f"sshpass -p '{passwd}' ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'powershell -NoProfile -ExecutionPolicy Bypass -Command \"{powershell_script}\"'"], check=False, text=True, capture_output=True)
+            if output.returncode != 0:
+                print(output.stderr)
+                sys.exit(1)
+
+            home_files = [file for file in home_files if f"md5:{md5(Path(file).read_bytes()).hexdigest().lower()} file:{Path(file).name}" not in output.stdout]
             if not home_files:
                 print("Nothing to copy, local and remote files are identical")
                 sys.exit(0)
+                
             home_files_quoted = " ".join(map(shlex.quote, home_files))
             subprocess.run(["bash", "-lic", rf"""
                 sshpass -p '{passwd}' ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'cmd /c "if not exist {dst}\\{hostname} mkdir {dst}\\{hostname}"'
