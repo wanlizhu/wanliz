@@ -155,8 +155,8 @@ def check_global_env():
     global RESET, DIM, RED, CYAN, BOLD 
     global ERASE_LEFT, ERASE_RIGHT, ERASE_LINE
     global STRIKE_BEGIN, STRIKE_END
-    global ARGPOS, HOME, INSIDE_WSL 
-    global UNAME_M, UNAME_M2
+    global ARGPOS, INSIDE_WSL 
+    global UNAME_M, UNAME_M2, HOME, USER, IPv4
 
     supports_ANSI = True
     if platform.system() == "Windows": 
@@ -185,9 +185,15 @@ def check_global_env():
     STRIKE_BEGIN = "\x1b[9m"   if supports_ANSI else ""
     STRIKE_END   = "\x1b[29m"  if supports_ANSI else ""
 
+    if platform.system() == "Linux":
+        HOME = os.environ["HOME"] 
+        HOME = HOME[:-1] if HOME.endswith("/") else HOME 
+        USER = os.environ["USER"]
+    else:
+        HOME = os.environ["$env:USERPROFILE"]
+        USER = os.environ["$env:USERNAME"]
+
     ARGPOS = 1
-    HOME = os.path.expanduser("~") 
-    HOME = HOME[:-1] if HOME.endswith("/") else HOME 
     INSIDE_WSL = False
     if any(k in os.environ for k in ["WSL_DISTRO_NAME", "WSL_INTEROP", "WSLENV"]) or os.path.exists("/mnt/c/Users/"):
         INSIDE_WSL = True
@@ -466,6 +472,20 @@ class CMD_info:
             done
         """], check=False)
 
+
+class CMD_ip:
+    """My public IP to remote"""
+
+    def run(self):
+        print(self.public_ip_to("1.1.1.1"))
+
+    def public_ip_to(self, remote, missing_OK=True):
+        output = subprocess.run(["bash", "-lic", rf"ip -4 route get \"$(getent ahostsv4 {remote} | awk 'NR==1{{print $1}}')\" | sed -n 's/.* src \([0-9.]\+\).*/\1/p'"], check=True, text=True, capture_output=True)
+        if output.returncode != 0:
+            if missing_OK: return None
+            else: raise RuntimeError(f"{remote} is not reachable") 
+        return output.stdout 
+
     
 class CMD_p4:
     """Perforce command tool"""
@@ -569,22 +589,12 @@ class CMD_upload:
     """Upload Linux local folder to Windows SSH host"""
     
     def run(self):
-        home_files = [str(p) for p in Path.home().iterdir() if p.is_file() and p.name.startswith(".")]
-        home_files_size = sum(os.path.getsize(p) for p in home_files)
+        hostname = socket.gethostname()
         user, host, passwd = self.get_windows_host()
-        dst = horizontal_select(f"Select dst folder on {host}", ["D:", "E:", "F:", "<input>"], 0, separator="|")
-        src = horizontal_select(f"Select src folder on local", [f"{HOME}:files ({1.0 * home_files_size / 1024 / 1024:.2f}MB)", "PerfInspector/output", "<input>"], 0, separator="|")
-        if src.startswith(f"{HOME}:files"):
-            hostname = socket.gethostname()
-            home_files_quoted = " ".join(map(shlex.quote, home_files))
-            subprocess.run(["bash", "-lic", rf"""
-                sshpass -p '{passwd}' ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'cmd /c "if not exist {dst}\\{hostname} mkdir {dst}\\{hostname}"'
-                sshpass -p '{passwd}' scp -o StrictHostKeyChecking=accept-new -o Compression=no {home_files_quoted} {user}@{host}:/{dst}/{hostname}
-            """], check=True)
-        elif src == "PerfInspector/output":
-            subprocess.run(["bash", "-lic", f"sshpass -p '{passwd}' scp -r {HOME}/SinglePassCapture/PerfInspector/output {user}@{host}:/{dst}"], check=True)
-        else:
-            subprocess.run(["bash", "-lic", f"sshpass -p '{passwd}' scp -r {src} {user}@{host}:/{dst}"], check=True)
+        publicIP = CMD_ip().public_ip_to(host)
+        subprocess.run(["bash", "-lic", rf"""
+            sshpass -p '{passwd}' ssh -o StrictHostKeyChecking=accept-new {user}@{host} "wsl rsync -e \"ssh -o StrictHostKeyChecking=accept-new\" -lth --info=progress2 {USER}@{publicIP}:{HOME}/ /mnt/d/{hostname}/"
+        """], check=True)
         
     def get_windows_host(self):
         if os.path.exists(f"{HOME}/.upload_host"):
