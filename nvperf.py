@@ -412,8 +412,10 @@ class CMD_config:
             if ! dpkg -s openssh-server >/dev/null 2>&1; then
                 sudo apt update -y
                 sudo apt install -y openssh-server
-                sudo systemctl enable ssh || true 
-                sudo systemctl restart ssh || true
+                if [[ "$(cat /proc/1/comm 2>/dev/null)" == "systemd" ]] && command -v systemctl >/dev/null 2>&1; then
+                    sudo systemctl enable ssh || true
+                    sudo systemctl restart ssh || true
+                fi
             fi
                         
             if [[ ! -f ~/.screenrc ]]; then 
