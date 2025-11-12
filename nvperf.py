@@ -414,15 +414,13 @@ class CMD_config:
             if [[ ! -f ~/.screenrc ]]; then 
                 printf "%s\n" \
                     "startup_message off" \
-                    "term screen-256color" \
-                    "defbce on" \
                     "hardstatus alwaysfirstline" \
                     "hardstatus string '%{{= bW}} [SCREEN %H] %=%-Lw %n:%t %+Lw %=%Y-%m-%d %c '" \
                 >> ~/.screenrc
                 echo "Added ~/.screenrc"
             fi 
                         
-            if [[ -z $(which nvperf) ]]; then 
+            if [[ -z $(which nvperf.py) ]]; then 
                 echo -e '\nexport PATH="$PATH:$HOME/wanliz"' >> ~/.bashrc
                 echo "Updated ~/.bashrc"
             fi 
