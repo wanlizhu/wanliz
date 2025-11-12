@@ -400,6 +400,13 @@ class CMD_config:
         
     def config_linux_host(self):
         subprocess.run(["bash", "-lic", rf"""
+            if ! dpkg -s openssh-server >/dev/null 2>&1; then
+                sudo apt-get update -y
+                sudo apt-get install -y openssh-server
+                sudo systemctl enable ssh
+                sudo systemctl restart ssh
+            fi
+                        
             if [[ ! -f ~/.screenrc ]]; then 
                 printf '%s\n' \
                     'hardstatus alwaysfirstline' \
