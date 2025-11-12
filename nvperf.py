@@ -516,7 +516,7 @@ class CMD_config:
         """], check=True)
 
         # Add known host IPs (hostname -> IP)
-        update_hosts = horizontal_select("Do you want to update /etc/hosts", ["yes", "no"], 1, return_bool=True)
+        update_hosts = horizontal_select("Do you want to update /etc/hosts", ["yes", "no"], 0, return_bool=True)
         if update_hosts:
             hosts_out = []
             for line in Path("/etc/hosts").read_text().splitlines():
