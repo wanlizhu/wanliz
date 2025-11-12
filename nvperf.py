@@ -188,7 +188,7 @@ def check_global_env():
     if platform.system() == "Linux":
         HOME = os.environ["HOME"] 
         HOME = HOME[:-1] if HOME.endswith("/") else HOME 
-        USER = os.environ["USER"]
+        USER = "root" if HOME == "/root" else os.environ["USER"]
     else:
         HOME = os.environ["USERPROFILE"]
         USER = os.environ["USERNAME"]
@@ -404,6 +404,9 @@ class CMD_config:
         
     def config_linux_host(self):
         subprocess.run(["bash", "-lic", rf"""
+            if [[ -z $(which sudo) ]]; then 
+                apt install -y sudo 
+            fi 
             if ! dpkg -s openssh-server >/dev/null 2>&1; then
                 sudo apt-get update -y
                 sudo apt-get install -y openssh-server
