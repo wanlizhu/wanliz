@@ -468,6 +468,9 @@ class CMD_config:
             if [[ ! -f ~/.screenrc ]]; then 
                 printf "%s\n" \
                     "startup_message off" \
+                    "termcapinfo xterm*|xterm-256color* ti@:te@" \
+                    "defscrollback 100000" \
+                    "defmousetrack off" \
                     "hardstatus alwaysfirstline" \
                     "hardstatus string '%{{= bW}} [SCREEN %H] %=%-Lw %n:%t %+Lw %=%Y-%m-%d %c '" \
                 >> ~/.screenrc
@@ -516,16 +519,19 @@ class CMD_config:
         # Add known host IPs (hostname -> IP)
         update_hosts = horizontal_select("Do you want to update /etc/hosts", ["yes", "no"], 0, return_bool=True)
         if update_hosts:
-            hosts_out = []
-            for line in Path("/etc/hosts").read_text().splitlines():
-                if line.strip().startswith("#"): 
-                    continue
-                if any(name in self.hosts for name in line.split()[1:]):
-                    continue 
-                hosts_out.append(line)
-            hosts_out += [f"{ip}\t{name}" for name, ip in self.hosts.items()]
-            Path("/tmp/hosts").write_text("\n".join(hosts_out) + "\n")
-            subprocess.run("sudo install -m 644 /tmp/hosts /etc/hosts", check=True, shell=True)
+            try:
+                hosts_out = []
+                for line in Path("/etc/hosts").read_text().splitlines():
+                    if line.strip().startswith("#"): 
+                        continue
+                    if any(name in self.hosts for name in line.split()[1:]):
+                        continue 
+                    hosts_out.append(line)
+                hosts_out += [f"{ip}\t{name}" for name, ip in self.hosts.items()]
+                Path("/tmp/hosts").write_text("\n".join(hosts_out) + "\n")
+                subprocess.run("sudo install -m 644 /tmp/hosts /etc/hosts", check=True, shell=True)
+            except Exception:
+                print("Failed to update /etc/hosts")
 
 
 class CMD_info:
