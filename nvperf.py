@@ -705,7 +705,7 @@ class CMD_sshkey:
         user = horizontal_select("User", ["WanliZhu", "wanliz", "nvidia", "<input>"], 0)
         self.copy_to(host, user)
 
-    def copy_to(self, host, user):
+    def copy_to(self, host, user, passwd=None):
         subprocess.run(["bash", "-lic", rf"""
             if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
                 if [[ ! -f ~/.passwd ]]; then 
@@ -721,7 +721,7 @@ class CMD_sshkey:
                 chmod 644 ~/.ssh/id_ed25519.pub
                 echo "Updated ~/.ssh/id_ed25519"
             fi 
-            ssh-copy-id -i ~/.ssh/id_ed25519.pub -o StrictHostKeyChecking=accept-new {user}@{host}
+            {f"sshpass -p '{passwd}'" if passwd else ""} ssh-copy-id -o StrictHostKeyChecking=accept-new {user}@{host}
             ssh {user}@{host} "echo '~/.ssh/id_ed25519 works'"
         """], check=False)
 
@@ -761,7 +761,7 @@ class CMD_upload:
         passwd = getpass.getpass("SSH Password: ")
         if self.test(user, host, passwd):
             Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
-            CMD_sshkey().copy_to(host=host, user=user)
+            CMD_sshkey().copy_to(host=host, user=user, passwd=passwd)
         else:
             Path(f"{HOME}/.upload_host").unlink(missing_ok=True)
             print("Authentication failed")
