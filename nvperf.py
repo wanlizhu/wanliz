@@ -414,8 +414,10 @@ class CMD_config:
             if [[ ! -f ~/.screenrc ]]; then 
                 printf "%s\n" \
                     "startup_message off" \
+                    "term screen-256color" \
+                    "defbce on" \
                     "hardstatus alwaysfirstline" \
-                    "hardstatus string '%{{= kB}}[SCREEN] %H %Y-%m-%d %c %=%-w%{{= BW}}%n:%t%{{-}}%+w'" \
+                    "hardstatus string '%{{= bW}} [SCREEN %H] %=%-Lw %n:%t %+Lw %=%Y-%m-%d %c '" \
                 >> ~/.screenrc
                 echo "Added ~/.screenrc"
             fi 
