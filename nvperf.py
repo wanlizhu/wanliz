@@ -723,7 +723,7 @@ class CMD_sshkey:
             fi 
             ssh-copy-id -i ~/.ssh/id_ed25519.pub -o StrictHostKeyChecking=accept-new {user}@{host}
             ssh {user}@{host} "echo '~/.ssh/id_ed25519 works'"
-        """])
+        """], check=False)
 
 
 class CMD_upload:
@@ -761,7 +761,7 @@ class CMD_upload:
         passwd = getpass.getpass("SSH Password: ")
         if self.test(user, host, passwd):
             Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
-
+            CMD_sshkey().copy_to(host=host, user=user)
         else:
             Path(f"{HOME}/.upload_host").unlink(missing_ok=True)
             print("Authentication failed")
