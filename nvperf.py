@@ -439,6 +439,7 @@ class CMD_config:
                 [pdbedit]=samba-common-bin
                 [smbpasswd]=samba-common-bin
             )
+            echo "Updating APT package lists ..."
             sudo apt update &>/dev/null || true 
             for cmd in "${{!package_list[@]}}"; do
                 if ! command -v "$cmd" &>/dev/null; then
