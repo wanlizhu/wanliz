@@ -404,10 +404,9 @@ class CMD_config:
         subprocess.run([
             "bash", "-lic", rf"""
             if [[ -z $(which sudo) ]]; then 
-                apt update -y
+                apt update -y 
                 apt install -y sudo 
             fi 
-                        
             if [[ ! -z $USER ]]; then 
                 if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
                     echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
@@ -440,7 +439,7 @@ class CMD_config:
                 [pdbedit]=samba-common-bin
                 [smbpasswd]=samba-common-bin
             )
-            sudo apt update
+            sudo apt update &>/dev/null || true 
             for cmd in "${{!package_list[@]}}"; do
                 if ! command -v "$cmd" &>/dev/null; then
                     pkg="${{package_list[$cmd]}}"
@@ -456,7 +455,6 @@ class CMD_config:
             if ! dpkg -s openssh-server >/dev/null 2>&1; then
                 read -p "Install SSH server? (Y/n): " install_ssh
                 if [[ -z $install_ssh || "$install_ssh" == "y" ]]; then 
-                    sudo apt update -y
                     sudo apt install -y openssh-server
                     if [[ "$(cat /proc/1/comm 2>/dev/null)" == "systemd" ]] && command -v systemctl >/dev/null 2>&1; then
                         sudo systemctl enable ssh || true
