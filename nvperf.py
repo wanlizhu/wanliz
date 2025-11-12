@@ -575,28 +575,7 @@ class CMD_upload:
         dst = horizontal_select(f"Select dst folder on {host}", ["D:", "E:", "F:", "<input>"], 0, separator="|")
         src = horizontal_select(f"Select src folder on local", [f"{HOME}:files ({1.0 * home_files_size / 1024 / 1024:.2f}MB)", "PerfInspector/output", "<input>"], 0, separator="|")
         if src.startswith(f"{HOME}:files"):
-            hostname = socket.gethostname() 
-            output = subprocess.run(["bash", "-lc", ('''
-                sshpass -p '%(passwd)s' ssh -o StrictHostKeyChecking=accept-new %(user)s@%(host)s 'powershell -NoProfile -ExecutionPolicy Bypass -Command \"
-                        \$root = '%(dst)s\\%(hostname)s';
-                        if (Test-Path -LiteralPath \$root) {
-                            Get-ChildItem -LiteralPath \$root -File -Recurse | ForEach-Object {
-                                \$hash = (Get-FileHash -Algorithm MD5 -LiteralPath \$_.FullName).Hash.ToLower();
-                                'md5:{0} file:{1}' -f \$hash, \$_.Name
-                            }
-                        }
-                    \"
-                '
-            ''' % {"passwd": passwd, "user": user, "host": host, "dst": dst, "hostname": socket.gethostname()})], check=False, text=True, capture_output=True)
-            if output.returncode != 0:
-                print(output.stderr)
-                sys.exit(1)
-
-            home_files = [file for file in home_files if f"md5:{md5(Path(file).read_bytes()).hexdigest().lower()} file:{Path(file).name}" not in output.stdout]
-            if len(home_files) == 0:
-                print("Nothing to copy, local and remote files are identical")
-                sys.exit(0)
-
+            hostname = socket.gethostname()
             home_files_quoted = " ".join(map(shlex.quote, home_files))
             subprocess.run(["bash", "-lic", rf"""
                 sshpass -p '{passwd}' ssh -o StrictHostKeyChecking=accept-new {user}@{host} 'cmd /c "if not exist {dst}\\{hostname} mkdir {dst}\\{hostname}"'
