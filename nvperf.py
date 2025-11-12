@@ -264,6 +264,7 @@ class CMD_config:
         self.hosts = {
             "office": "172.16.179.143",
             "proxy": "10.176.11.106",
+            "gb300-proxy": "cls-pdx-ipp6-bcm-3",
             "horizon5": "172.16.178.123",
             "horizon6": "172.16.177.182",
             "horizon7": "172.16.177.216",
