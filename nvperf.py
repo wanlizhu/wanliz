@@ -707,7 +707,7 @@ class CMD_upload:
         if src == f"{HOME}:NoRecur":
             excludes = ["*/", ".*", "*.deb", "*.run", "*.tar", "*.tar.gz", "*.tgz", "*.zip", "*.so", "perfdebug", "sandbag-tool", "LockToRatedTdp"]
             subprocess.run(["bash", "-lic", rf"""
-                sshpass -p '{passwd}' rsync -lth --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' {" ".join(f"--exclude='{x}'" for x in excludes)} {HOME}/ {user}@{host}:/mnt/d/{hostname}/
+                sshpass -p '{passwd}' rsync -lth --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' {" ".join(f"--exclude='{x}'" for x in excludes)} {HOME}/ {user}@{host}:/mnt/d/{USER}@{hostname}/
             """], check=True)
         else:
             subprocess.run(["bash", "-lic", rf"""
