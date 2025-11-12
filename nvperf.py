@@ -299,6 +299,7 @@ class CMD_config:
                 }}
             }} else {{ 
                 "[wsl2]`r`nnetworkingMode=mirrored" | Set-Content $wsl_cfg 
+                Write-Host ""Restart WSL for the changes of ~/.wslconfig to take effect" -ForegroundColor Yellow
             }}
                         
             function Enable-SSH-Server-on-Windows {{ 
@@ -322,8 +323,8 @@ class CMD_config:
                 }}
                 Start-Sleep -Seconds 1
                 $tcp   = Test-NetConnection -ComputerName localhost -Port 22 -WarningAction SilentlyContinue
-                $sshd  = Get-Service sshd
                 $state = if ($tcp.TcpTestSucceeded) {{ 'LISTENING' }} else {{ 'NOT LISTENING' }}
+                $sshd  = Get-Service sshd
                 "SSH server status: {{0}} | Startup: {{1}} | Port 22: {{2}}" -f $sshd.Status, $sshd.StartType, $state
             }}
                         
