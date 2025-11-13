@@ -1133,7 +1133,7 @@ class CMD_nvmake:
         ] if x is not None and x != ""])
         print(nvmake_cmd)
         subprocess.run(["bash", "-lic", rf"""
-            cd {self.workdirs[target]} || exit(1)
+            cd {self.workdirs[target]} || exit 1
             {nvmake_cmd} -j$(nproc) || {nvmake_cmd} -j1 >/dev/null 
         """], check=True)
         
