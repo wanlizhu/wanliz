@@ -1126,9 +1126,7 @@ class CMD_nvmake:
             "NV_MANGLE_SYMBOLS=",
             f"NV_TRACE_CODE={1 if config == 'release' else 0}",
             self.targets[target]['args'],
-            "linux", 
-            f"{arch}", 
-            f"{config}"
+            "linux", f"{arch}", f"{config}"
         ] if x is not None and x != ""])
         subprocess.run(["bash", "-lic", rf"""
             cd {self.targets[target]['workdir']} && {nvmake_cmd} -j$(nproc) || {nvmake_cmd} -j1 >/dev/null 
