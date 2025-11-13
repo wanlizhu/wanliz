@@ -1108,7 +1108,7 @@ class CMD_nvmake:
         arch   = horizontal_select("Target architecture", ["amd64", "aarch64"], 0 if UNAME_M == "x86_64" else 1)
         self.run_with_config(target, config, arch)
 
-    def unix_build_nvmake(self, target, config, arch):
+    def run_with_config(self, target, config, arch):
         nvmake_cmd = " ".join([x for x in [
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
             "--unshare-namespaces", 
