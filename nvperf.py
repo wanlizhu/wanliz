@@ -514,7 +514,7 @@ class CMD_config:
             path = Path(pathstr)
             if path.exists():
                 return not any(path.iterdir())
-            return False 
+            return True 
 
         # Mount folders 
         mount_dirs = []
