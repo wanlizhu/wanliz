@@ -1077,22 +1077,24 @@ class CMD_nvmake:
         arch   = horizontal_select("Target architecture", ["amd64", "aarch64"], 0 if UNAME_M == "x86_64" else 1)
         user_args = horizontal_select("Additional nvmake args (optional)")
 
-        if branch == "bugfix_main": self.branch = f"{os.environ['P4ROOT']}/dev/gpu_drv/bugfix_main"
-        if branch == "r580": self.branch = f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"
+        self.setup_targets(branch)
+        self.run_with_config(target, config, arch, user_args)
+
+    def setup_targets(self, branch):
+        if branch == "bugfix_main": branch = f"{os.environ['P4ROOT']}/dev/gpu_drv/bugfix_main"
+        if branch == "r580": branch = f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"
         self.workdirs = {
-            "drivers": f"{self.branch}",
-            "opengl":  f"{self.branch}/drivers/OpenGL",
+            "drivers": f"{branch}",
+            "opengl":  f"{branch}/drivers/OpenGL",
             "microbench": f"{os.environ['P4ROOT']}/apps/gpu/drivers/vulkan/microbench",
             "inspect-gpu-page-tables": f"{os.environ['P4ROOT']}/pvt/aritger/apps/inspect-gpu-page-tables"
         }
         self.unixbuild_args = {
-            "inspect-gpu-page-tables": f"--source {self.branch} --envvar NV_SOURCE={self.branch} --extra {os.environ['P4ROOT']}/pvt/aritger"
+            "inspect-gpu-page-tables": f"--source {branch} --envvar NV_SOURCE={branch} --extra {os.environ['P4ROOT']}/pvt/aritger"
         }
         self.nvmake_args = {
             "drivers": "drivers dist"
         }
-
-        self.run_with_config(target, config, arch, user_args)
 
     def run_with_config(self, target, config, arch, user_args=None):
         nvmake_cmd = " ".join([x for x in [
