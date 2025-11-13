@@ -1097,12 +1097,12 @@ class CMD_nvmake:
         if "P4ROOT" not in os.environ: 
             raise RuntimeError("P4ROOT is not defined")
         
-        self.branch = "/wanliz_sw_linux/dev/gpu_drv/bugfix_main" #f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"
+        self.branch = f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"
         self.workdirs = {
             "drivers": f"{self.branch}",
             "opengl":  f"{self.branch}/drivers/OpenGL",
             "microbench": f"{os.environ['P4ROOT']}/apps/gpu/drivers/vulkan/microbench",
-            "inspect-gpu-page-tables": self.branch
+            "inspect-gpu-page-tables": f"{os.environ['P4ROOT']}/pvt/aritger/apps/inspect-gpu-page-tables"
         }
         self.unixbuild_args = {
             "inspect-gpu-page-tables": f"--source {self.branch} --envvar NV_SOURCE={self.branch} --extra {os.environ['P4ROOT']}/pvt/aritger"
