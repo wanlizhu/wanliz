@@ -588,13 +588,16 @@ class CMD_ip:
     """My public IP to remote"""
 
     def run(self):
-        print(self.public_ip_to("office"))
+        print(self.public_ip_to("1.1.1.1", missing_OK=False))
 
-    def public_ip_to(self, remote, missing_OK=True):
+    def public_ip_to(self, remote, missing_OK):
         output = subprocess.run(["bash", "-lic", rf"ip -4 route get \"$(getent ahostsv4 {remote} | awk 'NR==1{{print $1}}')\" | sed -n 's/.* src \([0-9.]\+\).*/\1/p'"], check=True, text=True, capture_output=True)
         if output.returncode != 0:
-            if missing_OK: return None
-            else: raise RuntimeError(f"{remote} is not reachable") 
+            if missing_OK: 
+                return None
+            else: 
+                print(output.stderr)
+                raise RuntimeError(f"{remote} is not reachable") 
         return output.stdout 
 
     
