@@ -510,24 +510,13 @@ class CMD_config:
                 fi 
             """], check=False)
 
-        def missing_or_empty_dir(pathstr):
-            path = Path(pathstr)
-            if path.exists():
-                return not any(path.iterdir())
-            return True 
+        
 
         # Mount folders 
-        mount_dirs = []
-        if missing_or_empty_dir("/mnt/linuxqa"): mount_dirs.append(["linuxqa.nvidia.com:/storage/people", "/mnt/linuxqa"])
-        if missing_or_empty_dir("/mnt/data"): mount_dirs.append(["linuxqa.nvidia.com:/storage/data", "/mnt/data"])
-        if missing_or_empty_dir("/mnt/builds"): mount_dirs.append(["linuxqa.nvidia.com:/storage3/builds", "/mnt/builds"])
-        if missing_or_empty_dir("/mnt/dvsbuilds"): mount_dirs.append(["linuxqa.nvidia.com:/storage5/dvsbuilds", "/mnt/dvsbuilds"])
-        if missing_or_empty_dir("/mnt/wanliz_sw_linux"): mount_dirs.append(["office:/wanliz_sw_linux", "/mnt/wanliz_sw_linux"])
+        
         if mount_dirs:
             choice = horizontal_select("Do you want to mount linuxqa folders", ["yes", "no"], 0, return_bool=True)
-            if choice: 
-                mount_cmds = [f"sudo mkdir -p {item[1]}; sudo timeout 3 mount -t nfs {item[0]} {item[1]} && echo 'Mounted {item[1]}' || echo 'Failed to mount {item[1]}'" for item in mount_dirs]
-                subprocess.run(["bash", "-lic", "\n".join(mount_cmds) + "\n"], check=False)
+            if choice: CMD_mount().mount_all(mount_dirs)
         
         # Add known host IPs (hostname -> IP)
         try:
@@ -880,67 +869,57 @@ class CMD_share:
 
 class CMD_mount:
     """Mount Windows or Linux shared folder"""
+
+    def __init__(self):
+        def missing_or_empty_dir(pathstr):
+            path = Path(pathstr)
+            if path.exists():
+                return not any(path.iterdir())
+            return True 
+        self.mount_info = {}
+        if platform.system() == "Linux":
+            if missing_or_empty_dir("/mnt/linuxqa"): self.mount_info["/mnt/linuxqa"] = "linuxqa.nvidia.com:/storage/people"
+            if missing_or_empty_dir("/mnt/data"): self.mount_info["/mnt/data"] = "linuxqa.nvidia.com:/storage/data"
+            if missing_or_empty_dir("/mnt/builds"): self.mount_info["/mnt/builds"] = "linuxqa.nvidia.com:/storage3/builds"
+            if missing_or_empty_dir("/mnt/dvsbuilds"): self.mount_info["/mnt/dvsbuilds"] = "linuxqa.nvidia.com:/storage5/dvsbuilds"
+            if missing_or_empty_dir("/mnt/wanliz_sw_linux"): self.mount_info["/mnt/wanliz_sw_linux"] = "office:/wanliz_sw_linux"
     
     def run(self):
-        share_folder  = horizontal_select("Select shared folder", ["linuxqa", "builds", "data", "office:wanliz_sw_linux", "<input>"], 0)
-        self.mount_one(share_folder)
+        local = horizontal_select("Select local folder", list(self.mount_info.keys()) + ["<input>"], 0)
+        if local in self.mount_info:
+            remote = self.mount_info[local]
+        else:
+            remote = horizontal_select("Input remote folder")
+        self.mount(local, remote)
 
-    def mount_all(self, folders):
-        for folder in folders:
-            self.mount_one(folder)
-        
-    def mount_one(self, shared_folder):
+    def mount_all(self, ask_first):
+        if ask_first and len(self.mount_info) > 0:
+            confirm = horizontal_select("Mount linuxqa folders", ["yes", "no"], 0, return_bool=True)
+            if not confirm: 
+                return 
+        for local, remote in self.mount_info:
+            self.mount(local, remote)
+
+    def mount(self, local, remote):
         if platform.system() == "Linux":
-            if shared_folder == "linuxqa": 
-                fstype = "nfs"
-                login_user = "wanliz"
-                shared_folder = "linuxqa.nvidia.com:/storage/people"
-                local_folder = "/mnt/linuxqa"
-            elif shared_folder == "builds":
-                fstype = "nfs"
-                login_user = "wanliz"
-                shared_folder = "linuxqa.nvidia.com:/qa/builds"
-                local_folder = "/mnt/builds"
-            elif shared_folder == "data":
-                fstype = "nfs"
-                login_user = "wanliz"
-                shared_folder = "linuxqa.nvidia.com:/qa/data"
-                local_folder = "/mnt/data"
-            elif shared_folder == "office:wanliz_sw_linux":
-                CMD_p4.setup_env()
-                fstype = "nfs"
-                login_user = "wanliz"
-                shared_folder = f"office:{os.environ['P4ROOT']}"
-                local_folder = f"/mnt{os.environ['P4ROOT']}"
-            else:
-                if shared_folder.startswith("//"): fstype = "cifs"  
-                elif ":" in shared_folder: fstype = "nfs"
-                login_user = horizontal_select("Select login user", ["wanliz", "WanliZhu", "<input>"], 0)
-                local_folder = "/mnt/" + Path(shared_folder).name
-            subprocess.run(["bash", "-lic", f"""
-                if ! command -v mount.cifs >/dev/null 2>&1; then
-                    sudo apt install -y cifs-utils 2>/dev/null 
-                fi
-                if ! command -v mount.nfs >/dev/null 2>&1; then
-                    sudo apt install -y nfs-common 2>/dev/null 
-                fi 
-                if ! mountpoint -q {local_folder}; then  
-                    sudo mkdir -p {local_folder} &&
-                    sudo mount -t {fstype} {f"-o username={login_user}" if login_user else ""} {shared_folder} {local_folder}
-                fi
+            subprocess.run(["bash", "-lic", rf"""
+                sudo mkdir -p {local}  
+                sudo timeout 3 mount -t nfs {remote} {local} && 
+                    echo "Mounted {local}" || 
+                    echo "Failed to mount {local}"
             """], check=True)
         elif platform.system() == "Windows":
             if ctypes.windll.shell32.IsUserAnAdmin() == 0:
-                cmdline = subprocess.list2cmdline([os.path.abspath(sys.argv[0])] + [arg for arg in sys.argv[1:] if arg != "--admin"])
+                cmdline = subprocess.list2cmdline([os.path.abspath(sys.argv[0]), "mount", remote, local])
                 ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmdline, None, 1)
-                sys.exit(0)
-            shared_folder = shared_folder.strip().replace("/", "\\")
-            shared_folder = shared_folder.rstrip("\\")
-            unc_path = shared_folder if shared_folder.startswith("\\\\") else ("\\\\" + shared_folder.lstrip("\\")) 
-            drive = horizontal_select("Mount to drive", ["N", "X", "Y", "Z"], 3)
-            user = horizontal_select("Target user", ["nvidia", "wanliz", "wzhu", "<input>"], 0)
-            subprocess.run(f'cmd /k net use {drive}: "{unc_path}" /persistent:yes {str("/user:" + user + " *") if user else ""}', check=True, shell=True)
-
+            else:
+                remote = remote.strip().replace("/", "\\")
+                remote = remote.rstrip("\\")
+                unc_path = remote if remote.startswith("\\\\") else ("\\\\" + remote.lstrip("\\")) 
+                drive = horizontal_select("Mount to drive", ["X", "Y", "Z"], 0)
+                user = horizontal_select("Target user", ["WanliZhu", "wanliz", "nvidia", "<input>"], 0)
+                subprocess.run(f'cmd /k net use {drive}: "{unc_path}" /persistent:yes {str("/user:" + user + " *") if user else ""}', check=True, shell=True)
+            
 
 class CMD_spark:
     """Configure profiling env on DGX spark"""
@@ -1143,6 +1122,22 @@ class CMD_nvmake:
             {nvmake_cmd} -j$(nproc) || {nvmake_cmd} -j1 >/dev/null 
             pwd
         """], check=True)
+
+
+class CMD_inspect:
+    """inspect-gpu-page-tables"""
+
+    def run(self):
+        if UNAME_M == "aarch64":
+            pass
+        
+        if not os.path.exists(f"{HOME}/inspect-gpu-page-tables"):
+            CMD_mount()
+        subprocess.run(["bash", "-lic", rf"""
+            if [[ ! -f ~/inspect-gpu-page-tables ]]; then 
+
+            fi 
+        """], check=True)
         
 
 class CMD_rmmod:
@@ -1178,7 +1173,6 @@ class CMD_install:
             branch, config, arch, version = self.select_nvidia_driver(p4root)
             driver = os.path.join(p4root, branch, "_out", f"Linux_{arch}_{config}", f"NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run")
         elif location == "office build":
-            CMD_mount().mount_one("office:wanliz_sw_linux")
             branch, config, arch, version = self.select_nvidia_driver(p4root)  
             driver = f"/mnt{p4root}/_out/Linux_{arch}_{config}/NVIDIA-Linux-{'x86_64' if arch == 'amd64' else arch}-{version}-internal.run"
         elif location == "redo":
@@ -1233,7 +1227,7 @@ class CMD_download:
 
     def __init__(self):
         if not os.path.exists("/mnt/linuxqa/wanliz"):
-            CMD_mount().mount_one("linuxqa")
+            raise RuntimeError("Mount /mnt/linuxqa first")
 
     def run(self):
         src = horizontal_select("Download", [
