@@ -588,7 +588,7 @@ class CMD_ip:
     """My public IP to remote"""
 
     def run(self):
-        print(self.public_ip_to("1.1.1.1"))
+        print(self.public_ip_to("office"))
 
     def public_ip_to(self, remote, missing_OK=True):
         output = subprocess.run(["bash", "-lic", rf"ip -4 route get \"$(getent ahostsv4 {remote} | awk 'NR==1{{print $1}}')\" | sed -n 's/.* src \([0-9.]\+\).*/\1/p'"], check=True, text=True, capture_output=True)
