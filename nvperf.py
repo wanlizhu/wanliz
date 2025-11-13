@@ -1102,10 +1102,10 @@ class CMD_nvmake:
             "drivers": f"{self.branch}",
             "opengl":  f"{self.branch}/drivers/OpenGL",
             "microbench": f"{os.environ['P4ROOT']}/apps/gpu/drivers/vulkan/microbench",
-            "inspect-gpu-page-tables": f"{os.environ['P4ROOT']}/pvt/aritger/apps/inspect-gpu-page-tables"
+            "inspect-gpu-page-tables": self.branch
         }
         self.unixbuild_args = {
-            "inspect-gpu-page-tables": f"--source {self.branch} --envvar NV_SOURCE={self.branch} --extra={os.environ['P4ROOT']}/pvt/aritger/"
+            "inspect-gpu-page-tables": f"--source {self.branch} --envvar NV_SOURCE={self.branch} --extra={os.environ['P4ROOT']}/pvt/aritger"
         }
         self.nvmake_args = {
             "drivers": "drivers dist"
