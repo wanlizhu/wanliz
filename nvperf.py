@@ -656,7 +656,7 @@ class CMD_p4:
         elif subcmd == "stash": self.stash()
 
     def status(self):
-        reconcile = horizontal_select("Reconcile to check added/deleted files", ["yes", "no"], 1, return_bool=True)
+        reconcile = horizontal_select("Do you want to run p4 reconcile to collect changes", ["yes", "no"], 1, return_bool=True)
         subprocess.run(["bash", "-lic", rf"""
             echo "=== Files Opened for Edit ==="
             ofiles=$(p4 opened -C $P4CLIENT //$P4CLIENT/...)
@@ -680,7 +680,7 @@ class CMD_p4:
         """], cwd=self.p4root, check=True)
 
     def pull(self):
-        force = horizontal_select("Force pull", ["yes", "no"], 1, return_bool=True)
+        force = horizontal_select("Do you want to run force pull", ["yes", "no"], 1, return_bool=True)
         subprocess.run(["bash", "-lic", rf"""
             time p4 sync {"-f" if force else ""}
             resolve_files=$(p4 resolve -n $P4ROOT/... 2>/dev/null)
@@ -1002,8 +1002,8 @@ class CMD_startx:
     def run(self):
         spark    = horizontal_select("Is this a DGX spark system", ["yes", "no"], 1, return_bool=True)
         headless = horizontal_select("Is this a headless system", ["yes", "no"], 1, return_bool=True)
-        startWithDM   = horizontal_select("Start with a display manager", ["yes", "no"], 1, return_bool=True)
-        startWithVNC  = horizontal_select("Start with a VNC server", ["yes", "no"], 1, return_bool=True)
+        startWithDM   = horizontal_select("Do you want to run a display manager", ["yes", "no"], 1, return_bool=True)
+        startWithVNC  = horizontal_select("Do you want to run a VNC server", ["yes", "no"], 1, return_bool=True)
 
         # Start a bare X server in GNU screen
         subprocess.run(["bash", "-lic", rf"""
@@ -1099,9 +1099,9 @@ class CMD_nvmake:
         config = horizontal_select("[2/7] Target config", ["develop", "debug", "release", "<input>"], 0)
         arch   = horizontal_select("[3/7] Target architecture", ["amd64", "aarch64", "<input>"], 0)
         module = horizontal_select("[4/7] Target module", ["microbench", "<input>"] if branch == "apps" else ["drivers", "opengl", "<input>"], 0)
-        regen  = horizontal_select("[5/7] Regen opengl code", ["yes", "no"], 1, return_bool=True) if module == "opengl" else "no"
+        regen  = horizontal_select("[5/7] Do you want to run regen for OpenGL", ["yes", "no"], 1, return_bool=True) if module == "opengl" else "no"
         jobs   = horizontal_select("[6/7] Number of compiling threads", [str(os.cpu_count()), "1"], 0)
-        clean  = horizontal_select("[7/7] Make a clean build", ["yes", "no"], 1, return_bool=True)
+        clean  = horizontal_select("[7/7] Do you want to run a clean build", ["yes", "no"], 1, return_bool=True)
 
         # Clean previous builds
         if clean and module == "drivers":
@@ -1216,7 +1216,7 @@ class CMD_install:
             raise RuntimeError(f"File not found: {driver}")
         print(driver)
         
-        interactive = horizontal_select("Install in interactive mode", ["yes", "no"], 0, return_bool=True)
+        interactive = horizontal_select("Do you want to install in interactive mode", ["yes", "no"], 0, return_bool=True)
         CMD_rmmod().run()
         subprocess.run(["bash", "-lic", rf"""
             chmod +x {driver}
@@ -1412,12 +1412,12 @@ class CMD_pi:
             test = Test_info().input()
             startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
             frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-            debug = horizontal_select("[3/3] Enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
+            debug = horizontal_select("[3/3] Do you want to enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
             self.launch_and_capture(exe=test.exe, arg=test.arg, workdir=test.workdir, api=test.api, startframe=startframe, frames=frames, debug=debug)
         elif subcmd == "server mode":
             api = horizontal_select("[1/3] Capture graphics API", ["ogl", "vk"], 0)
             frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-            debug = horizontal_select("[3/3] Enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
+            debug = horizontal_select("[3/3] Do you want to enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
             self.run_in_server_mode(api=api, frames=frames, debug=debug)
         elif subcmd == "upload report":
             reports = sorted([p.name for p in Path(self.pi_root + "/PerfInspector/output").iterdir() 
@@ -1490,7 +1490,7 @@ class CMD_ngfx:
         test = Test_info().input()
         startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
         frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-        time_all_actions = horizontal_select("[3/3] Time all API calls separately", ["yes", "no"], 1, return_bool=True)
+        time_all_actions = horizontal_select("[3/3] Do you want to time all API calls separately", ["yes", "no"], 1, return_bool=True)
         self.capture(exe=test.exe, args=test.arg, workdir=test.workdir, env=None, startframe=startframe, frames=frames, time_all_actions=time_all_actions)
 
     def fix_me(self):
@@ -1735,12 +1735,12 @@ class CMD_viewperf:
         elif env == "picx":
             startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
             frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-            debug = horizontal_select("[3/3] Enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
+            debug = horizontal_select("[3/3] Do you want to enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
             CMD_pi().launch_and_capture(exe=self.exe, arg=self.arg, workdir=self.dir, api="ogl", startframe=startframe, frames=frames, debug=debug)
         elif env == "ngfx":
             startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
             frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-            time_all_actions = horizontal_select("[3/3] Time all API calls separately", ["yes", "no"], 1, return_bool=True)
+            time_all_actions = horizontal_select("[3/3] Do you want to time all API calls separately", ["yes", "no"], 1, return_bool=True)
             CMD_ngfx().capture(exe=self.exe, arg=self.arg, workdir=self.dir, startframe=startframe, frames=frames, time_all_actions=time_all_actions)
         elif env == "nsys":
             CMD_nsys.capture(exe=self.exe, arg=self.arg, workdir=self.dir)
