@@ -1103,7 +1103,7 @@ class CMD_nvmake:
             "inspect-gpu-page-tables": f"{os.environ['P4ROOT']}/pvt/aritger/apps/inspect-gpu-page-tables"
         }
 
-        target = horizontal_select("Build target", self.workdirs.keys(), 0)
+        target = horizontal_select("Build target", self.workdirs.keys(), 0, separator=" | ")
         config = horizontal_select("Target config", ["develop", "debug", "release"], 0)
         arch   = horizontal_select("Target architecture", ["amd64", "aarch64"], 0 if UNAME_M == "x86_64" else 1)
         self.run_with_config(target, config, arch)
