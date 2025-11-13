@@ -1099,14 +1099,19 @@ class CMD_nvmake:
         
         self.branch = f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"
         self.workdirs = {
-            ".": ".",
             "drivers": f"{self.branch}",
             "opengl":  f"{self.branch}/drivers/OpenGL",
             "microbench": f"{os.environ['P4ROOT']}/apps/gpu/drivers/vulkan/microbench",
             "inspect-gpu-page-tables": f"{os.environ['P4ROOT']}/pvt/aritger/apps/inspect-gpu-page-tables"
         }
+        self.unixbuild_args = {
+            "inspect-gpu-page-tables": f"--source {self.branch} --envvar NV_SOURCE={self.branch} --extra={os.environ['P4ROOT']}/pvt/aritger"
+        }
+        self.nvmake_args = {
+            "drivers": "drivers dist"
+        }
 
-        target = horizontal_select("Build target", list(self.workdirs.keys()), 0, separator=" | ")
+        target = horizontal_select("Build target", [".", "drivers", "opengl", "microbench", "inspect-gpu-page-tables"], 0)
         config = horizontal_select("Target config", ["develop", "debug", "release"], 0)
         arch   = horizontal_select("Target architecture", ["amd64", "aarch64"], 0 if UNAME_M == "x86_64" else 1)
         self.run_with_config(target, config, arch)
@@ -1117,6 +1122,7 @@ class CMD_nvmake:
             "--unshare-namespaces", 
             "--tools",  f"{os.environ['P4ROOT']}/tools",
             "--devrel", f"{os.environ['P4ROOT']}/devrel/SDK/inc/GL",
+            self.unixbuild_args[target] if target in self.unixbuild_args else "",
             "nvmake",
             "NV_COLOR_OUTPUT=1",
             "NV_GUARDWORD=",
@@ -1128,12 +1134,12 @@ class CMD_nvmake:
             "NV_UNIX_CHECK_DEBUG_INFO=0",
             "NV_MANGLE_SYMBOLS=",
             f"NV_TRACE_CODE={1 if config == 'release' else 0}",
-            "drivers dist" if target == "drivers" else "",
+            self.nvmake_args[target] if target in self.nvmake_args else "",
             "linux", f"{arch}", f"{config}"
         ] if x is not None and x != ""])
         print(nvmake_cmd)
         subprocess.run(["bash", "-lic", rf"""
-            cd {self.workdirs[target]} || exit 1
+            cd {self.workdirs[target] if target in self.workdirs else "."} || exit 1
             {nvmake_cmd} -j$(nproc) || {nvmake_cmd} -j1 >/dev/null 
         """], check=True)
         
