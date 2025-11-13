@@ -1129,7 +1129,7 @@ class CMD_nvmake:
             "linux", f"{arch}", f"{config}"
         ] if x is not None and x != ""])
         subprocess.run(["bash", "-lic", rf"""
-            cd {self.targets[target]['workdir']} && {nvmake_cmd} -j$(nproc) || {nvmake_cmd} -j1 >/dev/null 
+            cd {self.workdirs[target]} && {nvmake_cmd} -j$(nproc) || {nvmake_cmd} -j1 >/dev/null 
         """], check=True)
         
 
