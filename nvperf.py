@@ -486,6 +486,7 @@ class CMD_config:
             fi 
         """], check=True)
 
+        # Add SSH/GTL keys 
         missing_keys = False
         if not os.path.exists(f"{HOME}/.ssh/id_ed25519"): missing_keys = True
         if not os.path.exists(f"{HOME}/.gtl_api_key"): missing_keys = True
@@ -515,6 +516,7 @@ class CMD_config:
                 return not any(path.iterdir())
             return False 
 
+        # Mount folders 
         mount_dirs = []
         if missing_or_empty_dir("/mnt/linuxqa"): mount_dirs.append(["linuxqa.nvidia.com:/storage/people", "/mnt/linuxqa"])
         if missing_or_empty_dir("/mnt/data"): mount_dirs.append(["linuxqa.nvidia.com:/storage/data", "/mnt/data"])
@@ -528,18 +530,20 @@ class CMD_config:
                 subprocess.run(["bash", "-lic", "\n".join(mount_cmds) + "\n"], check=False)
         
         # Add known host IPs (hostname -> IP)
-        update_hosts = horizontal_select("Do you want to update /etc/hosts", ["yes", "no"], 0, return_bool=True)
         try:
-            if update_hosts:
-                hosts_out = []
-                for line in Path("/etc/hosts").read_text().splitlines():
-                    if line.strip().startswith("#"):  continue
-                    if any(name in self.hosts for name in line.split()[1:]): continue 
-                    hosts_out.append(line)
-                hosts_out += [f"{ip}\t{name}" for name, ip in self.hosts.items()]
-                subprocess.run(["bash", "-lic", rf"""
-                    echo '{"\n".join(hosts_out) + "\n"}' | sudo tee /etc/hosts >/dev/null 
-                """], check=True)
+            hosts_str = Path("/etc/hosts").read_text(encoding="utf-8")
+            if not all([f"{ip}\t{name}" in hosts_str for name, ip in self.hosts.items()]):
+                update_hosts = horizontal_select("Do you want to update /etc/hosts", ["yes", "no"], 0, return_bool=True)
+                if update_hosts:
+                    hosts_out = []
+                    for line in Path("/etc/hosts").read_text().splitlines():
+                        if line.strip().startswith("#"):  continue
+                        if any(name in self.hosts for name in line.split()[1:]): continue 
+                        hosts_out.append(line)
+                    hosts_out += [f"{ip}\t{name}" for name, ip in self.hosts.items()]
+                    subprocess.run(["bash", "-lic", rf"""
+                        echo '{"\n".join(hosts_out) + "\n"}' | sudo tee /etc/hosts >/dev/null 
+                    """], check=True)
         except Exception:
             print("Failed to update /etc/hosts")
 
