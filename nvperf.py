@@ -526,7 +526,7 @@ class CMD_config:
         if mount_dirs:
             choice = horizontal_select("Do you want to mount linuxqa folders", ["yes", "no"], 0, return_bool=True)
             if choice: 
-                mount_cmds = [f"mkdir -p {item[1]}; sudo timeout 3 mount -t nfs {item[0]} {item[1]} && echo 'Mounted {item[1]}' || echo 'Failed to mount {item[1]}'" for item in mount_dirs]
+                mount_cmds = [f"sudo mkdir -p {item[1]}; sudo timeout 3 mount -t nfs {item[0]} {item[1]} && echo 'Mounted {item[1]}' || echo 'Failed to mount {item[1]}'" for item in mount_dirs]
                 subprocess.run(["bash", "-lic", "\n".join(mount_cmds) + "\n"], check=False)
         
         # Add known host IPs (hostname -> IP)
