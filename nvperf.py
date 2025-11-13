@@ -1120,7 +1120,7 @@ class CMD_nvmake:
             "nvmake",
             "NV_COLOR_OUTPUT=1",
             "NV_GUARDWORD=",
-            f"NV_COMPRESS_THREADS={os.cpu_count() or 1}",
+            f"NV_COMPRESS_THREADS=$(nproc)",
             "NV_FAST_PACKAGE_COMPRESSION=zstd",
             "NV_USE_FRAME_POINTER=1",
             "NV_UNIX_LTO_ENABLED=",
@@ -1131,6 +1131,7 @@ class CMD_nvmake:
             "drivers dist" if target == "drivers" else "",
             "linux", f"{arch}", f"{config}"
         ] if x is not None and x != ""])
+        print(nvmake_cmd)
         subprocess.run(["bash", "-lic", rf"""
             cd {self.workdirs[target]} || exit(1)
             {nvmake_cmd} -j$(nproc) || {nvmake_cmd} -j1 >/dev/null 
