@@ -1094,49 +1094,36 @@ class CMD_nvmake:
         if "P4ROOT" not in os.environ: 
             raise RuntimeError("P4ROOT is not defined")
         
-        # Collect compiling arguments 
-        branch = horizontal_select("[1/7] Target branch", ["r580", "bugfix_main", "apps", "<input>"], 0)
-        config = horizontal_select("[2/7] Target config", ["develop", "debug", "release", "<input>"], 0)
-        arch   = horizontal_select("[3/7] Target architecture", ["amd64", "aarch64", "<input>"], 0)
-        module = horizontal_select("[4/7] Target module", ["microbench", "<input>"] if branch == "apps" else ["drivers", "opengl", "<input>"], 0)
-        regen  = horizontal_select("[5/7] Do you want to run regen for OpenGL", ["yes", "no"], 1, return_bool=True) if module == "opengl" else "no"
-        jobs   = horizontal_select("[6/7] Number of compiling threads", [str(os.cpu_count()), "1"], 0)
-        clean  = horizontal_select("[7/7] Do you want to run a clean build", ["yes", "no"], 1, return_bool=True)
+        self.branch = f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"
+        self.targets = {
+            ".": {
+                "args": "",
+                "workdir": "."
+            },
+            "drivers": {
+                "args": "drivers dist",
+                "workdir": f"{self.branch}"
+            },
+            "opengl": {
+                "args": "",
+                "workdir": f"{self.branch}/drivers/OpenGL"
+            },
+            "microbench": {
+                "args": "",
+                "workdir": f"{os.environ['P4ROOT']}/apps/gpu/drivers/vulkan/microbench"
+            },
+            "inspect-gpu-page-tables": {
+                "args": "",
+                "workdir": f"{os.environ['P4ROOT']}/pvt/aritger/apps/inspect-gpu-page-tables"
+            }
+        }
 
-        # Clean previous builds
-        if clean and module == "drivers":
-            subprocess.run([
-                f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
-                "--unshare-namespaces", 
-                "--tools",  f"{os.environ['P4ROOT']}/tools",
-                "--devrel", f"{os.environ['P4ROOT']}/devrel/SDK/inc/GL",
-                "nvmake", "sweep"
-            ], cwd=f"{os.environ['P4ROOT']}", check=True)
+        target = horizontal_select("Build target", self.targets.keys(), 0)
+        config = horizontal_select("Target config", ["develop", "debug", "release"], 0)
+        arch   = horizontal_select("Target architecture", ["amd64", "aarch64"], 0 if UNAME_M == "x86_64" else 1)
+        self.run_with_config(target, config, arch)
 
-        with tempfile.NamedTemporaryFile(mode="w+t", encoding="utf-8", delete=False) as out:
-            for _branch in [self.branch_path(b) for b in branch.split("|")]:
-                for _config in config.split("|"):
-                    for _arch in arch.split("|"):
-                        for _module in module.split("|"):
-                            try:
-                                _branch, _module = self.override_branch_and_module(_branch, _module)
-                                self.unix_build_nvmake(_branch, _config, _arch, _module, regen, jobs, clean)
-                                out.write(f"{_branch},{_config},{_arch},{_module},[OK]\n")
-                            except Exception as e:
-                                out.write(f"{_branch},{_config},{_arch},{_module},[FAILED]\n")
-            subprocess.run(["bash", "-lic", f"column -s, -o ' | ' -t {out.name}"], check=True)
-
-    def branch_path(self, branch):
-        if branch == "r580": return f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"
-        elif branch == "bugfix_main": return f"{os.environ['P4ROOT']}/dev/gpu_drv/bugfix_main"
-        elif branch == "apps": return os.environ['P4ROOT']
-        else: return branch 
-    
-    def override_branch_and_module(self, branch, module):
-        if module == "microbench": return f"{os.environ['P4ROOT']}/apps/gpu/drivers/vulkan/microbench", ""
-        else: return branch, module 
-        
-    def unix_build_nvmake(self, branch, config, arch, module, regen, jobs, clean):
+    def unix_build_nvmake(self, target, config, arch):
         nvmake_cmd = " ".join([x for x in [
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
             "--unshare-namespaces", 
@@ -1153,23 +1140,14 @@ class CMD_nvmake:
             "NV_UNIX_CHECK_DEBUG_INFO=0",
             "NV_MANGLE_SYMBOLS=",
             f"NV_TRACE_CODE={1 if config == 'release' else 0}",
-            module, 
-            "dist" if module == "drivers" else "", 
-            "@generate" if regen else "",
+            self.targets[target]['args'],
             "linux", 
             f"{arch}", 
             f"{config}"
         ] if x is not None and x != ""])
         subprocess.run(["bash", "-lic", rf"""
-            if (( {1 if clean else 0} )); then 
-                sudo mv _out /tmp || true  
-            fi 
-            {nvmake_cmd} -j{jobs} || {{
-                read -r -t 5 -p "About to retry with 1 thread in 5 seconds ..."
-                {nvmake_cmd} -j1
-            }} 
-            echo "Exit {branch}"
-        """], cwd=branch, check=True)
+            cd {self.targets[target]['workdir']} && {nvmake_cmd} -j$(nproc) || {nvmake_cmd} -j1 >/dev/null 
+        """], check=True)
         
 
 class CMD_rmmod:
@@ -1226,11 +1204,11 @@ class CMD_install:
         """], check=True)
 
     def select_nvidia_driver(self, p4root):
-        branch  = horizontal_select("[1/4] Target branch", ["r580", "bugfix_main"], 0)
+        branch  = horizontal_select("Target branch", ["r580", "bugfix_main"], 0)
         branch  = "rel/gpu_drv/r580/r580_00" if branch == "r580" else branch 
         branch  = "dev/gpu_drv/bugfix_main" if branch == "bugfix_main" else branch 
-        config  = horizontal_select("[2/4] Target config", ["develop", "debug", "release"], 0)
-        arch    = horizontal_select("[3/4] Target architecture", ["amd64", "aarch64"], 1 if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e") else 0)
+        config  = horizontal_select("Target config", ["develop", "debug", "release"], 0)
+        arch    = horizontal_select("Target architecture", ["amd64", "aarch64"], 1 if os.uname().machine.lower() in ("aarch64", "arm64", "arm64e") else 0)
         version = self.select_nvidia_driver_version(p4root, branch, config, arch)
         return branch, config, arch, version 
     
@@ -1250,7 +1228,7 @@ class CMD_install:
             reverse=True,
         ) # versions[0] is the latest
 
-        if len(versions) > 1: return horizontal_select("[4/4] Target driver version", versions, 0)
+        if len(versions) > 1: return horizontal_select("Target driver version", versions, 0)
         elif len(versions) == 1: return versions[0]
         else: raise RuntimeError("No version found")
     
@@ -1410,14 +1388,14 @@ class CMD_pi:
         subcmd = horizontal_select("Select subcmd", ["exe mode", "server mode", "upload report", "fix me"], 0)
         if subcmd == "exe mode":
             test = Test_info().input()
-            startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
-            frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-            debug = horizontal_select("[3/3] Do you want to enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
+            startframe = horizontal_select("Start capturing at frame index", ["100", "<input>"], 0)
+            frames = horizontal_select("Number of frames to capture", ["3", "<input>"], 0)
+            debug = horizontal_select("Do you want to enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
             self.launch_and_capture(exe=test.exe, arg=test.arg, workdir=test.workdir, api=test.api, startframe=startframe, frames=frames, debug=debug)
         elif subcmd == "server mode":
-            api = horizontal_select("[1/3] Capture graphics API", ["ogl", "vk"], 0)
-            frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-            debug = horizontal_select("[3/3] Do you want to enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
+            api = horizontal_select("Capture graphics API", ["ogl", "vk"], 0)
+            frames = horizontal_select("Number of frames to capture", ["3", "<input>"], 0)
+            debug = horizontal_select("Do you want to enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
             self.run_in_server_mode(api=api, frames=frames, debug=debug)
         elif subcmd == "upload report":
             reports = sorted([p.name for p in Path(self.pi_root + "/PerfInspector/output").iterdir() 
@@ -1488,9 +1466,9 @@ class CMD_ngfx:
     def run(self):
         # for N1x: --architecture="T254 GB20B" --metric-set-name="Top-Level Triage"
         test = Test_info().input()
-        startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
-        frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-        time_all_actions = horizontal_select("[3/3] Do you want to time all API calls separately", ["yes", "no"], 1, return_bool=True)
+        startframe = horizontal_select("Start capturing at frame index", ["100", "<input>"], 0)
+        frames = horizontal_select("Number of frames to capture", ["3", "<input>"], 0)
+        time_all_actions = horizontal_select("Do you want to time all API calls separately", ["yes", "no"], 1, return_bool=True)
         self.capture(exe=test.exe, args=test.arg, workdir=test.workdir, env=None, startframe=startframe, frames=frames, time_all_actions=time_all_actions)
 
     def fix_me(self):
@@ -1719,13 +1697,13 @@ class CMD_viewperf:
 
         timestamp = perf_counter()
         subtest_nums = { "catia": 8, "creo": 13, "energy": 6, "maya": 10, "medical": 10, "snx": 10, "sw": 10 }
-        self.viewset = horizontal_select("[1/3] Target viewset", ["all", "catia", "creo", "energy", "maya", "medical", "snx", "sw"], 4)
+        self.viewset = horizontal_select("Target viewset", ["all", "catia", "creo", "energy", "maya", "medical", "snx", "sw"], 4)
         if self.viewset == "all":
             env = "stats"
         else:
-            self.subtest = horizontal_select("[2/3] Target subtest", ["all"] + [str(i) for i in range(1, subtest_nums[self.viewset] + 1)], 0)
+            self.subtest = horizontal_select("Target subtest", ["all"] + [str(i) for i in range(1, subtest_nums[self.viewset] + 1)], 0)
             self.subtest = "" if self.subtest == "all" else self.subtest
-            env = horizontal_select("[3/3] Launch in profiling/debug env", ["stats", "picx", "ngfx", "nsys", "gdb", "limiter"], 0)
+            env = horizontal_select("Launch in profiling/debug env", ["stats", "picx", "ngfx", "nsys", "gdb", "limiter"], 0)
             self.exe = self.viewperf_root + '/viewperf/bin/viewperf'
             self.arg = f"viewsets/{self.viewset}/config/{self.viewset}.xml {self.subtest} -resolution 3840x2160" 
             self.dir = self.viewperf_root
@@ -1733,14 +1711,14 @@ class CMD_viewperf:
         if env == "stats":
             self.run_in_stats()
         elif env == "picx":
-            startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
-            frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-            debug = horizontal_select("[3/3] Do you want to enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
+            startframe = horizontal_select("Start capturing at frame index", ["100", "<input>"], 0)
+            frames = horizontal_select("Number of frames to capture", ["3", "<input>"], 0)
+            debug = horizontal_select("Do you want to enable pic-x debugging", ["yes", "no"], 1, return_bool=True)
             CMD_pi().launch_and_capture(exe=self.exe, arg=self.arg, workdir=self.dir, api="ogl", startframe=startframe, frames=frames, debug=debug)
         elif env == "ngfx":
-            startframe = horizontal_select("[1/3] Start capturing at frame index", ["100", "<input>"], 0)
-            frames = horizontal_select("[2/3] Number of frames to capture", ["3", "<input>"], 0)
-            time_all_actions = horizontal_select("[3/3] Do you want to time all API calls separately", ["yes", "no"], 1, return_bool=True)
+            startframe = horizontal_select("Start capturing at frame index", ["100", "<input>"], 0)
+            frames = horizontal_select("Number of frames to capture", ["3", "<input>"], 0)
+            time_all_actions = horizontal_select("Do you want to time all API calls separately", ["yes", "no"], 1, return_bool=True)
             CMD_ngfx().capture(exe=self.exe, arg=self.arg, workdir=self.dir, startframe=startframe, frames=frames, time_all_actions=time_all_actions)
         elif env == "nsys":
             CMD_nsys.capture(exe=self.exe, arg=self.arg, workdir=self.dir)
@@ -1796,8 +1774,8 @@ class CMD_viewperf:
         Table_view(columns=raw_data, header=viewsets).print(logfile_prefix="viewperf_stats_")
 
     def run_in_limiter(self):
-        choice = horizontal_select("[1/2] Emulate perf limiter of", ["CPU", "GPU"], 1)
-        lowest = horizontal_select("[2/2] Emulation lower bound", ["50%", "33%", "10%"], 0)
+        choice = horizontal_select("Emulate perf limiter of", ["CPU", "GPU"], 1)
+        lowest = horizontal_select("Emulation lower bound", ["50%", "33%", "10%"], 0)
         lowest = 5 if lowest == "50%" else (3 if lowest == "33%" else 1)
         limiter = None 
         try:
