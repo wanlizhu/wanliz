@@ -593,7 +593,7 @@ class CMD_ip:
     def public_ip_to(self, remote, missing_OK):
         output = subprocess.run(["bash", "-lic", rf"ip -4 route get \"$(getent ahostsv4 {remote} | awk 'NR==1{{print $1}}')\" | sed -n 's/.* src \([0-9.]\+\).*/\1/p'"], check=True, text=True, capture_output=True)
         if output.returncode == 0:
-            return output.stdout 
+            return output.stdout + output.stderr 
         if not missing_OK: 
             print(output.stderr)
             raise RuntimeError(f"{remote} is not reachable") 
