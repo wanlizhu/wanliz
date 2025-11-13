@@ -510,13 +510,8 @@ class CMD_config:
                 fi 
             """], check=False)
 
-        
-
         # Mount folders 
-        
-        if mount_dirs:
-            choice = horizontal_select("Do you want to mount linuxqa folders", ["yes", "no"], 0, return_bool=True)
-            if choice: CMD_mount().mount_all(mount_dirs)
+        CMD_mount().mount_all(ask_first=True)
         
         # Add known host IPs (hostname -> IP)
         try:
@@ -1128,15 +1123,21 @@ class CMD_inspect:
     """inspect-gpu-page-tables"""
 
     def run(self):
-        if UNAME_M == "aarch64":
-            pass
-        
-        if not os.path.exists(f"{HOME}/inspect-gpu-page-tables"):
-            CMD_mount()
         subprocess.run(["bash", "-lic", rf"""
-            if [[ ! -f ~/inspect-gpu-page-tables ]]; then 
-
+            if [[ ! -e /dev/nvidia-soc-iommu-inspect && $(uname -m) == "aarch64" ]]; then 
+                if [[ ! -d /mnt/wanliz_sw_linux ]]; then 
+                    echo "Mount /mnt/wanliz_sw_linux first"; exit 1   
+                fi 
+                rsync -ah --info=progress2 /mnt/wanliz_sw_linux/pvt/aritger/apps/inspect-gpu-page-tables/nvidia-soc-iommu-inspect /tmp 
+                cd /tmp/nvidia-soc-iommu-inspect || exit 1
+                make || exit 1
+                sudo insmod ./nvidia-soc-iommu-inspect.ko 
+                sudo ./create-dev-node.sh
             fi 
+            if [[ ! -f ~/inspect-gpu-page-tables ]]; then 
+                cp -vf /mnt/linuxqa/wanliz/inspect-gpu-page-tables.$(uname -m) ~/inspect-gpu-page-tables
+            fi 
+            cd ~ && sudo ./inspect-gpu-page-tables 
         """], check=True)
         
 
