@@ -892,8 +892,8 @@ class CMD_mount:
             confirm = horizontal_select("Mount linuxqa folders", ["yes", "no"], 0, return_bool=True)
             if not confirm: 
                 return 
-        for local, remote in self.mount_info:
-            self.mount(local, remote)
+        for local in self.mount_info:
+            self.mount(local, self.mount_info[local])
 
     def mount(self, local, remote):
         if platform.system() == "Linux":
