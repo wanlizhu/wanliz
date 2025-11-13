@@ -1096,26 +1096,11 @@ class CMD_nvmake:
         
         self.branch = f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"
         self.targets = {
-            ".": {
-                "args": "",
-                "workdir": "."
-            },
-            "drivers": {
-                "args": "drivers dist",
-                "workdir": f"{self.branch}"
-            },
-            "opengl": {
-                "args": "",
-                "workdir": f"{self.branch}/drivers/OpenGL"
-            },
-            "microbench": {
-                "args": "",
-                "workdir": f"{os.environ['P4ROOT']}/apps/gpu/drivers/vulkan/microbench"
-            },
-            "inspect-gpu-page-tables": {
-                "args": "",
-                "workdir": f"{os.environ['P4ROOT']}/pvt/aritger/apps/inspect-gpu-page-tables"
-            }
+            ".":          { "args": "", "workdir": "." },
+            "drivers":    { "args": "drivers dist",   "workdir": f"{self.branch}" },
+            "opengl":     { "args": "", "workdir": f"{self.branch}/drivers/OpenGL" },
+            "microbench": { "args": "", "workdir": f"{os.environ['P4ROOT']}/apps/gpu/drivers/vulkan/microbench" },
+            "inspect-gpu-page-tables":  { "args": "", "workdir": f"{os.environ['P4ROOT']}/pvt/aritger/apps/inspect-gpu-page-tables" }
         }
 
         target = horizontal_select("Build target", self.targets.keys(), 0)
