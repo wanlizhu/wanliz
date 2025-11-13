@@ -510,9 +510,6 @@ class CMD_config:
                 fi 
             """], check=False)
 
-        # Mount folders 
-        CMD_mount().mount_all(ask_first=True)
-        
         # Add known host IPs (hostname -> IP)
         try:
             hosts_str = Path("/etc/hosts").read_text(encoding="utf-8")
@@ -530,6 +527,9 @@ class CMD_config:
                     """], check=True)
         except Exception:
             print("Failed to update /etc/hosts")
+
+        # Mount folders (must be after updating hosts)
+        CMD_mount().mount_all(ask_first=True)
 
 
 class CMD_info:
