@@ -620,8 +620,6 @@ class CMD_p4:
     def __init__(self):
         CMD_p4.setup_env()
         self.p4root = os.environ["P4ROOT"]
-        for x in ["P4CLIENT", "P4PORT", "P4USER", "P4ROOT", "P4IGNORE"]:
-            print(f"export {x}={os.environ[x]}")
 
     @staticmethod
     def setup_env():
@@ -652,8 +650,11 @@ class CMD_p4:
         })
     
     def run(self):
-        subcmd = horizontal_select("Select git-emu subcmd", ["status", "pull", "stash"], 0)
-        if subcmd == "status": self.status()
+        subcmd = horizontal_select("Select git-emu subcmd", ["env", "status", "pull", "stash"], 0)
+        if subcmd == "env":
+            for x in ["P4CLIENT", "P4PORT", "P4USER", "P4ROOT", "P4IGNORE"]:
+                print(f"export {x}={os.environ[x]}")
+        elif subcmd == "status": self.status()
         elif subcmd == "pull": self.pull()
         elif subcmd == "stash": self.stash()
 
