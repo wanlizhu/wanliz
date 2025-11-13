@@ -1071,7 +1071,8 @@ class CMD_nvmake:
         if "P4ROOT" not in os.environ: 
             raise RuntimeError("P4ROOT is not defined")
         
-        target = horizontal_select("Build target", [".", "drivers", "opengl", "microbench", "inspect-gpu-page-tables"], 0)
+        targets = ["drivers", "opengl", "microbench", "inspect-gpu-page-tables"]
+        target = horizontal_select("Build target", [".", *targets] if os.path.exists("makefile.nvmk") else targets, 0)
         branch = horizontal_select("Target branch", ["bugfix_main", "r580"], 1)
         config = horizontal_select("Target config", ["develop", "debug", "release"], 0)
         arch   = horizontal_select("Target architecture", ["amd64", "aarch64"], 0 if UNAME_M == "x86_64" else 1)
