@@ -1141,6 +1141,7 @@ class CMD_nvmake:
         subprocess.run(["bash", "-lic", rf"""
             cd {self.workdirs[target] if target in self.workdirs else "."} || exit 1
             {nvmake_cmd} -j$(nproc) || {nvmake_cmd} -j1 >/dev/null 
+            pwd
         """], check=True)
         
 
