@@ -1088,9 +1088,10 @@ class CMD_nvmake:
         target = horizontal_select("Build target", [".", "drivers", "opengl", "microbench", "inspect-gpu-page-tables"], 0)
         config = horizontal_select("Target config", ["develop", "debug", "release"], 0)
         arch   = horizontal_select("Target architecture", ["amd64", "aarch64"], 0 if UNAME_M == "x86_64" else 1)
-        self.run_with_config(target, config, arch)
+        user_args = horizontal_select("Additional nvmake args (optional)")
+        self.run_with_config(target, config, arch, user_args)
 
-    def run_with_config(self, target, config, arch):
+    def run_with_config(self, target, config, arch, user_args=None):
         nvmake_cmd = " ".join([x for x in [
             f"{os.environ['P4ROOT']}/tools/linux/unix-build/unix-build",
             "--unshare-namespaces", 
@@ -1109,7 +1110,7 @@ class CMD_nvmake:
             "NV_MANGLE_SYMBOLS=",
             f"NV_TRACE_CODE={1 if config == 'release' else 0}",
             self.nvmake_args[target] if target in self.nvmake_args else "",
-            "linux", f"{arch}", f"{config}"
+            "linux", arch, config, user_args
         ] if x is not None and x != ""])
         print(nvmake_cmd)
         subprocess.run(["bash", "-lic", rf"""
