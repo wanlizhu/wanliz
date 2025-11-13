@@ -1105,7 +1105,7 @@ class CMD_nvmake:
             "inspect-gpu-page-tables": f"{os.environ['P4ROOT']}/pvt/aritger/apps/inspect-gpu-page-tables"
         }
         self.unixbuild_args = {
-            "inspect-gpu-page-tables": f"--source {self.branch} --envvar NV_SOURCE={self.branch} --extra={os.environ['P4ROOT']}/pvt/aritger"
+            "inspect-gpu-page-tables": f"--source {self.branch} --envvar NV_SOURCE={self.branch} --extra={os.environ['P4ROOT']}/pvt/aritger/"
         }
         self.nvmake_args = {
             "drivers": "drivers dist"
