@@ -1071,7 +1071,14 @@ class CMD_nvmake:
         if "P4ROOT" not in os.environ: 
             raise RuntimeError("P4ROOT is not defined")
         
-        self.branch = f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"
+        target = horizontal_select("Build target", [".", "drivers", "opengl", "microbench", "inspect-gpu-page-tables"], 0)
+        branch = horizontal_select("Target branch", ["bugfix_main", "r580"], 1)
+        config = horizontal_select("Target config", ["develop", "debug", "release"], 0)
+        arch   = horizontal_select("Target architecture", ["amd64", "aarch64"], 0 if UNAME_M == "x86_64" else 1)
+        user_args = horizontal_select("Additional nvmake args (optional)")
+
+        if branch == "bugfix_main": self.branch = f"{os.environ['P4ROOT']}/dev/gpu_drv/bugfix_main"
+        if branch == "r580": self.branch = f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"
         self.workdirs = {
             "drivers": f"{self.branch}",
             "opengl":  f"{self.branch}/drivers/OpenGL",
@@ -1085,10 +1092,6 @@ class CMD_nvmake:
             "drivers": "drivers dist"
         }
 
-        target = horizontal_select("Build target", [".", "drivers", "opengl", "microbench", "inspect-gpu-page-tables"], 0)
-        config = horizontal_select("Target config", ["develop", "debug", "release"], 0)
-        arch   = horizontal_select("Target architecture", ["amd64", "aarch64"], 0 if UNAME_M == "x86_64" else 1)
-        user_args = horizontal_select("Additional nvmake args (optional)")
         self.run_with_config(target, config, arch, user_args)
 
     def run_with_config(self, target, config, arch, user_args=None):
