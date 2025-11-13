@@ -620,6 +620,8 @@ class CMD_p4:
     def __init__(self):
         CMD_p4.setup_env()
         self.p4root = os.environ["P4ROOT"]
+        for x in ["P4CLIENT", "P4PORT", "P4USER", "P4ROOT", "P4IGNORE"]:
+            print(f"export {x}={os.environ[x]}")
 
     @staticmethod
     def setup_env():
