@@ -1097,7 +1097,7 @@ class CMD_nvmake:
         if "P4ROOT" not in os.environ: 
             raise RuntimeError("P4ROOT is not defined")
         
-        self.branch = f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"
+        self.branch = "/wanliz_sw_linux/dev/gpu_drv/bugfix_main" #f"{os.environ['P4ROOT']}/rel/gpu_drv/r580/r580_00"
         self.workdirs = {
             "drivers": f"{self.branch}",
             "opengl":  f"{self.branch}/drivers/OpenGL",
