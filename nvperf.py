@@ -412,6 +412,11 @@ class CMD_config:
                     echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
                 fi
             fi 
+            if [[ ! -f ~/.passwd ]]; then 
+                read -r -s -p "OpenSSL Password: " passwd; echo
+                echo -n "$passwd" > ~/.passwd    
+                echo "Updated ~/.passwd"       
+            fi
                         
             declare -A package_list=(
                 [jq]=jq
@@ -451,7 +456,6 @@ class CMD_config:
                     }}
                 fi
             done
-
             
             if ! dpkg -s openssh-server >/dev/null 2>&1; then
                 read -p "Install SSH server? (Y/n): " install_ssh
@@ -463,6 +467,11 @@ class CMD_config:
                     fi
                 fi
             fi
+
+            if [[ -z $(which nvperf.py) ]]; then 
+                echo -e '\nexport PATH="$PATH:$HOME/wanliz"' >> ~/.bashrc
+                echo "Updated ~/.bashrc"
+            fi 
                         
             if [[ ! -f ~/.screenrc ]]; then 
                 printf "%s\n" \
@@ -475,62 +484,64 @@ class CMD_config:
                 >> ~/.screenrc
                 echo "Updated ~/.screenrc"
             fi 
-                        
-            if [[ -z $(which nvperf.py) ]]; then 
-                echo -e '\nexport PATH="$PATH:$HOME/wanliz"' >> ~/.bashrc
-                echo "Updated ~/.bashrc"
-            fi 
-                        
-            if [[ ! -f ~/.passwd ]]; then 
-                read -r -s -p "OpenSSL Password: " passwd; echo
-                echo -n "$passwd" > ~/.passwd    
-                echo "Updated ~/.passwd"       
-            fi
-                        
-            if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
-                cipher_prv='U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo'  
-                mkdir -p ~/.ssh
-                echo "$cipher_prv" | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass "pass:$(cat ~/.passwd)" > ~/.ssh/id_ed25519
-                chmod 600 ~/.ssh/id_ed25519
-                echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > ~/.ssh/id_ed25519.pub
-                chmod 644 ~/.ssh/id_ed25519.pub
-                echo "Updated ~/.ssh/id_ed25519"
-            fi 
-                        
-            if [[ ! -f ~/.gtl_api_key ]]; then 
-                cipher='U2FsdGVkX18BU0ZpoGynLWZBV16VNV2x85CjdpJfF+JF4HhpClt/vTyr6gs6GAq0lDVWvNk7L7s7eTFcJRhEnU4IpABfxIhfktMypWw85PuJCcDXOyZm396F02KjBRwunVfNkhfuinb5y2L6YR9wYbmrGDn1+DjodSWzt1NgoWotCEyYUz0xAIstEV6lF5zedcGwSzHDdFhj3hh5YxQFANL96BFhK9aSUs4Iqs9nQIT9evjinEh5ZKNq5aJsll91czHS2oOi++7mJ9v29sU/QjaqeSWDlneZj4nPYXhZRCw='
-                echo "$cipher" | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass "pass:$(cat ~/.passwd)" > ~/.gtl_api_key
-                chmod 500 ~/.gtl_api_key
-                echo "Updated ~/.gtl_api_key"
-            fi 
-                        
-            if [[ ! -d /mnt/linuxqa/wanliz ]]; then 
-                sudo mkdir -p /mnt/linuxqa
-                sudo apt install -y nfs-common cifs-utils &>/dev/null
-                sudo mount linuxqa.nvidia.com:/storage/people /mnt/linuxqa
-                echo "Mounted /mnt/linuxqa"
-                sudo mkdir -p /mnt/data
-                sudo mount linuxqa.nvidia.com:/qa/data /mnt/data   
-                echo "Mounted /mnt/data"
-            fi 
         """], check=True)
 
+        missing_keys = False
+        if not os.path.exists(f"{HOME}/.ssh/id_ed25519"): missing_keys = True
+        if not os.path.exists(f"{HOME}/.gtl_api_key"): missing_keys = True
+        if missing_keys:
+            choice = horizontal_select("Do you want to install registered keys", ["yes", "no"], 0, return_bool=True)
+            if choice: subprocess.run(["bash", "-lic", rf"""
+                if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
+                    cipher_prv='U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo'  
+                    mkdir -p ~/.ssh
+                    echo "$cipher_prv" | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass "pass:$(cat ~/.passwd)" > ~/.ssh/id_ed25519
+                    chmod 600 ~/.ssh/id_ed25519
+                    echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > ~/.ssh/id_ed25519.pub
+                    chmod 644 ~/.ssh/id_ed25519.pub
+                    echo "Updated ~/.ssh/id_ed25519"
+                fi 
+                if [[ ! -f ~/.gtl_api_key ]]; then 
+                    cipher='U2FsdGVkX18BU0ZpoGynLWZBV16VNV2x85CjdpJfF+JF4HhpClt/vTyr6gs6GAq0lDVWvNk7L7s7eTFcJRhEnU4IpABfxIhfktMypWw85PuJCcDXOyZm396F02KjBRwunVfNkhfuinb5y2L6YR9wYbmrGDn1+DjodSWzt1NgoWotCEyYUz0xAIstEV6lF5zedcGwSzHDdFhj3hh5YxQFANL96BFhK9aSUs4Iqs9nQIT9evjinEh5ZKNq5aJsll91czHS2oOi++7mJ9v29sU/QjaqeSWDlneZj4nPYXhZRCw='
+                    echo "$cipher" | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass "pass:$(cat ~/.passwd)" > ~/.gtl_api_key
+                    chmod 500 ~/.gtl_api_key
+                    echo "Updated ~/.gtl_api_key"
+                fi 
+            """], check=False)
+
+        def missing_or_empty_dir(pathstr):
+            path = Path(pathstr)
+            if path.exists():
+                return not any(path.iterdir())
+            return False 
+
+        mount_dirs = []
+        if missing_or_empty_dir("/mnt/linuxqa"): mount_dirs.append(["linuxqa.nvidia.com:/storage/people", "/mnt/linuxqa"])
+        if missing_or_empty_dir("/mnt/data"): mount_dirs.append(["linuxqa.nvidia.com:/storage/data", "/mnt/data"])
+        if missing_or_empty_dir("/mnt/builds"): mount_dirs.append(["linuxqa.nvidia.com:/storage3/builds", "/mnt/builds"])
+        if missing_or_empty_dir("/mnt/dvsbuilds"): mount_dirs.append(["linuxqa.nvidia.com:/storage5/dvsbuilds", "/mnt/dvsbuilds"])
+        if missing_or_empty_dir("/mnt/wanliz_sw_linux"): mount_dirs.append(["office:/wanliz_sw_linux", "/mnt/wanliz_sw_linux"])
+        if mount_dirs:
+            choice = horizontal_select("Do you want to mount linuxqa folders", ["yes", "no"], 0, return_bool=True)
+            if choice: 
+                mount_cmds = [f"mkdir -p {item[1]}; sudo mount -t nfs -o timeo=20,retrans=2 {item[0]} {item[1]} && 'Mounted {item[1]}' || echo 'Failed to mount {item[1]}'" for item in mount_dirs]
+                subprocess.run(["bash", "-lic", "\n".join(mount_cmds) + "\n"], check=False)
+        
         # Add known host IPs (hostname -> IP)
         update_hosts = horizontal_select("Do you want to update /etc/hosts", ["yes", "no"], 0, return_bool=True)
-        if update_hosts:
-            try:
+        try:
+            if update_hosts:
                 hosts_out = []
                 for line in Path("/etc/hosts").read_text().splitlines():
-                    if line.strip().startswith("#"): 
-                        continue
-                    if any(name in self.hosts for name in line.split()[1:]):
-                        continue 
+                    if line.strip().startswith("#"):  continue
+                    if any(name in self.hosts for name in line.split()[1:]): continue 
                     hosts_out.append(line)
                 hosts_out += [f"{ip}\t{name}" for name, ip in self.hosts.items()]
-                Path("/tmp/hosts").write_text("\n".join(hosts_out) + "\n")
-                subprocess.run("sudo install -m 644 /tmp/hosts /etc/hosts", check=True, shell=True)
-            except Exception:
-                print("Failed to update /etc/hosts")
+                subprocess.run(["bash", "-lic", rf"""
+                    echo '{"\n".join(hosts_out) + "\n"}' | sudo tee /etc/hosts >/dev/null 
+                """], check=True)
+        except Exception:
+            print("Failed to update /etc/hosts")
 
 
 class CMD_info:
