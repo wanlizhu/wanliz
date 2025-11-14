@@ -1,4 +1,5 @@
 _out/
+out/
 .vs/
 .vscode/
 **/build*/

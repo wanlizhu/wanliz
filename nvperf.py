@@ -443,6 +443,10 @@ class CMD_config:
                 [testparm]=samba-common-bin
                 [pdbedit]=samba-common-bin
                 [smbpasswd]=samba-common-bin
+                [socat]=socat
+                [cmake]=cmake
+                [g++]=build-essential
+                [ninja]=ninja-build
             )
             echo "Updating APT package lists ..."
             sudo apt update &>/dev/null || true 

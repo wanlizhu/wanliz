@@ -1,0 +1,39 @@
+﻿{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "Windows_base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/_out/${presetName}",
+            "installDir": "${sourceDir}/_out/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_COMPILER": "cl.exe",
+                "CMAKE_CXX_COMPILER": "cl.exe"
+            },
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "Windows_amd64_debug",
+            "displayName": "Windows_amd64_debug",
+            "inherits": "Windows_base"
+        },
+        {
+            "name": "Windows_amd64_release",
+            "displayName": "Windows_amd64_release",
+            "inherits": "Windows_base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        }
+    ]
+}
