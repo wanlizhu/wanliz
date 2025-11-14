@@ -734,10 +734,12 @@ class CMD_sshkey:
             ssh {user}@{host} "echo '~/.ssh/id_ed25519 works'" || exit 1
 
             if grep -qF "{host}" /path/to/file; then 
+                mkdir -p ~/.ssh 
                 echo >> ~/.ssh/config 
                 echo "Host {host}" >> ~/.ssh/config
                 echo -e "\tHostName {host}" >> ~/.ssh/config
                 echo -e "\tUser {user}" >> ~/.ssh/config
+                echo "Added {user}@{host} to ~/.ssh/config"
             fi 
         """], check=True)
 
