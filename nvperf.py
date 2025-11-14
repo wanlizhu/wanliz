@@ -733,7 +733,7 @@ class CMD_sshkey:
             {f"sshpass -p '{passwd}'" if passwd else ""} ssh-copy-id -o StrictHostKeyChecking=accept-new {user}@{host}
             ssh {user}@{host} "echo '~/.ssh/id_ed25519 works'" || exit 1
 
-            if grep -qF "{host}" /path/to/file; then 
+            if grep -qF "{host}" /path/to/file 2>/dev/null; then 
                 mkdir -p ~/.ssh 
                 echo >> ~/.ssh/config 
                 echo "Host {host}" >> ~/.ssh/config
