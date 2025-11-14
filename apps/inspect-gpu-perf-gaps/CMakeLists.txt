@@ -5,12 +5,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if (MSVC)
-    # Make SYSTEM includes use /I instead of /external:I
-    set(CMAKE_INCLUDE_SYSTEM_FLAG_C   "/I")
-    set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "/I")
-endif()
-
 find_package(Vulkan REQUIRED)
 
 add_executable(inspect-gpu-perf-gaps 
@@ -24,5 +18,6 @@ add_executable(inspect-gpu-perf-gaps
     "VK_queue.h"
 )
 
+target_include_directories(inspect-gpu-perf-gaps PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(inspect-gpu-perf-gaps PRIVATE Vulkan::Vulkan)
 

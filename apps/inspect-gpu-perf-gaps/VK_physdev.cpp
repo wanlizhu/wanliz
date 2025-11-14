@@ -116,6 +116,7 @@ nlohmann::json VK_physdev::info() const {
 
     auto print_driver_id = [&]() -> std::string {
 #define CASE(v) if (driver.driverID == v) return std::string(#v) 
+        // Core in VK_VERSION_1_2
         CASE(VK_DRIVER_ID_AMD_PROPRIETARY);
         CASE(VK_DRIVER_ID_AMD_OPEN_SOURCE);
         CASE(VK_DRIVER_ID_MESA_RADV);
@@ -133,16 +134,22 @@ nlohmann::json VK_physdev::info() const {
         CASE(VK_DRIVER_ID_COREAVI_PROPRIETARY);
         CASE(VK_DRIVER_ID_JUICE_PROPRIETARY);
         CASE(VK_DRIVER_ID_VERISILICON_PROPRIETARY);
+        #if VK_HEADER_VERSION >= 218
         CASE(VK_DRIVER_ID_MESA_TURNIP);
         CASE(VK_DRIVER_ID_MESA_V3DV);
         CASE(VK_DRIVER_ID_MESA_PANVK);
         CASE(VK_DRIVER_ID_SAMSUNG_PROPRIETARY);
+        #endif
+        #if VK_HEADER_VERSION >= 250
         CASE(VK_DRIVER_ID_MESA_VENUS);
+        #endif
+        #if VK_HEADER_VERSION >= 278
         CASE(VK_DRIVER_ID_MESA_DOZEN);
         CASE(VK_DRIVER_ID_MESA_NVK);
         CASE(VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA);
         CASE(VK_DRIVER_ID_MESA_HONEYKRISP);
         CASE(VK_DRIVER_ID_VULKAN_SC_EMULATION_ON_VULKAN);
+        #endif
 #undef CASE 
             return "unknown";
     };
