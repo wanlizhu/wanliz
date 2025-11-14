@@ -17,3 +17,7 @@ Diagnostics:
     Add: []  
     Remove: '*'   
   UnusedIncludes: None  
+  MissingIncludes: None
+  
+InlayHints:
+  Enabled: false
