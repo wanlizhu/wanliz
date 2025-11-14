@@ -729,9 +729,17 @@ class CMD_sshkey:
                 chmod 644 ~/.ssh/id_ed25519.pub
                 echo "Updated ~/.ssh/id_ed25519"
             fi 
+            
             {f"sshpass -p '{passwd}'" if passwd else ""} ssh-copy-id -o StrictHostKeyChecking=accept-new {user}@{host}
-            ssh {user}@{host} "echo '~/.ssh/id_ed25519 works'"
-        """], check=False)
+            ssh {user}@{host} "echo '~/.ssh/id_ed25519 works'" || exit 1
+
+            if grep -qF "{host}" /path/to/file; then 
+                echo >> ~/.ssh/config 
+                echo "Host {host}" >> ~/.ssh/config
+                echo -e "\tHostName {host}" >> ~/.ssh/config
+                echo -e "\tUser {user}" >> ~/.ssh/config
+            fi 
+        """], check=True)
 
 
 class CMD_upload:
