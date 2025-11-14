@@ -1,6 +1,8 @@
 _out/
 out/
+.cache/
 .vs/
 .vscode/
 **/build*/
 .ipynb_checkpoints/
+compile_commands.json
