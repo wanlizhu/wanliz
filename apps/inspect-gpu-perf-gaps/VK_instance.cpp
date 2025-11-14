@@ -17,6 +17,12 @@ VK_instance& VK_instance::GET() {
 }
 
 VK_instance::VK_instance() {
+    uint32_t maxApiVersion = VK_API_VERSION_1_3;
+    auto _vkEnumerateInstanceVersion = LOAD_VK_API_FROM_INST(vkEnumerateInstanceVersion, NULL);
+    if (_vkEnumerateInstanceVersion) {
+        _vkEnumerateInstanceVersion(&maxApiVersion);
+    }
+
     std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"
     };
@@ -30,7 +36,7 @@ VK_instance::VK_instance() {
     appInfo.applicationVersion = 0;
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = 0;
-    appInfo.apiVersion = VK_API_VERSION_1_3;
+    appInfo.apiVersion = maxApiVersion;
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -61,14 +67,18 @@ VK_instance::VK_instance() {
     }
 
     auto _vkCreateDebugUtilsMessengerEXT = LOAD_VK_API_FROM_INST(vkCreateDebugUtilsMessengerEXT, handle);
-    res = _vkCreateDebugUtilsMessengerEXT(handle, &debugCreateInfo, NULL, &debugMessenger);
-    if (res != VK_SUCCESS || debugMessenger == NULL) {
-        throw std::runtime_error("VkResult: " + std::to_string(res));
+    if (_vkCreateDebugUtilsMessengerEXT) {
+        res = _vkCreateDebugUtilsMessengerEXT(handle, &debugCreateInfo, NULL, &debugMessenger);
+        if (res != VK_SUCCESS || debugMessenger == NULL) {
+            throw std::runtime_error("VkResult: " + std::to_string(res));
+        }
     }
 }
 
 VK_instance::~VK_instance() {
-    auto _vkDestroyDebugUtilsMessengerEXT = LOAD_VK_API_FROM_INST(vkDestroyDebugUtilsMessengerEXT, handle);
-    _vkDestroyDebugUtilsMessengerEXT(handle, debugMessenger, NULL);
+    if (debugMessenger) {
+        auto _vkDestroyDebugUtilsMessengerEXT = LOAD_VK_API_FROM_INST(vkDestroyDebugUtilsMessengerEXT, handle);
+        _vkDestroyDebugUtilsMessengerEXT(handle, debugMessenger, NULL);
+    }
     vkDestroyInstance(handle, NULL);
 }

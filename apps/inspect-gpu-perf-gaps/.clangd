@@ -1,0 +1,28 @@
+﻿CompileFlags:
+  Add: 
+    - "-std=c++17"
+    - "-Wall"
+    - "-Wextra"
+    - "-Wpedantic"
+  Remove:
+    - "-W*"   
+    - "-std:c++*"   
+    - "-external:W*"   
+  Compiler: clang++
+  CompilationDatabase: .
+
+Index:
+  Background: Build 
+
+Diagnostics:
+  ClangTidy:
+    Add:
+      - modernize-*
+      - readability-*
+      - performance-*
+      - bugprone-*
+    Remove:
+      - modernize-use-trailing-return-type
+      - readability-magic-numbers
+    FastCheckFilter: Loose   
+  UnusedIncludes: None  
