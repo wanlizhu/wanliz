@@ -10,7 +10,7 @@ add_executable (inspect-gpu-perf-gaps
     "main.cpp"
     "common.h"
     "VK_physdev.cpp" 
-    "Vk_physdev.h" 
+    "VK_physdev.h" 
     "VK_instance.cpp"
     "VK_instance.h"
     "VK_queue.cpp"
