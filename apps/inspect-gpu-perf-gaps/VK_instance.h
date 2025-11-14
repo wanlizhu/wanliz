@@ -20,4 +20,4 @@ private:
     VK_instance& operator=(VK_instance&&) = delete;
 };
 
-const char* VkResult_str(VkResult result);
+std::string VkResult_str(VkResult result);

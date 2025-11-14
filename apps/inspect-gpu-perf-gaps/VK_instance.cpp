@@ -1,7 +1,7 @@
 #pragma once
 #include "VK_instance.h"
 
-const char* VkResult_str(VkResult result) {
+std::string VkResult_str(VkResult result) {
     switch (result) {
         case 0:             return "VK_SUCCESS";
         case 1:             return "VK_NOT_READY";
