@@ -91,7 +91,7 @@ VK_instance::VK_instance() {
     }
 
     std::vector<const char*> validationLayers = {
-        "VK_LAYER_KHRONOS_validation"
+        //"VK_LAYER_KHRONOS_validation"
     };
     std::vector<const char*> extensions = {
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME
