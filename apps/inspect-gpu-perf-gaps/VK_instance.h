@@ -19,3 +19,5 @@ private:
     VK_instance& operator=(const VK_instance&) = delete;
     VK_instance& operator=(VK_instance&&) = delete;
 };
+
+const char* VkResult_str(VkResult result);

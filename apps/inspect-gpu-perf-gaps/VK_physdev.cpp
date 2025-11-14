@@ -115,43 +115,35 @@ nlohmann::json VK_physdev::info() const {
     };
 
     auto print_driver_id = [&]() -> std::string {
-#define CASE(v) if (driver.driverID == v) return std::string(#v) 
-        // Core in VK_VERSION_1_2
-        CASE(VK_DRIVER_ID_AMD_PROPRIETARY);
-        CASE(VK_DRIVER_ID_AMD_OPEN_SOURCE);
-        CASE(VK_DRIVER_ID_MESA_RADV);
-        CASE(VK_DRIVER_ID_NVIDIA_PROPRIETARY);
-        CASE(VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS);
-        CASE(VK_DRIVER_ID_INTEL_OPEN_SOURCE_MESA);
-        CASE(VK_DRIVER_ID_IMAGINATION_PROPRIETARY);
-        CASE(VK_DRIVER_ID_QUALCOMM_PROPRIETARY);
-        CASE(VK_DRIVER_ID_ARM_PROPRIETARY);
-        CASE(VK_DRIVER_ID_GOOGLE_SWIFTSHADER);
-        CASE(VK_DRIVER_ID_GGP_PROPRIETARY);
-        CASE(VK_DRIVER_ID_BROADCOM_PROPRIETARY);
-        CASE(VK_DRIVER_ID_MESA_LLVMPIPE);
-        CASE(VK_DRIVER_ID_MOLTENVK);
-        CASE(VK_DRIVER_ID_COREAVI_PROPRIETARY);
-        CASE(VK_DRIVER_ID_JUICE_PROPRIETARY);
-        CASE(VK_DRIVER_ID_VERISILICON_PROPRIETARY);
-        #if VK_HEADER_VERSION >= 218
-        CASE(VK_DRIVER_ID_MESA_TURNIP);
-        CASE(VK_DRIVER_ID_MESA_V3DV);
-        CASE(VK_DRIVER_ID_MESA_PANVK);
-        CASE(VK_DRIVER_ID_SAMSUNG_PROPRIETARY);
-        #endif
-        #if VK_HEADER_VERSION >= 250
-        CASE(VK_DRIVER_ID_MESA_VENUS);
-        #endif
-        #if VK_HEADER_VERSION >= 278
-        CASE(VK_DRIVER_ID_MESA_DOZEN);
-        CASE(VK_DRIVER_ID_MESA_NVK);
-        CASE(VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA);
-        CASE(VK_DRIVER_ID_MESA_HONEYKRISP);
-        CASE(VK_DRIVER_ID_VULKAN_SC_EMULATION_ON_VULKAN);
-        #endif
-#undef CASE 
-            return "unknown";
+        switch (static_cast<int>(driver.driverID)) {
+            case 1:  return "VK_DRIVER_ID_AMD_PROPRIETARY";
+            case 2:  return "VK_DRIVER_ID_AMD_OPEN_SOURCE";
+            case 3:  return "VK_DRIVER_ID_MESA_RADV";
+            case 4:  return "VK_DRIVER_ID_NVIDIA_PROPRIETARY";
+            case 5:  return "VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS";
+            case 6:  return "VK_DRIVER_ID_INTEL_OPEN_SOURCE_MESA";
+            case 7:  return "VK_DRIVER_ID_IMAGINATION_PROPRIETARY";
+            case 8:  return "VK_DRIVER_ID_QUALCOMM_PROPRIETARY";
+            case 9:  return "VK_DRIVER_ID_ARM_PROPRIETARY";
+            case 10: return "VK_DRIVER_ID_GOOGLE_SWIFTSHADER";
+            case 11: return "VK_DRIVER_ID_GGP_PROPRIETARY";
+            case 12: return "VK_DRIVER_ID_BROADCOM_PROPRIETARY";
+            case 13: return "VK_DRIVER_ID_MESA_LLVMPIPE";
+            case 14: return "VK_DRIVER_ID_MOLTENVK";
+            case 15: return "VK_DRIVER_ID_COREAVI_PROPRIETARY";
+            case 16: return "VK_DRIVER_ID_JUICE_PROPRIETARY";
+            case 17: return "VK_DRIVER_ID_VERISILICON_PROPRIETARY";
+            case 18: return "VK_DRIVER_ID_MESA_TURNIP";
+            case 19: return "VK_DRIVER_ID_MESA_V3DV";
+            case 20: return "VK_DRIVER_ID_MESA_PANVK";
+            case 21: return "VK_DRIVER_ID_SAMSUNG_PROPRIETARY";
+            case 22: return "VK_DRIVER_ID_MESA_VENUS";
+            case 23: return "VK_DRIVER_ID_MESA_DOZEN";
+            case 24: return "VK_DRIVER_ID_MESA_NVK";
+            case 25: return "VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA";
+            case 26: return "VK_DRIVER_ID_MESA_HONEYKRISP";
+            default: return "unknown";
+        }
     };
 
     auto print_size = [](uint64_t bytes) -> std::string {
@@ -174,8 +166,8 @@ nlohmann::json VK_physdev::info() const {
             oss << name;
         };
         if (flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) add("DEVICE_LOCAL");
-        if (flags & VK_MEMORY_HEAP_MULTI_INSTANCE_BIT) add("MULTI_INSTANCE");
-        if (flags & VK_MEMORY_HEAP_TILE_MEMORY_BIT_QCOM) add("TILE_MEMORY");
+        if (flags & 0x00000002) add("MULTI_INSTANCE");
+        if (flags & 0x00000008) add("TILE_MEMORY");
         if (oss.tellp() == 0) {
             oss << "*system memory*";
         }
@@ -192,11 +184,11 @@ nlohmann::json VK_physdev::info() const {
         if (flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) add("HOST_VISIBLE");
         if (flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) add("HOST_COHERENT");
         if (flags & VK_MEMORY_PROPERTY_HOST_CACHED_BIT) add("HOST_CACHED");
-        if (flags & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT) add("LAZY_ALLOC");
-        if (flags & VK_MEMORY_PROPERTY_PROTECTED_BIT) add("PROTECTED");
-        if (flags & VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD) add("DEVICE_COHERENT");
-        if (flags & VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD) add("DEVICE_UNCACHED");
-        if (flags & VK_MEMORY_PROPERTY_RDMA_CAPABLE_BIT_NV) add("RDMA");
+        if (flags & 0x00000010) add("LAZY_ALLOC");
+        if (flags & 0x00000020) add("PROTECTED");
+        if (flags & 0x00000040) add("DEVICE_COHERENT");
+        if (flags & 0x00000080) add("DEVICE_UNCACHED");
+        if (flags & 0x00000100) add("RDMA");
         return oss.str();
     };
 
