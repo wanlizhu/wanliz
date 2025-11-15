@@ -298,7 +298,7 @@ class CMD_config:
                 }}
             }} else {{ 
                 "[wsl2]`r`nnetworkingMode=mirrored" | Set-Content $wsl_cfg 
-                Write-Host ""Restart WSL for the changes of ~/.wslconfig to take effect" -ForegroundColor Yellow
+                Write-Host "Restart WSL for the changes of ~/.wslconfig to take effect" -ForegroundColor Yellow
             }}
                         
             function Enable-SSH-Server-on-Windows {{ 
@@ -350,8 +350,9 @@ class CMD_config:
             $miss = $want | % {{ $_.Trim('"').TrimEnd('\') }} | ? {{ $cur -notcontains $_ }}
             if ($miss) {{
                 $env:Path = ($cur + $miss) -join ';'
-                $user = ([Environment]::GetEnvironmentVariable('Path','User') -split ';') | ? {{ $_ }} | % {{ $_.Trim('"').TrimEnd('\') }}
-                [Environment]::SetEnvironmentVariable('Path', ($user + ($miss | ? {{ $user -notcontains $_ }})) -join ';', 'User')
+                $user    = ([Environment]::GetEnvironmentVariable('Path','User') -split ';') | ? {{ $_ }} | % {{ $_.Trim('"').TrimEnd('\') }}
+                $newPath = ($user + ($miss | ? {{ $user -notcontains $_ }})) -join ';'
+                [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
             }}
                         
             Write-Host "`r`nChecking classic context menu"
