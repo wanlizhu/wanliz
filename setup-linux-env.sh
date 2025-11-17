@@ -185,13 +185,21 @@ declare -A required_folders=(
     ["/mnt/dvsbuilds"]="linuxqa.nvidia.com:/storage5/dvsbuilds"
     ["/mnt/wanliz_sw_linux"]="office:/wanliz_sw_linux"
 )
+missing_folders=()
+for local_folder in "${!required_folders[@]}"; do
+    if ! mountpoint -q "$local_folder"; then 
+        missing_folders+=("$local_folder")
+    fi 
+done 
 echo -n "Mounting linuxqa folders ... "
-if (( ${#required_folders[@]} > 0 )); then 
+if (( ${#missing_folders[@]} > 0 )); then
     failed_msg=""
-    for local_path in "${!required_folders[@]}"; do
-        remote_path="${required_folders[$local_path]}"
-        sudo mkdir -p "$local_path"
-        sudo timeout 3 mount -t nfs $remote_path $local_path || { failed_msg="$failed_msg\nFailed to mount $remote_path" }
+    for local_folder in "${missing_folders[@]}"; do 
+        remote_folder="${required_folders[$local_folder]}"
+        sudo mkdir -p "$local_folder"
+        sudo timeout 3 mount -t nfs "$remote_folder" "$local_folder" || { 
+            failed_msg+=$'\n'"\nFailed to mount $remote_folder"
+        }
     done 
     if [[ -z $failed_msg ]]; then 
         echo "[OK]"
