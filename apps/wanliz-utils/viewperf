@@ -28,6 +28,9 @@ if [[ -z $viewsets ]]; then
     rm -rf $HOME/viewperf2020v3/results
     mkdir -p $HOME/viewperf2020v3/results
 fi 
+if [[ -z $samples ]]; then 
+    samples=1
+fi 
 
 cd $HOME/viewperf2020v3 || exit 1
 
