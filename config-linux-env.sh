@@ -205,7 +205,7 @@ find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link;
     fi 
 done 
 failed_msg=""
-for file in "$(dirname $0)/apps/wanliz-utils"/*; do 
+for file in "$(realpath $(dirname $0))/apps/wanliz-utils"/*; do 
     [[ -f "$file" && -x "$file" ]] || continue 
     name=$(basename "$file")
     sudo ln -sf "$file" "/usr/local/bin/$name" &>/dev/null || {
@@ -219,9 +219,9 @@ else
 fi 
 
 echo -n "Installing inspect-gpu-perf-info ... "
-$(dirname $0)/apps/inspect-gpu-perf-info/run.sh -s -b -r &>/dev/null && {
+$(realpath $(dirname $0))/apps/inspect-gpu-perf-info/run.sh -s -b -r &>/dev/null && {
     sudo rm -rf /usr/local/bin/inspect-gpu-perf-info  
-    sudo cp -f $(dirname $0)/apps/inspect-gpu-perf-info/_out/Linux_$(uname -m | sed 's/x86_64/amd64/g')_release/inspect-gpu-perf-info /usr/local/bin/inspect-gpu-perf-info && echo "[OK]" || echo "[FAILED]"
+    sudo cp -f $(realpath $(dirname $0))/apps/inspect-gpu-perf-info/_out/Linux_$(uname -m | sed 's/x86_64/amd64/g')_release/inspect-gpu-perf-info /usr/local/bin/inspect-gpu-perf-info && echo "[OK]" || echo "[FAILED]"
 } || echo "[FAILED]"
 
 

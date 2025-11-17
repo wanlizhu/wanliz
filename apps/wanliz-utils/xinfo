@@ -3,8 +3,6 @@
 if [[ -z $DISPLAY ]]; then 
     export DISPLAY=:0
     echo "Fall back to DISPLAY=$DISPLAY"
-else
-    echo "Keep the customized DISPLAY=$DISPLAY"
 fi 
 
 echo "X server info:"

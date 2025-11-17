@@ -16,7 +16,7 @@ for arg in "$@"; do
     fi 
 done 
 
-workspace=$(dirname $0)
+workspace=$(realpath $(dirname $0))
 outdir=$workspace/_out/Linux_$(uname -m | sed 's/x86_64/amd64/g')_${build_config}
 mkdir -p $outdir 
 cd $outdir || exit 1

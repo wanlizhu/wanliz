@@ -14,7 +14,7 @@ elif [[ $1 == "redo" ]]; then
         echo "Invalid path in ~/.driver"
         exit 1
     fi 
-    $0 $(cat ~/.driver $2)
+    $(realpath $(dirname $0)) $(cat ~/.driver $2)
 else
     sudo env NVTEST_INSTALLER_REUSE_INSTALL=False /mnt/linuxqa/nvt.sh drivers "$@" 2>/tmp/std2 | tee /tmp/std1 && {
         driver=$(cat /tmp/std2 | grep 'NVTEST_DRIVER=' | awk '{print $2}' | awk -F'=' '{print $2}')
