@@ -37,7 +37,6 @@ cd $HOME/viewperf2020v3 || exit 1
 results="${viewsets// /,}"$'\n'
 for i in $(seq $samples); do 
     for viewset in $viewsets; do 
-        echo "./viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml $subtest -resolution 3840x2160"
         $HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml $subtest -resolution 3840x2160 && {
             results_xml=$HOME/viewperf2020v3/results/${viewset_names[$viewset]}/results.xml
             composite_score=$(cat $results_xml | grep "Composite" | awk -F'"' '{print $2}')
