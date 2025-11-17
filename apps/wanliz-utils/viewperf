@@ -28,8 +28,9 @@ if [[ -z $viewsets ]]; then
     mkdir -p $HOME/viewperf2020v3/results
 fi 
 
+cd $HOME/viewperf2020v3 || exit 1
 for viewset in $viewsets; do 
-    echo "$HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml $subtest -resolution 3840x2160"
+    echo "./viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml $subtest -resolution 3840x2160"
     echo "Test starts in 3 seconds ..."
     sleep 3
     $HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml $subtest -resolution 3840x2160 && {
