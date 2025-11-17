@@ -5,7 +5,7 @@ if [[ -z $DISPLAY ]]; then
     echo "Fall back to DISPLAY=$DISPLAY"
 fi 
 
-if [[ -d ~/viewperf2020v3 ]]; then
+if [[ ! -d ~/viewperf2020v3 ]]; then
     rsync -ah --info=progress2 /mnt/linuxqa/wanliz/viewperf2020v3.$(uname -m)/ ~/viewperf2020v3 || exit 1
 fi 
 
