@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+export P4PORT="p4proxy-sc.nvidia.com:2006"
+export P4USER="wanliz"
+export P4CLIENT="wanliz_sw_linux"
+export P4ROOT="/wanliz_sw_linux"
+export P4IGNORE="$HOME/.p4ignore"
+
+if [[ ! -f ~/.p4ignore ]]; then 
+    cat >~/.p4ignore <<EOF
+_out
+.git
+.vscode
+.cursorignore
+.clangd
+.p4config
+.p4ignore
+compile-commands.json
+*.code-workspace
+EOF
+fi 
+
+exec bash -i

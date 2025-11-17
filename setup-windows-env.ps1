@@ -15,7 +15,7 @@ trap {
     if ($_.InvocationInfo.PositionMessage) { 
         Write-Host "$($_.InvocationInfo.PositionMessage)" -ForegroundColor Yellow 
     }
-    Read-Host "Press [Enter] to exit: "
+    Read-Host "Press [Enter] to exit"
     exit 1
 }
 
@@ -32,7 +32,7 @@ if (wsl -l -v 2>$null |
     Write-Host "WSL2 present"
 } else {
     Write-Host "No WSL2 distros, install it first" -ForegroundColor Yellow
-    Read-Host "Press [Enter] to exit: "
+    Read-Host "Press [Enter] to exit"
     exit 1
 }
 
@@ -40,7 +40,7 @@ $wsl_cfg = "$env:USERPROFILE\.wslconfig"
 if (Test-Path $wsl_cfg) {
     if (-not (Select-String -Path $wsl_cfg -SimpleMatch -Pattern 'networkingMode=mirrored' -Quiet)) {
         Write-Host "Please add 'networkingMode=mirrored' to $wsl_cfg first" -ForegroundColor Yellow
-        Read-Host "Press [Enter] to exit: "
+        Read-Host "Press [Enter] to exit"
         exit 1
     }
 } else {
@@ -130,8 +130,6 @@ Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled False
 Get-NetFirewallProfile | Select-Object Name, Enabled
 
 Write-Host "Checking context menu items"
-Invoke-WebRequest "https://raw.githubusercontent.com/wanlizhu/wanliz/main/apps/wanliz-utils/who-locks-me.ps1" -OutFile "C:\Program Files\who-locks-me.ps1"
-
 $root = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\Classes', $true)
 foreach ($sub in @('*\shell\WhoLocks','Directory\shell\WhoLocks')) {
     $k = $root.CreateSubKey($sub)
@@ -144,4 +142,4 @@ foreach ($sub in @('*\shell\WhoLocks','Directory\shell\WhoLocks')) {
 }
 $root.Close()
 
-Read-Host "Press [Enter] to exit: "
+Read-Host "Press [Enter] to exit"

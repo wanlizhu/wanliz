@@ -3,11 +3,11 @@ $Path = (Resolve-Path -LiteralPath $Path -ErrorAction Stop).Path
 $ErrorActionPreference = 'Stop'
 
 trap {
-    Write-Host "`nERROR: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
     if ($_.InvocationInfo.PositionMessage) { 
-        Write-Host "`n$($_.InvocationInfo.PositionMessage)" -ForegroundColor Yellow 
+        Write-Host "$($_.InvocationInfo.PositionMessage)" -ForegroundColor Yellow 
     }
-    Read-Host "`nPress [Enter] to exit: "
+    Read-Host "Press [Enter] to exit"
     exit 1
 }
 
@@ -64,7 +64,7 @@ if (Test-Path -LiteralPath $Path -PathType Container) {
 $pids = [RM]::Pids($files) | Sort-Object -Unique
 if (-not $pids) { 
     Write-Host 'No locking processes.'
-    Read-Host 'Press [Enter] to exit: ' | Out-Null
+    Read-Host 'Press [Enter] to exit' | Out-Null
     exit 
 }
 
@@ -99,4 +99,4 @@ if ($doKillOthers -or $hasEx) {
     Write-Host 'Canceled' 
 }
 
-Read-Host 'Press [Enter] to exit: ' | Out-Null
+Read-Host 'Press [Enter] to exit' | Out-Null

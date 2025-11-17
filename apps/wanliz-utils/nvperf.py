@@ -274,203 +274,18 @@ class CMD_config:
             self.config_linux_host()
 
     def config_windows_host(self):
-        if ctypes.windll.shell32.IsUserAnAdmin() == 0:
-            cmdline = subprocess.list2cmdline([os.path.abspath(sys.argv[0])] + [arg for arg in sys.argv[1:] if arg != "--admin"])
-            ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmdline, None, 1)
-            sys.exit(0)
-            
-        names = r"\b(" + "|".join(re.escape(k) for k in (*self.hosts, "wanliz")) + r")\b"
-        mappings = "\n".join(f"{ip} {name}" for name, ip in self.hosts.items())
-        subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
-            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters' -Name 'AllowInsecureGuestAuth' -Type DWord -Value 1
-            $ErrorActionPreference = 'Stop'
-                        
-            Write-Host "Checking WSL2 status"
-            if (wsl -l -v 2>$null | Select-Object -Skip 1 | ForEach-Object {{ ($_ -replace '\x00','' -split '\s+')[-1] }} | Where-Object {{ $_ -eq '2' }} | Select-Object -First 1) {{ "WSL2 present" }} else {{ 
-                Write-Host "No WSL2 distros, install it first" -ForegroundColor Yellow
-                exit(1)
-            }}
-            $wsl_cfg="$env:USERPROFILE\.wslconfig"
-            if (Test-Path $wsl_cfg) {{
-                if (-not (Select-String -Path $wsl_cfg -SimpleMatch -Pattern 'networkingMode=mirrored' -Quiet)) {{
-                    Write-Host "Please add 'networkingMode=mirrored' to $wsl_cfg first" -ForegroundColor Yellow
-                    exit(1)
-                }}
-            }} else {{ 
-                "[wsl2]`r`nnetworkingMode=mirrored" | Set-Content $wsl_cfg 
-                Write-Host "Restart WSL for the changes of ~/.wslconfig to take effect" -ForegroundColor Yellow
-            }}
-                        
-            function Enable-SSH-Server-on-Windows {{ 
-                Write-Host "`r`nChecking SSH server status"
-                $cap = Get-WindowsCapability -Online -Name OpenSSH.Server* | Select-Object -First 1
-                if ($cap.State -ne 'Installed') {{ 
-                    Add-WindowsCapability -Online -Name $cap.Name 
-                    Set-Service -Name sshd -StartupType Automatic
-                }}
-                $cap = Get-WindowsCapability -Online -Name OpenSSH.Client* | Select-Object -First 1
-                if (-not $cap -or $cap.State -ne 'Installed') {{ 
-                    Add-WindowsCapability -Online -Name $cap.Name 
-                    Set-Service -Name ssh-agent -StartupType Automatic
-                }}
-                if ((Get-Service sshd).Status -ne 'Running') {{ Start-Service sshd }}
-                if ((Get-Service ssh-agent -ErrorAction Stop).Status -ne 'Running') {{ Start-Service ssh-agent }}
-                if (-not ((Get-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name DefaultShell -ErrorAction SilentlyContinue).DefaultShell -match '\\(powershell|pwsh)\.exe$')) {{
-                    New-Item -Path 'HKLM:\SOFTWARE\OpenSSH' -Force | Out-Null
-                    New-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -PropertyType String -Value 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -Force | Out-Null
-                    Restart-Service sshd -Force
-                }}
-                Start-Sleep -Seconds 1
-                $tcp   = Test-NetConnection -ComputerName localhost -Port 22 -WarningAction SilentlyContinue
-                $state = if ($tcp.TcpTestSucceeded) {{ 'LISTENING' }} else {{ 'NOT LISTENING' }}
-                $sshd  = Get-Service sshd
-                "SSH server status: {{0}} | Startup: {{1}} | Port 22: {{2}}" -f $sshd.Status, $sshd.StartType, $state
-            }}
-                        
-            function Disable-SSH-Server-on-Windows-and-Enable-on-WSL {{
-                $svc = Get-Service -Name sshd -ErrorAction SilentlyContinue
-                if ($svc -and $svc.Status -eq 'Running') {{
-                    Write-Host "`r`nDisable SSH server on Windows"
-                    Stop-Service -Name sshd -Force
-                    Set-Service -Name sshd -StartupType Disabled
-                }}
-                Write-Host "`r`nChecking SSH server on WSL (ensure Auto-Start)"
-                $Action  = New-ScheduledTaskAction -Execute "wsl.exe" -Argument "-d Ubuntu -u root -- true"
-                $Trigger = New-ScheduledTaskTrigger -AtStartup
-                if (-not (Get-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -ErrorAction SilentlyContinue)) {{
-                    Register-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -Action $Action -Trigger $Trigger -RunLevel Highest
-                }}
-            }}
-            
-            Disable-SSH-Server-on-Windows-and-Enable-on-WSL
-
-            Write-Host "`r`nChecking PATH environment variables"
-            $want = @('C:\Program Files', $env:LOCALAPPDATA.TrimEnd('\'))
-            $cur  = ($env:Path -split ';') | ? {{ $_ }} | % {{ $_.Trim('"').TrimEnd('\') }}
-            $miss = $want | % {{ $_.Trim('"').TrimEnd('\') }} | ? {{ $cur -notcontains $_ }}
-            if ($miss) {{
-                $env:Path = ($cur + $miss) -join ';'
-                $user    = ([Environment]::GetEnvironmentVariable('Path','User') -split ';') | ? {{ $_ }} | % {{ $_.Trim('"').TrimEnd('\') }}
-                $newPath = ($user + ($miss | ? {{ $user -notcontains $_ }})) -join ';'
-                [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
-            }}
-                        
-            Write-Host "`r`nChecking classic context menu"
-            $k = 'HKCU:\Software\Classes\CLSID\{{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}}\InprocServer32'
-            if (-not (Test-Path $k) -or ((Get-Item $k).GetValue('', $null) -ne '')) {{
-                New-Item $k -Force | Out-Null
-                Set-Item  $k -Value ''
-                Stop-Process -Name explorer -Force
-                Start-Process explorer.exe
-            }}
-
-            Write-Host "`r`nChecking C:\Windows\System32\drivers\etc\hosts"
-            $hostsfile = 'C:\Windows\System32\drivers\etc\hosts'
-            $pattern = '({names})'
-            if ((Get-Item -LiteralPath $hostsfile).Attributes -band [IO.FileAttributes]::ReadOnly) {{
-                attrib -R $hostsfile
-            }}
-            $lines = Get-Content -LiteralPath $hostsfile -Encoding ASCII -ErrorAction SilentlyContinue 
-            if ($null -eq $lines) {{ $lines = @() }}
-            $content_old = $lines | Where-Object {{ ($_ -notmatch $pattern) -and ($_.Trim() -ne '') }}
-            $content_new = ($content_old + "" + "`n# --- wanliz ---`n{mappings}`n") -join "`r`n"
-            [IO.File]::WriteAllText($hostsfile, $content_new + "`r`n", [System.Text.Encoding]::ASCII)
-
-            Write-Host "`r`nAllow all users to run .ps1 scripts"
-            Set-ExecutionPolicy Bypass -Scope LocalMachine -Force
-
-            Write-Host "`r`nDisable 'Only allow Windows Hello sign-in'"
-            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\PasswordLess\Device' -Name 'DevicePasswordLessBuildVersion' -Type DWord -Value 0
-
-            Write-Host "`r`nDisable Windows Firewall for all profiles"
-            Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled False
-            Get-NetFirewallProfile | Select-Object Name, Enabled
-
-            Write-Host "`r`nChecking context menu items"
-            Invoke-WebRequest "https://raw.githubusercontent.com/wanlizhu/wanliz/main/WhoLocks.ps1" -OutFile "C:\Program Files\WhoLocks.ps1"
-            $root = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\Classes', $true)
-            foreach ($sub in @('*\shell\WhoLocks','Directory\shell\WhoLocks')) {{
-                $k = $root.CreateSubKey($sub)
-                $k.SetValue('MUIVerb','Who locks this?',[Microsoft.Win32.RegistryValueKind]::String)
-                $k.SetValue('Icon','%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe',[Microsoft.Win32.RegistryValueKind]::String)
-                $k.SetValue('HasLUAShield','',[Microsoft.Win32.RegistryValueKind]::String)
-                $cmd = 'cmd.exe /c start "" "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\WhoLocks.ps1" "%1"'
-                ($k.CreateSubKey('command')).SetValue('', $cmd, [Microsoft.Win32.RegistryValueKind]::String)
-                $k.Close()
-            }}
-            $root.Close()
-        """], check=True)
+        pass 
         
     def config_linux_host(self):
         pass 
 
 
 class CMD_info:
-    """Get GPU HW and driver info"""
-    
-    def run(self):
-        if platform.system() == "Linux":
-            self.linux_info()
-        elif platform.system() == "Windows":
-            self.windows_info()
-
-    def windows_info(self):
-        subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", rf"""
-            nvidia-smi --query-gpu=name,driver_version,pci.bus_id,memory.total,clocks.gr --format=csv | ConvertFrom-Csv |  Format-Table -AutoSize
-            nvidia-smi -q | Select-String 'GSP Firmware Version'
-        """], check=True)
-
-    def linux_info(self):
-        subprocess.run(["bash", "-lic", rf"""
-            export DISPLAY=:0  
-            if [[ -z $(which jq) ]]; then 
-                sudo apt install -y jq &>/dev/null 
-            fi 
-            echo "X server info:"
-            if timeout 2s bash -lc 'command -v xdpyinfo >/dev/null && xdpyinfo >/dev/null 2>&1 || xset q >/dev/null 2>&1'; then 
-                echo "X(:0) is online"
-                echo "DISPLAY=:$DISPLAY"
-                echo "XDG_SESSION_TYPE=:$XDG_SESSION_TYPE"
-                xrandr | grep current
-                glxinfo | grep -i 'OpenGL renderer'
-            else 
-                echo "X(:0) is down or unauthorized"
-            fi 
-            echo -e "\nList GPU devices:"
-            nvidia-smi --query-gpu=index,pci.bus_id,name,compute_cap --format=csv,noheader | while IFS=, read -r idx bus name cc; do
-                bus=$(echo "$bus" | awk '{{$1=$1}};1' | sed 's/^00000000/0000/' | tr 'A-Z' 'a-z')
-                sys="/sys/bus/pci/devices/$bus"
-                node=$(cat "$sys/numa_node" 2>/dev/null || echo -1)         # -1 means no NUMA info
-                cpus=$(cat "$sys/local_cpulist" 2>/dev/null || echo '?')
-                printf "GPU: %s    Name: %s    PCI: %s    NUMA node: %s    CPUs: %s\n" "$idx" "$name" "$bus" "$node" "$cpus"
-            done
-            if [[ -f /mnt/linuxqa/wanliz/vk-physdev-info.$(uname -m) ]]; then 
-                /mnt/linuxqa/wanliz/vk-physdev-info.$(uname -m) | jq -s .
-            fi 
-            echo -e "\nDriver info:"
-            nvidia-smi | grep "Driver Version"
-            nvidia-smi -q | grep -i 'GSP Firmware Version' | sed 's/^[[:space:]]*//'
-            echo -e "\nList PIDs using nvidia module:"
-            sudo lsof -w -n /dev/nvidia* | awk 'NR>1{{print $2}}' | sort -un | while read -r pid; do
-                printf "PID=%-7s %s\n" "$pid" "$(tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null || ps -o args= -p "$pid")"
-            done
-        """], check=False)
+    pass 
 
 
 class CMD_ip:
-    """My public IP to remote"""
-
-    def run(self):
-        print(self.public_ip_to("1.1.1.1", missing_OK=False))
-
-    def public_ip_to(self, remote, missing_OK):
-        output = subprocess.run(["bash", "-lic", rf"ip -4 route get $(getent ahostsv4 {remote} | awk 'NR==1{{print $1}}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p'"], check=True, text=True, capture_output=True)
-        if output.returncode == 0 and output.stdout:
-            return output.stdout 
-        if not missing_OK: 
-            print(output.stderr)
-            raise RuntimeError(f"{remote} is not reachable") 
-        return None 
+    pass 
 
     
 class CMD_p4:
@@ -518,60 +333,13 @@ class CMD_p4:
         elif subcmd == "stash": self.stash()
 
     def status(self):
-        reconcile = horizontal_select("Do you want to run p4 reconcile to collect changes", ["yes", "no"], 1, return_bool=True)
-        subprocess.run(["bash", "-lic", rf"""
-            echo "=== Files Opened for Edit ==="
-            ofiles=$(p4 opened -C $P4CLIENT //$P4CLIENT/...)
-            if [[ ! -z $ofiles ]]; then
-                echo $ofiles
-            fi 
-            if (( {1 if reconcile else 0} )); then 
-                echo 
-                echo "=== Files Not Tracked ==="
-                afiles=$(p4 reconcile -n -a $P4ROOT/... 2>/dev/null || true)
-                if [[ ! -z $afiles ]]; then 
-                    echo "$afiles"     
-                fi  
-                echo 
-                echo "=== Files Deleted ==="
-                dfiles=$(p4 reconcile -n -d $P4ROOT/... 2>/dev/null || true)
-                if [[ ! -z $dfiles ]]; then 
-                    echo "$dfiles"   
-                fi  
-            fi 
-        """], cwd=self.p4root, check=True)
+        pass 
 
     def pull(self):
-        force = horizontal_select("Do you want to run force pull", ["yes", "no"], 1, return_bool=True)
-        subprocess.run(["bash", "-lic", rf"""
-            time p4 sync {"-f" if force else ""}
-            resolve_files=$(p4 resolve -n $P4ROOT/... 2>/dev/null)
-            if [[ ! -z $resolve_files ]]; then 
-                echo "Need resolve, trying auto-merge"
-                p4 resolve -am $P4ROOT/... 
-                conflict_files=$(p4 resolve $P4ROOT/... 2>/dev/null)
-                if [[ ! -z $conflict_files ]]; then 
-                    echo "$(echo $conflict_files | wc -l) conflict files remain [Manual Merge]"
-                    echo $conflict_files
-                else
-                    echo "No manual resolved needed"
-                fi
-            else
-                echo "No resolves needed"
-            fi 
-        """], cwd=self.p4root, check=True)
+        pass 
 
     def stash(self):
-        name = horizontal_select("Select stash name", [f"stash_{datetime.now().astimezone():%Y-%m-%d_%H-%M-%S}", "<input>"], 0)
-        subprocess.run(["bash", "-lic", rf"""
-            p4 reconcile -e -a -d $P4ROOT/... >/dev/null || true
-            p4 change -o /tmp/stash
-            sed -i "s|<enter description here>|STASH: $(date '+%F %T')" /tmp/stash 
-            cl=$(p4 change -i </tmp/stash | awk '/^Change/ {{print $2}}')
-            p4 reopen -c $cl $P4ROOT/... >/dev/null || true 
-            p4 shelve -f -c $cl >/dev/null 
-            echo "Stashed into CL $cl"
-        """], cwd=self.p4root, check=True)
+        pass 
 
 
 class CMD_sshkey:
@@ -583,168 +351,15 @@ class CMD_sshkey:
         self.copy_to(host, user)
 
     def copy_to(self, host, user, passwd=None):
-        subprocess.run(["bash", "-lic", rf"""
-            if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
-                if [[ ! -f ~/.passwd ]]; then 
-                    read -r -s -p "OpenSSL Password: " passwd; echo
-                    echo -n "$passwd" > ~/.passwd    
-                    echo "Updated ~/.passwd"       
-                fi
-                cipher_prv='U2FsdGVkX1/M3Vl9RSvWt6Nkq+VfxD/N9C4jr96qvbXsbPfxWmVSfIMGg80m6g946QCdnxBxrNRs0i9M0mijcmJzCCSgjRRgE5sd2I9Buo1Xn6D0p8LWOpBu8ITqMv0rNutj31DKnF5kWv52E1K4MJdW035RHoZVCEefGXC46NxMo88qzerpdShuzLG8e66IId0kEBMRtWucvhGatebqKFppGJtZDKW/W1KteoXC3kcAnry90H70x2fBhtWnnK5QWFZCuoC16z+RQxp8p1apGHbXRx8JStX/om4xZuhl9pSPY47nYoCAOzTfgYLFanrdK10Jp/huf40Z0WkNYBEOH4fSTD7oikLugaP8pcY7/iO0vD7GN4RFwcB413noWEW389smYdU+yZsM6VNntXsWPWBSRTPaIEjaJ0vtq/4pIGaEn61Tt8ZMGe8kKFYVAPYTZg/0bai1ghdA9CHwO9+XKwf0aL2WalWd8Amb6FFQh+TlkqML/guFILv8J/zov70Jxz/v9mReZXSpDGnLKBpc1K1466FnlLJ89buyx/dh/VXJb+15RLQYUkSZou0S2zxo'  
-                mkdir -p ~/.ssh
-                echo "$cipher_prv" | openssl enc -d -aes-256-cbc -pbkdf2 -a -pass "pass:$(cat ~/.passwd)" > ~/.ssh/id_ed25519
-                chmod 600 ~/.ssh/id_ed25519
-                echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > ~/.ssh/id_ed25519.pub
-                chmod 644 ~/.ssh/id_ed25519.pub
-                echo "Updated ~/.ssh/id_ed25519"
-            fi 
-            
-            {f"sshpass -p '{passwd}'" if passwd else ""} ssh-copy-id -o StrictHostKeyChecking=accept-new {user}@{host}
-            ssh {user}@{host} "echo '~/.ssh/id_ed25519 works'" || exit 1
-
-            if grep -qF "{host}" /path/to/file 2>/dev/null; then 
-                mkdir -p ~/.ssh 
-                echo >> ~/.ssh/config 
-                echo "Host {host}" >> ~/.ssh/config
-                echo -e "\tHostName {host}" >> ~/.ssh/config
-                echo -e "\tUser {user}" >> ~/.ssh/config
-                echo "Added {user}@{host} to ~/.ssh/config"
-            fi 
-        """], check=True)
+        pass 
 
 
 class CMD_upload:
-    """Upload Linux local folder to Windows SSH host"""
-    
-    def run(self):
-        hostname = socket.gethostname()
-        user, host, passwd = self.get_windows_host()
-        src = horizontal_select("Select local folder", [f"{HOME}:NoRecur", "<input>"], 0)
-        if src == f"{HOME}:NoRecur":
-            excludes = ["*/", ".*", "*.deb", "*.run", "*.tar", "*.tar.gz", "*.tgz", "*.zip", "*.so", "perfdebug", "sandbag-tool", "LockToRatedTdp"]
-            subprocess.run(["bash", "-lic", rf"""
-                sshpass -p '{passwd}' rsync -lth --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' {" ".join(f"--exclude='{x}'" for x in excludes)} {HOME}/* {user}@{host}:/mnt/d/{USER}@{hostname}/
-            """], check=True)
-        else:
-            subprocess.run(["bash", "-lic", rf"""
-                sshpass -p '{passwd}' rsync -lth --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' {src} {user}@{host}:/mnt/d/
-            """], check=True)
-        
-    def get_windows_host(self):
-        if os.path.exists(f"{HOME}/.upload_host"):
-            text = Path(f"{HOME}/.upload_host").read_text(encoding="utf-8").rstrip("\n")
-            user = text.split("@")[0]
-            host = text.split("@")[1]
-        else:
-            host = horizontal_select("Host IP")
-            user = horizontal_select("User", ["WanliZhu", "<input>"], 0)
-        
-        if os.path.exists(f"{HOME}/.passwd"):
-            passwd_cipher = Path(f"{HOME}/.passwd").read_text(encoding="utf-8").rstrip("\n")
-        else:
-            passwd_cipher = getpass.getpass("OpenSSL Password: ")
-            Path(f"{HOME}/.passwd").write_text(passwd_cipher, encoding="utf-8")
-            
-        passwd = getpass.getpass("SSH Password: ")
-        if self.test(user, host, passwd):
-            Path(f"{HOME}/.upload_host").write_text(f"{user}@{host}", encoding="utf-8")
-            CMD_sshkey().copy_to(host=host, user=user, passwd=passwd)
-        else:
-            Path(f"{HOME}/.upload_host").unlink(missing_ok=True)
-            print("Authentication failed")
-            return self.get_windows_host()
-
-        return user, host, passwd 
-        
-    def test(self, user, host, passwd):
-        sshpass = f"sshpass -p '{passwd}'" if passwd else ""
-        print(f"Authenticating {user}@{host} with {'password' if passwd else 'keys'}")
-        output = subprocess.run(["bash", "-lic", rf"""
-            if [[ -z $(which sshpass) ]]; then sudo apt install -y sshpass &>/dev/null; fi 
-            {sshpass} ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=3 {user}@{host} true
-        """], check=False)
-        return output.returncode == 0 
+    pass 
 
 
 class CMD_share:
-    """Share a Linux folder via both SMB and NFS"""
-    
-    def run(self):
-        subcmd = horizontal_select("Select subcmd", ["create", "list"], 0)
-        if subcmd == "share":
-            path = horizontal_select("Select or input folder to share", [HOME, "<input>"], 0)
-            path = Path(path).resolve()
-            if not (path.exists() and path.is_dir()):
-                raise RuntimeError(f"Invalid path: {path}")
-            self.share_via_nfs(path)
-            self.share_via_smb(path)
-        else:
-            subprocess.run(["bash", "-lic", rf"""
-                echo "=== NFS Exports ==="
-                sudo exportfs -v | awk '/^\/|^\.\// {{print $1}}' | sort -u
-                echo -e "\n=== SMB Exports ==="
-                sudo testparm -s 2>/dev/null | awk '
-                    /^\[.*\]$/ {{ sec=$0; gsub(/^\[|\]$/,"",sec); next }}
-                    tolower($0) ~ /^[ \t]*path[ \t]*=/ {{
-                    p=$0; sub(/^[ \t]*path[ \t]*=[ \t]*/,"",p);
-                    print sec "\t" p
-                    }}' | grep -Ev '^(global|printers|print\$|homes)$' | column -t  
-            """], check=True)
-
-    def share_via_smb(self, path: Path):
-        output = subprocess.run(["bash", "-lic", "testparm -s"], text=True, check=False, capture_output=True)
-        if output.returncode != 0 and 'not found' in output.stderr:
-            subprocess.run(["bash", "-lic", "sudo apt install -y samba-common-bin samba"], check=True)
-            output = subprocess.run(["bash", "-lic", "testparm -s"], text=True, check=True, capture_output=True)
-
-        for line in output.stdout.splitlines():
-            if str(path) in line:
-                print(f"{path} is sharing via SMB")
-                return 
-        
-        shared_name = re.sub(r"[^A-Za-z0-9._-]","_", path.name) or "share"
-        subprocess.run(["bash", "-lic", rf"""
-            if ! pdbedit -L -u {getpass.getuser()} >/dev/null 2>&1; then
-                sudo smbpasswd -a {getpass.getuser()}
-            fi 
-            if ! grep -q '^\[global\][[:space:]]*$' /etc/samba/smb.conf; then 
-                echo '' | sudo tee -a /etc/samba/smb.conf >/dev/null
-                echo '[global]' | sudo tee -a /etc/samba/smb.conf >/dev/null
-                echo '   map to guest = Bad Password' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            fi 
-            echo '' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '[{shared_name}]' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   path = {path}' | sudo tee  -a /etc/samba/smb.conf >/dev/null
-            echo '   public = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   guest ok = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   force user = {getpass.getuser()}' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   writable = yes' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   create mask = 0777' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            echo '   directory mask = 0777' | sudo tee -a /etc/samba/smb.conf >/dev/null
-            sudo testparm -s || echo '/etc/samba/smb.conf is invalid'
-            sudo systemctl enable --now smbd
-            sudo systemctl restart smbd
-        """], check=True)
-        print(f"{path} is sharing via SMB as {shared_name}")
-
-    def share_via_nfs(self, path: Path):
-        output = subprocess.run(["bash", "-lic", "sudo exportfs -v"], text=True, check=False, capture_output=True)
-        if output.returncode != 0 and 'not found' in output.stderr:
-            subprocess.run(["bash", "-lic", "sudo apt install -y nfs-kernel-server"], check=True)
-            output = subprocess.run(["bash", "-lic", "sudo exportfs -v"], text=True, check=True, capture_output=True)
-
-        for line in output.stdout.splitlines():
-            if line.strip().startswith(str(path) + " "):
-                print(f"{path} is sharing via NFS")
-                return
-        
-        subprocess.run(["bash", "-lic", rf"""
-            echo '{path} *(rw,sync,insecure,no_subtree_check,no_root_squash)' | sudo tee -a /etc/exports >/dev/null 
-            sudo exportfs -ra 
-            sudo systemctl enable --now nfs-kernel-server
-            sudo systemctl restart nfs-kernel-server
-        """], check=True)
-        print(f"{path} is sharing via NFS")
+    pass 
 
 
 class CMD_mount:

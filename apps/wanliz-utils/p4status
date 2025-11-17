@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+if [[ -z $P4CLIENT ]]; then 
+    source p4env
+fi 
+
+echo "=== Files Opened for Edit ==="
+ofiles=$(p4 opened -C $P4CLIENT //$P4CLIENT/...)
+if [[ ! -z $ofiles ]]; then
+    echo $ofiles
+fi 
+
+input "Reconcile to collect local changes? [Y/n]: " choice 
+if [[ -z $choice || $choice == "y" ]]; then 
+    echo "=== Files Not Tracked ==="
+    afiles=$(p4 reconcile -n -a $P4ROOT/... 2>/dev/null || true)
+    if [[ ! -z $afiles ]]; then 
+        echo "$afiles"     
+    fi  
+    echo 
+    echo "=== Files Deleted ==="
+    dfiles=$(p4 reconcile -n -d $P4ROOT/... 2>/dev/null || true)
+    if [[ ! -z $dfiles ]]; then 
+        echo "$dfiles"   
+    fi  
+fi 

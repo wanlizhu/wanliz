@@ -161,7 +161,7 @@ function get_missing_hosts() {
         printf '%s\n' "${missing[@]}"
     fi 
 }
-echo -n "Checking /etc/hosts of known hosts ... "
+echo -n "Adding known hosts into /etc/hosts ... "
 mapfile -t missing_hosts < <(get_missing_hosts)
 if (( ${#missing_hosts[@]} > 0 )); then 
     echo -n "Adding ${#missing_hosts[@]} missing hosts ... "
@@ -175,6 +175,39 @@ if (( ${#missing_hosts[@]} > 0 )); then
         echo "[FAILED]"
     fi 
 else
-    echo "[OK]"
+    echo "[SKIPPED]"
 fi
+
+declare -A required_folders=(
+    ["/mnt/linuxqa"]="linuxqa.nvidia.com:/storage/people"
+    ["/mnt/data"]="linuxqa.nvidia.com:/storage/data"
+    ["/mnt/builds"]="linuxqa.nvidia.com:/storage3/builds"
+    ["/mnt/dvsbuilds"]="linuxqa.nvidia.com:/storage5/dvsbuilds"
+    ["/mnt/wanliz_sw_linux"]="office:/wanliz_sw_linux"
+)
+echo -n "Mounting linuxqa folders ... "
+if (( ${#required_folders[@]} > 0 )); then 
+    failed_msg=""
+    for local_path in "${!required_folders[@]}"; do
+        remote_path="${required_folders[$local_path]}"
+        sudo mkdir -p "$local_path"
+        sudo timeout 3 mount -t nfs $remote_path $local_path || { failed_msg="$failed_msg\nFailed to mount $remote_path" }
+    done 
+    if [[ -z $failed_msg ]]; then 
+        echo "[OK]"
+    else
+        echo "$failed_msg"
+    fi 
+else
+    echo "[SKIPPED]"
+fi
+
+git_email=$(git config --global user.email 2>/dev/null || true)
+if [[ -z $git_email ]]; then
+    git config --global user.email "zhu.wanli@icloud.com"
+fi 
+git_name=$(git config --global user.name 2>/dev/null || true)
+if [[ -z $git_name ]]; then
+    git config --global user.name "Wanli Zhu"
+fi 
 
