@@ -51,11 +51,11 @@ if [[ $fbsize != "3840x2160" ]]; then
 fi 
 xrandr --current
             
-if [[ -z $start_openbox || $start_openbox == "y" ]]; then 
+if [[ $start_openbox == "y" ]]; then 
     screen -S openbox -dm openbox
 fi
 
-if [[ -z $start_x11vnc || $start_x11vnc == "y" ]]; then 
+if [[ $start_x11vnc == "y" ]]; then 
     if [[ -z $(sudo cat /etc/gdm3/custom.conf | grep -v '^#' | grep "WaylandEnable=false") ]]; then 
         echo "{RED}Disable wayland before starting VNC server{RESET}"
         exit 0
