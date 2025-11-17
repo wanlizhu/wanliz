@@ -54,22 +54,31 @@ public static class RM {
 # Collect files (cap recursion if desired)
 if (Test-Path -LiteralPath $Path -PathType Container) {
     $files = Get-ChildItem -LiteralPath $Path -Recurse -File -ErrorAction SilentlyContinue | Select-Object -Expand FullName
-    if (-not $files) { $files = ,$Path }
-} else { $files = ,$Path }
+    if (-not $files) { 
+        $files = ,$Path 
+    }
+} else { 
+    $files = ,$Path 
+}
 
 $pids = [RM]::Pids($files) | Sort-Object -Unique
-if (-not $pids) { 'No locking processes.'; exit }
+if (-not $pids) { 
+    Write-Host 'No locking processes.'
+    Read-Host 'Press [Enter] to exit: ' | Out-Null
+    exit 
+}
 
 $procs   = Get-Process -Id $pids -ErrorAction SilentlyContinue
 $explr   = $procs | Where-Object { $_.ProcessName -ieq 'explorer' }
 $others  = $procs | Where-Object { $_.ProcessName -ine 'explorer' }
 $hasEx   = [bool]$explr
-
+$doKillOthers = $false
 $procs | Select-Object Id,ProcessName,Path | Format-Table -AutoSize
 
-if ($hasEx) { 'File Explorer is locking the target, will restart it' }
+if ($hasEx) { 
+    Write-Host 'File Explorer is locking the target, will restart it' 
+}
 
-$doKillOthers = $false
 if ($others) {
     $doKillOthers = (Read-Host 'Kill all locking processes? (y/N)') -match '^(y|yes)$'
 }
@@ -81,8 +90,13 @@ if ($doKillOthers) {
 if ($hasEx) {
     Get-Process -Name explorer -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Process explorer.exe
-    'File Explorer restarted'
+    Write-Host 'File Explorer restarted'
 }
 
-if ($doKillOthers -or $hasEx) { 'Killed all lockers' } else { 'Cancelled' }
+if ($doKillOthers -or $hasEx) { 
+    Write-Host 'Killed all lockers' 
+} else { 
+    Write-Host 'Canceled' 
+}
+
 Read-Host 'Press [Enter] to exit: ' | Out-Null
