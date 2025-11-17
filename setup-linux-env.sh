@@ -82,6 +82,15 @@ for cmd in "${{!dependencies[@]}}"; do
     fi
 done
 
+git_email=$(git config --global user.email 2>/dev/null || true)
+if [[ -z $git_email ]]; then
+    git config --global user.email "zhu.wanli@icloud.com"
+fi 
+git_name=$(git config --global user.name 2>/dev/null || true)
+if [[ -z $git_name ]]; then
+    git config --global user.name "Wanli Zhu"
+fi 
+
 if ! dpkg -s openssh-server >/dev/null 2>&1; then
     read -p "Install and set up OpenSSH server on this system? [Y/n]: " choice
     if [[ -z $choice || "$choice" == "y" ]]; then 
@@ -198,7 +207,7 @@ if (( ${#missing_folders[@]} > 0 )); then
         remote_folder="${required_folders[$local_folder]}"
         sudo mkdir -p "$local_folder"
         sudo timeout 3 mount -t nfs "$remote_folder" "$local_folder" || { 
-            failed_msg+=$'\n'"\nFailed to mount $remote_folder"
+            failed_msg+=$'\n'"Failed to mount $remote_folder"
         }
     done 
     if [[ -z $failed_msg ]]; then 
@@ -210,12 +219,23 @@ else
     echo "[SKIPPED]"
 fi
 
-git_email=$(git config --global user.email 2>/dev/null || true)
-if [[ -z $git_email ]]; then
-    git config --global user.email "zhu.wanli@icloud.com"
+echo -n "Installing wanliz-utils to /usr/local/bin ..."
+find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
+    real_target=$(readlink -f "$link") || continue 
+    if [[ $real_target == *"/wanliz-utils/"* ]]; then 
+        sudo rm -f "$link" &>/dev/null 
+    fi 
+done 
+failed_msg=""
+for file in "$HOME/wanliz/apps/wanliz-utils"/*; do 
+    [[ -f "$file" && -x "$file" ]] || continue 
+    name=$(basename "$file")
+    sudo ln -sf "$file" "/usr/local/bin/$name" &>/dev/null || {
+        failed_msg+=$'\n'"Failed to create symbolic link /usr/local/bin/$name"
+    }
+done 
+if [[ -z $failed_msg ]]; then 
+    echo "[OK]"
+else
+    echo "$failed_msg"
 fi 
-git_name=$(git config --global user.name 2>/dev/null || true)
-if [[ -z $git_name ]]; then
-    git config --global user.name "Wanli Zhu"
-fi 
-
