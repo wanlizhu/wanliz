@@ -44,4 +44,5 @@ for i in $(seq $samples); do
     done 
     [[ $results == *, ]] && results=${results%,}$'\n'
     echo "$results" | column -t
+    echo 
 done 
