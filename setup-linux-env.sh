@@ -1,26 +1,7 @@
 #!/usr/bin/env bash
 
-apt_has_updated=0
-update_success_stamp=/var/lib/apt/periodic/update-success-stamp
-if [[ -f $update_success_stamp ]]; then 
-    now=$(date +%s)
-    stamp=$(stat -c %Y "$update_success_stamp")
-    if (( now - stamp < 1440 * 60 )); then
-        apt_has_updated=1
-    fi
-fi  
-
-if (( ! apt_has_updated )); then 
-    if [[ "$EUID" -eq 0 ]]; then 
-        apt update -y || true 
-    else
-        sudo apt update -y || true 
-    fi 
-fi 
-
 if [[ -z $(which sudo) && $EUID -eq 0 ]]; then 
     apt install -y sudo 
-    apt_has_updated=1
 fi 
 
 if [[ ! -z "$USER" ]]; then 
@@ -68,17 +49,14 @@ declare -A dependencies=(
     [ninja]=ninja-build
 )
 echo "Ensuring required APT packages are installed ..."
-if [[ -z $apt_has_updated ]]; then
-    sudo apt update &>/dev/null || true 
-fi
-for cmd in "${{!dependencies[@]}}"; do
+for cmd in "${!dependencies[@]}"; do
     if ! command -v "$cmd" &>/dev/null; then
-        pkg="${{dependencies[$cmd]}}"
+        pkg="${dependencies[$cmd]}"
         echo -n "Installing $pkg ... "
-        sudo apt install -y "$pkg" >/dev/null 2>/tmp/err && echo "[OK]" || {{ 
+        sudo apt install -y "$pkg" >/dev/null 2>/tmp/err && echo "[OK]" || {
             echo "[FAILED]"
             cat /tmp/err 
-        }}
+        }
     fi
 done
 
@@ -241,7 +219,7 @@ else
 fi 
 
 echo -n "Installing inspect-gpu-perf-info ... "
-$(dirname $0)/apps/inspect-gpu-perf-info/run.sh -s -b -r && {
+$(dirname $0)/apps/inspect-gpu-perf-info/run.sh -s -b -r &>/dev/null && {
     sudo rm -rf /usr/local/bin/inspect-gpu-perf-info  
     sudo cp -f $(dirname $0)/apps/inspect-gpu-perf-info/_out/Linux_$(uname -m | sed 's/x86_64/amd64/g')_release/inspect-gpu-perf-info /usr/local/bin/inspect-gpu-perf-info && echo "[OK]" || echo "[FAILED]"
 } || echo "[FAILED]"

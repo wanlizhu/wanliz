@@ -19,8 +19,20 @@ declare -A viewset_names=(
     ["sw"]="solidworks-07"
 )
 
-read -p "Viewset: " viewset
+read -p "Viewset (optional): " viewsets
 read -p "Subtest (optional): " subtest 
-$HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml $subtest -resolution 3840x2160 && {
-    cat $HOME/viewperf2020v3/results/${viewset_names[$viewset]}/results.xml 
-}
+
+if [[ -z $viewsets ]]; then 
+    viewsets="catia creo energy maya medical snx sw"
+    rm -rf $HOME/viewperf2020v3/results
+    mkdir -p $HOME/viewperf2020v3/results
+fi 
+
+for viewset in $viewsets; do 
+    echo "$HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml $subtest -resolution 3840x2160"
+    echo "Test starts in 3 seconds ..."
+    sleep 3
+    $HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml $subtest -resolution 3840x2160 && {
+        cat $HOME/viewperf2020v3/results/${viewset_names[$viewset]}/results.xml 
+    }  
+done 
