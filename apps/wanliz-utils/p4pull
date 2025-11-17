@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ -z $P4CLIENT ]]; then 
-    source p4env
+    source p4env -s
 fi 
 
 time p4 sync  

@@ -241,9 +241,9 @@ else
 fi 
 
 echo -n "Installing inspect-gpu-perf-info ... "
-if [[ -e /usr/local/bin/inspect-gpu-perf-info ]]; then 
-    sudo rm -f /usr/local/bin/inspect-gpu-perf-info || true 
-fi 
 $(dirname $0)/apps/inspect-gpu-perf-info/run.sh -s -b -r && {
-    sudo ln -sf $(dirname $0)/apps/inspect-gpu-perf-info/_out/Linux_$(uname -m | sed 's/x86_64/amd64/g')_release/inspect-gpu-perf-info /usr/local/bin/inspect-gpu-perf-info && echo "[OK]" || echo "[FAILED]"
+    sudo rm -rf /usr/local/bin/inspect-gpu-perf-info  
+    sudo cp -f $(dirname $0)/apps/inspect-gpu-perf-info/_out/Linux_$(uname -m | sed 's/x86_64/amd64/g')_release/inspect-gpu-perf-info /usr/local/bin/inspect-gpu-perf-info && echo "[OK]" || echo "[FAILED]"
 } || echo "[FAILED]"
+
+

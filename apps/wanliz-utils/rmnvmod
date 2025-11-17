@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+sudo rm -f /tmp/nvidia_pids
+sudo systemctl stop gdm sddm lightdm nvidia-persistenced nvidia-dcgm 2>/dev/null || true
+sudo lsof  -t /dev/nvidia* /dev/dri/{card*,renderD*} 2>/dev/null >>/tmp/nvidia_pids
+sudo grep -El 'lib(nvidia|cuda|GLX_nvidia|EGL_nvidia|nvoptix|nvrm|nvcuvid)' /proc/*/maps 2>/dev/null | sed -E 's@/proc/([0-9]+)/maps@\1@' >>/tmp/nvidia_pids 
+awk '{for (i=1; i<=NF; i++) print $i}' /tmp/nvidia_pids | sort -u | while IFS= read -r pid; do 
+    [[ $pid =~ ^[0-9]+$ ]] || continue
+    [[ $pid -eq 1 || $pid -eq $$ ]] && continue
+    sudo kill -9 $pid  
+done 

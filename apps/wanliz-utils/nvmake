@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+branch=r580
+target=
+config=develop 
+arch=$(uname -m | sed 's/x86_64/amd64/g')
+jobs=$(nproc)
+
+for arg in "$@"; do 
+    case $arg in 
+        bugfix_main|r580) branch=$arg ;;
+        drivers|opengl|inspect-gpu-page-tables|microbench) target=$arg ;;
+        debug|release|develop) config=$arg ;;
+        amd64|x64|x86_64) arch=amd64 ;;
+        aarch64|arm64) arch=aarch64 ;;
+        -j1) jobs=1 ;;
+    esac
+done 
+
+unixbuild_args="--unshare-namespaces \
+    --tools $P4ROOT/tools \
+    --devrel $P4ROOT/devrel/SDK/inc/GL "
+nvmake_args="NV_COLOR_OUTPUT=1 
+    NV_GUARDWORD= \
+    NV_COMPRESS_THREADS=$(nproc) \
+    NV_FAST_PACKAGE_COMPRESSION=zstd \
+    NV_USE_FRAME_POINTER=1 \
+    NV_UNIX_LTO_ENABLED= \
+    NV_LTCG= \
+    NV_UNIX_CHECK_DEBUG_INFO=0 \
+    NV_MANGLE_SYMBOLS= \
+    NV_TRACE_CODE=$([[ $config == 'release']] && echo 0 || echo 1) \
+    linux $config $arch -j$jobs"
+
+if [[ $branch == "bugfix_main" ]]; then 
+    branch="$P4ROOT/dev/gpu_drv/bugfix_main"
+elif [[ $branch == "r580" ]]; then
+    branch="$P4ROOT/rel/gpu_drv/r580/r580_00"
+else
+    echo "Invalid branch $branch"
+    exit 1
+fi 
+
+if [[ $target == "drivers" ]]; then 
+    nvmake_args+=" drivers dist"
+    workdir="$branch"
+elif [[ $target == "opengl" ]]; then 
+    workdir="$branch/drivers/OpenGL"
+elif [[ $target == "inspect-gpu-page-tables" ]]; then 
+    unixbuild_args+=" --source $workdir --envvar NV_SOURCE=$workdir --extra $P4ROOT/pvt/aritger"
+    workdir="$P4ROOT/pvt/aritger/apps/inspect-gpu-page-tables"
+elif [[ $target == "microbench" ]]; then 
+    workdir="$P4ROOT/apps/gpu/drivers/vulkan/microbench"
+else
+    if [[ -f makefile.nvmk ]]; then 
+        workdir="$(pwd)"
+    else
+        echo "Invalid target: $target"
+        exit 1
+    fi 
+fi 
+
+cd $workdir || exit 1
+time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args 2>/tmp/err && pwd || cat /tmp/err
+

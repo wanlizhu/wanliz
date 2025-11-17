@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+if [[ -z $DISPLAY ]]; then 
+    export DISPLAY=:0
+    echo "Fall back to DISPLAY=$DISPLAY"
+fi 
+
+if [[ -d ~/viewperf2020v3 ]]; then
+    rsync -ah --info=progress2 /mnt/linuxqa/wanliz/viewperf2020v3.$(uname -m)/ ~/viewperf2020v3 || exit 1
+fi 
+
+declare -A viewset_names=(
+    ["catia"]="catia-06"
+    ["creo"]="creo-03"
+    ["energy"]="energy-03"
+    ["maya"]="maya-06"
+    ["medical"]="medical-03"
+    ["snx"]="snx-04"
+    ["sw"]="solidworks-07"
+)
+
+read -p "Viewset: " viewset
+read -p "Subtest (optional): " subtest 
+$HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml $subtest -resolution 3840x2160 && {
+    cat $HOME/viewperf2020v3/results/${viewset_names[$viewset]}/results.xml 
+}

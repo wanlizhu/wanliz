@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+if [[ -f "$1" ]]; then 
+    chmod +x "$1" &>/dev/null || true 
+    if [[ $2 == "-i" ]]; then 
+        sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 "$1"
+    else
+        sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 "$1" -s --no-kernel-module-source --skip-module-load 
+    fi 
+    echo "$1" >~/.driver 
+    echo "Generated ~/.driver"
+elif [[ $1 == "redo" ]]; then 
+    if [[ ! -f $(cat ~/.driver) ]]; then
+        echo "Invalid path in ~/.driver"
+        exit 1
+    fi 
+    $0 $(cat ~/.driver $2)
+else
+    sudo env NVTEST_INSTALLER_REUSE_INSTALL=False /mnt/linuxqa/nvt.sh drivers "$@" 2>/tmp/std2 | tee /tmp/std1 && {
+        driver=$(cat /tmp/std2 | grep 'NVTEST_DRIVER=' | awk '{print $2}' | awk -F'=' '{print $2}')
+        echo "$driver" > ~/.driver 
+        echo "Generated ~/.driver"
+    }
+fi 
