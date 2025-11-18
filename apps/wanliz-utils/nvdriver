@@ -19,12 +19,19 @@ else
     if sudo test ! -d /root/nvt; then 
         sudo /mnt/linuxqa/nvt.sh sync
     fi 
-    sudo env NVTEST_INSTALLER_REUSE_INSTALL=False /mnt/linuxqa/nvt.sh drivers "$@" 2>/tmp/std2 | tee /tmp/std1 && {
-        driver=$(cat /tmp/std2 | grep 'NVTEST_DRIVER=' | awk '{print $2}' | awk -F'=' '{print $2}')
-    } || driver="" 
+    sudo env NVTEST_INSTALLER_REUSE_INSTALL=False /mnt/linuxqa/nvt.sh drivers "$@" 2>/tmp/std2 | tee /tmp/std1 
     cat /tmp/std2
-    if [[ -f $driver ]]; then 
-        echo "$driver" > ~/.driver 
-        echo "Generated ~/.driver"
+    driver=$(cat /tmp/std2 | grep 'NVTEST_DRIVER=' | awk '{print $2}' | awk -F'=' '{print $2}')
+    if [[ ! -z $driver ]]; then 
+        if [[ $driver == "http"* ]]; then 
+            mkdir -p $HOME/drivers
+            local_driver=$HOME/drivers/$(basename "$driver")
+            wget --no-check-certificate -O $local_driver $driver || exit 1
+            echo "$local_driver" > ~/.driver 
+            echo "Generated ~/.driver"
+        elif [[ -f $driver ]]; then 
+            echo "$driver" > ~/.driver 
+            echo "Generated ~/.driver"
+        fi 
     fi 
 fi 
