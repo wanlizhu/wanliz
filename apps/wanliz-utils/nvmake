@@ -29,7 +29,7 @@ nvmake_args="NV_COLOR_OUTPUT=1
     NV_LTCG= \
     NV_UNIX_CHECK_DEBUG_INFO=0 \
     NV_MANGLE_SYMBOLS= \
-    NV_TRACE_CODE=$([[ $config == 'release']] && echo 0 || echo 1) \
+    NV_TRACE_CODE=$([[ $config == 'release']] && echo '0' || echo '1') \
     linux $config $arch -j$jobs"
 
 if [[ $branch == "bugfix_main" ]]; then 
