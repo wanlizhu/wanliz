@@ -7,5 +7,5 @@ sudo grep -El 'lib(nvidia|cuda|GLX_nvidia|EGL_nvidia|nvoptix|nvrm|nvcuvid)' /pro
 awk '{for (i=1; i<=NF; i++) print $i}' /tmp/nvidia_pids | sort -u | while IFS= read -r pid; do 
     [[ $pid =~ ^[0-9]+$ ]] || continue
     [[ $pid -eq 1 || $pid -eq $$ ]] && continue
-    sudo kill -9 $pid  
+    sudo kill -9 $pid  && echo "Killing $pid ... [OK]" || echo "Killing $pid ... [FAILED]"
 done 

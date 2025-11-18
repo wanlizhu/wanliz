@@ -47,6 +47,7 @@ declare -A dependencies=(
     [cmake]=cmake
     [g++]=build-essential
     [ninja]=ninja-build
+    [pkg-config]=pkg-config
 )
 echo "Ensuring required APT packages are installed ..."
 for cmd in "${!dependencies[@]}"; do
