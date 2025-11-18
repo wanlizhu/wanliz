@@ -21,9 +21,10 @@ else
     fi 
     sudo env NVTEST_INSTALLER_REUSE_INSTALL=False /mnt/linuxqa/nvt.sh drivers "$@" 2>/tmp/std2 | tee /tmp/std1 && {
         driver=$(cat /tmp/std2 | grep 'NVTEST_DRIVER=' | awk '{print $2}' | awk -F'=' '{print $2}')
-        if [[ -f $driver ]]; then 
-            echo "$driver" > ~/.driver 
-            echo "Generated ~/.driver"
-        fi 
-    } || cat /tmp/std2
+    } || driver="" 
+    cat /tmp/std2
+    if [[ -f $driver ]]; then 
+        echo "$driver" > ~/.driver 
+        echo "Generated ~/.driver"
+    fi 
 fi 
