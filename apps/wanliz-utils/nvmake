@@ -17,6 +17,8 @@ for arg in "$@"; do
     esac
 done 
 
+[[ $config == "release" ]] && trace_code=0 || trace_code=1
+
 unixbuild_args="--unshare-namespaces \
     --tools $P4ROOT/tools \
     --devrel $P4ROOT/devrel/SDK/inc/GL "
@@ -29,7 +31,7 @@ nvmake_args="NV_COLOR_OUTPUT=1
     NV_LTCG= \
     NV_UNIX_CHECK_DEBUG_INFO=0 \
     NV_MANGLE_SYMBOLS= \
-    NV_TRACE_CODE=$([[ $config == 'release']] && echo '0' || echo '1') \
+    NV_TRACE_CODE=$trace_code \
     linux $config $arch -j$jobs"
 
 if [[ $branch == "bugfix_main" ]]; then 
