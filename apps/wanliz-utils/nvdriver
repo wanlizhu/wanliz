@@ -25,5 +25,5 @@ else
             echo "$driver" > ~/.driver 
             echo "Generated ~/.driver"
         fi 
-    }
+    } || cat /tmp/std2
 fi 
