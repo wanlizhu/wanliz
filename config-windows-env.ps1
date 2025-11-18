@@ -38,13 +38,23 @@ if (wsl -l -v 2>$null |
 
 $wsl_cfg = "$env:USERPROFILE\.wslconfig"
 if (Test-Path $wsl_cfg) {
+    $invalid_wslconfig = $false
     if (-not (Select-String -Path $wsl_cfg -SimpleMatch -Pattern 'networkingMode=mirrored' -Quiet)) {
         Write-Host "Please add 'networkingMode=mirrored' to $wsl_cfg first" -ForegroundColor Yellow
+        $invalid_wslconfig = $true
+    }
+    if (-not (Select-String -Path $wsl_cfg -SimpleMatch -Pattern 'sysctl.vm.max_map_count=262144' -Quiet)) {
+        Write-Host "Please add 'sysctl.vm.max_map_count=262144' to $wsl_cfg first" -ForegroundColor Yellow
+        $invalid_wslconfig = $true
+    }
+    if ($invalid_wslconfig) {
         Read-Host "Press [Enter] to exit"
         exit 1
     }
 } else {
-    "[wsl2]`r`nnetworkingMode=mirrored" | Set-Content $wsl_cfg
+    "[wsl2]" | Set-Content $wsl_cfg
+    "networkingMode=mirrored" | Add-Content $wsl_cfg
+    "kernelCommandLine = `"sysctl.vm.max_map_count=262144`"" | Add-Content $wsl_cfg
     Write-Host "Restart WSL for the changes of ~/.wslconfig to take effect" -ForegroundColor Yellow
 }
 
