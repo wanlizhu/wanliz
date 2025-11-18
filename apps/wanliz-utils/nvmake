@@ -39,9 +39,9 @@ nvmake_args="NV_COLOR_OUTPUT=1
     linux $config $arch -j$jobs"
 
 if [[ $branch == "bugfix_main" ]]; then 
-    branch="$P4ROOT/dev/gpu_drv/bugfix_main"
+    workdir="$P4ROOT/dev/gpu_drv/bugfix_main"
 elif [[ $branch == "r580" ]]; then
-    branch="$P4ROOT/rel/gpu_drv/r580/r580_00"
+    workdir="$P4ROOT/rel/gpu_drv/r580/r580_00"
 else
     echo "Invalid branch \"$branch\""
     exit 1
@@ -49,9 +49,8 @@ fi
 
 if [[ $target == "drivers" ]]; then 
     nvmake_args+=" drivers dist"
-    workdir="$branch"
 elif [[ $target == "opengl" ]]; then 
-    workdir="$branch/drivers/OpenGL"
+    workdir+="/drivers/OpenGL"
 elif [[ $target == "inspect-gpu-page-tables" ]]; then 
     unixbuild_args+=" --source $workdir --envvar NV_SOURCE=$workdir --extra $P4ROOT/pvt/aritger"
     workdir="$P4ROOT/pvt/aritger/apps/inspect-gpu-page-tables"
@@ -61,10 +60,13 @@ else
     if [[ -f makefile.nvmk ]]; then 
         workdir="$(pwd)"
     else
-        echo "Invalid target: $target"
+        echo "Invalid target: \"$target\""
         exit 1
     fi 
 fi 
+
+echo "$branch => $target => linux $arch $config"
+read -p "Press [Enter] to continue: "
 
 cd $workdir || exit 1
 time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args 2>/tmp/err && pwd || cat /tmp/err
