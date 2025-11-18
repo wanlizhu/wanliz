@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ -z $P4CLIENT ]]; then 
-    source p4env -s
+    eval "$(p4env -print)"
 fi 
 
 echo "=== Files Opened for Edit ==="

@@ -20,8 +20,8 @@ compile-commands.json
 EOF
 fi 
 
-if [[ $1 == "-s" ]]; then 
-    exit 0
+if [[ $1 == "-print" ]]; then 
+    echo "export P4PORT=$P4PORT; export P4USER=$P4USER; export P4CLIENT=$P4CLIENT; export P4ROOT=$P4ROOT; export P4IGNORE=$P4IGNORE"
 else
     exec bash -i
 fi 

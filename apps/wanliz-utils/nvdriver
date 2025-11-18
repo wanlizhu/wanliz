@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+if [[ -z $P4CLIENT ]]; then 
+    eval "$(p4env -print)"
+fi 
+
 if [[ -f "$1" ]]; then 
     chmod +x "$1" &>/dev/null || true 
     if [[ $2 == "-i" ]]; then 
@@ -15,7 +19,7 @@ elif [[ $1 == "redo" ]]; then
         exit 1
     fi 
     $(realpath $(dirname $0)) $(cat ~/.driver $2)
-else
+elif [[ ! -z $1 ]]; then  
     if sudo test ! -d /root/nvt; then 
         sudo /mnt/linuxqa/nvt.sh sync
     fi 
@@ -34,4 +38,6 @@ else
             echo "Generated ~/.driver"
         fi 
     fi 
+else 
+    # TODO: list local built drivers 
 fi 
