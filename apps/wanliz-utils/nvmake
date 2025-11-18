@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+if [[ -z $P4CLIENT ]]; then 
+    source p4env -s
+fi 
+
 branch=r580
 target=
 config=develop 
@@ -39,7 +43,7 @@ if [[ $branch == "bugfix_main" ]]; then
 elif [[ $branch == "r580" ]]; then
     branch="$P4ROOT/rel/gpu_drv/r580/r580_00"
 else
-    echo "Invalid branch $branch"
+    echo "Invalid branch \"$branch\""
     exit 1
 fi 
 
