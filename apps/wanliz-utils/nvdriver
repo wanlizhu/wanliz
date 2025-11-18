@@ -16,6 +16,9 @@ elif [[ $1 == "redo" ]]; then
     fi 
     $(realpath $(dirname $0)) $(cat ~/.driver $2)
 else
+    if sudo test ! -d /root/nvt; then 
+        sudo /mnt/linuxqa/nvt.sh sync
+    fi 
     sudo env NVTEST_INSTALLER_REUSE_INSTALL=False /mnt/linuxqa/nvt.sh drivers "$@" 2>/tmp/std2 | tee /tmp/std1 && {
         driver=$(cat /tmp/std2 | grep 'NVTEST_DRIVER=' | awk '{print $2}' | awk -F'=' '{print $2}')
         if [[ -f $driver ]]; then 
