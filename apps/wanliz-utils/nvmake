@@ -9,17 +9,15 @@ target=
 config=develop 
 arch=$(uname -m | sed 's/x86_64/amd64/g')
 jobs=$(nproc)
-sweep=
 
 for arg in "$@"; do 
     case $arg in 
         bugfix_main|r580) branch=$arg ;;
-        drivers|opengl|inspect-gpu-page-tables|microbench) target=$arg ;;
+        sweep|drivers|opengl|inspect-gpu-page-tables|microbench) target=$arg ;;
         debug|release|develop) config=$arg ;;
         amd64|x64|x86_64) arch=amd64 ;;
         aarch64|arm64) arch=aarch64 ;;
         -j1) jobs=1 ;;
-        sweep) sweep=1 ;;
     esac
 done 
 
@@ -58,6 +56,8 @@ elif [[ $target == "inspect-gpu-page-tables" ]]; then
     workdir="$P4ROOT/pvt/aritger/apps/inspect-gpu-page-tables"
 elif [[ $target == "microbench" ]]; then 
     workdir="$P4ROOT/apps/gpu/drivers/vulkan/microbench"
+elif [[ $target == "sweep" ]]; then 
+    echo
 else
     if [[ -f makefile.nvmk ]]; then 
         workdir="$(pwd)"
