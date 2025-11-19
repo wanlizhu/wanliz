@@ -57,7 +57,8 @@ elif [[ $target == "inspect-gpu-page-tables" ]]; then
 elif [[ $target == "microbench" ]]; then 
     workdir="$P4ROOT/apps/gpu/drivers/vulkan/microbench"
 elif [[ $target == "sweep" ]]; then 
-    echo
+    $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake sweep 
+    exit 0
 else
     if [[ -f makefile.nvmk ]]; then 
         workdir="$(pwd)"
@@ -71,9 +72,5 @@ echo "$branch => $target => linux $arch $config"
 read -p "Press [Enter] to continue: "
 
 cd $workdir || exit 1
-if [[ -z $sweep ]]; then 
-    time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args 2>/tmp/std2 && pwd || cat /tmp/std2 | grep -i 'error:\|: \*\*\*'
-else
-    $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake sweep 
-fi 
+time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args 2>/tmp/std2 && pwd || cat /tmp/std2 | grep -i 'error:\|: \*\*\*'
 
