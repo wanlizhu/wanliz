@@ -149,38 +149,6 @@ else
     echo "[OK]"
 fi 
 
-declare -A required_folders=(
-    ["/mnt/linuxqa"]="linuxqa.nvidia.com:/storage/people"
-    ["/mnt/data"]="linuxqa.nvidia.com:/storage/data"
-    ["/mnt/builds"]="linuxqa.nvidia.com:/storage3/builds"
-    ["/mnt/dvsbuilds"]="linuxqa.nvidia.com:/storage5/dvsbuilds"
-    ["/mnt/wanliz_sw_linux"]="office:/wanliz_sw_linux"
-)
-missing_folders=()
-for local_folder in "${!required_folders[@]}"; do
-    if ! mountpoint -q "$local_folder"; then 
-        missing_folders+=("$local_folder")
-    fi 
-done 
-echo -n "Mounting linuxqa folders ... "
-if (( ${#missing_folders[@]} > 0 )); then
-    failed_msg=""
-    for local_folder in "${missing_folders[@]}"; do 
-        remote_folder="${required_folders[$local_folder]}"
-        sudo mkdir -p "$local_folder"
-        sudo timeout 3 mount -t nfs "$remote_folder" "$local_folder" || { 
-            failed_msg+=$'\n'"Failed to mount $remote_folder"
-        }
-    done 
-    if [[ -z $failed_msg ]]; then 
-        echo "[OK]"
-    else
-        echo "$failed_msg"
-    fi 
-else
-    echo "[SKIPPED]"
-fi
-
 echo -n "Installing wanliz-utils to /usr/local/bin ..."
 find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
     real_target=$(readlink -f "$link") || continue 
@@ -208,3 +176,35 @@ $(realpath $(dirname $0))/apps/inspect-gpu-perf-info/run.sh -s -b -r &>/dev/null
 } || echo "[FAILED]"
 
 
+declare -A required_folders=(
+    ["/mnt/linuxqa"]="linuxqa.nvidia.com:/storage/people"
+    ["/mnt/data"]="linuxqa.nvidia.com:/storage/data"
+    ["/mnt/builds"]="linuxqa.nvidia.com:/storage3/builds"
+    ["/mnt/dvsbuilds"]="linuxqa.nvidia.com:/storage5/dvsbuilds"
+    ["/mnt/wanliz_sw_linux"]="office:/wanliz_sw_linux"
+)
+missing_folders=()
+for local_folder in "${!required_folders[@]}"; do
+    if ! mountpoint -q "$local_folder"; then 
+        missing_folders+=("$local_folder")
+    fi 
+done 
+echo "Mount linuxqa folders in 3 seconds: " && sleep 3
+echo -n "Mounting linuxqa folders ... "
+if (( ${#missing_folders[@]} > 0 )); then
+    failed_msg=""
+    for local_folder in "${missing_folders[@]}"; do 
+        remote_folder="${required_folders[$local_folder]}"
+        sudo mkdir -p "$local_folder"
+        sudo timeout 3 mount -t nfs "$remote_folder" "$local_folder" || { 
+            failed_msg+=$'\n'"Failed to mount $remote_folder"
+        }
+    done 
+    if [[ -z $failed_msg ]]; then 
+        echo "[OK]"
+    else
+        echo "$failed_msg"
+    fi 
+else
+    echo "[SKIPPED]"
+fi
