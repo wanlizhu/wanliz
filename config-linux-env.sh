@@ -124,10 +124,13 @@ fi
 
 declare -A required_hosts=(
     ["172.16.179.143"]="office"
-    ["10.31.86.235"]="horizon spark"
-    ["10.176.11.106"]="horizon-proxy spark-proxy 4u2g-0110"
-    ["10.178.94.106"]="gb300 galaxy"
-    ["10.86.160.23"]="gb300-proxy galaxy-proxy"
+    ["172.16.178.123"]="horizon5"
+    ["172.16.177.182"]="horizon6"
+    ["172.16.177.216"]="horizon7"
+    ["10.31.86.235"]="n1x-nvtest"
+    ["10.176.11.106"]="n1x-proxy 4u2g-0110"
+    ["10.178.94.106"]="gb300"
+    ["10.86.160.23"]="gb300-proxy"
 )
 function get_missing_hosts() {
     local host_ip host_name  
