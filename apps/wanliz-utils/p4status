@@ -5,12 +5,12 @@ if [[ -z $P4CLIENT ]]; then
 fi 
 
 echo "=== Files Opened for Edit ==="
-ofiles=$(p4 opened -C $P4CLIENT //$P4CLIENT/...)
+ofiles=$(p4 opened -C $P4CLIENT //... 2>/dev/null)
 if [[ ! -z $ofiles ]]; then
     echo $ofiles
 fi 
 
-input "Reconcile to collect local changes? [Y/n]: " choice 
+read -p "Reconcile to collect local changes? [Y/n]: " choice 
 if [[ -z $choice || $choice == "y" ]]; then 
     echo "=== Files Not Tracked ==="
     afiles=$(p4 reconcile -n -a $P4ROOT/... 2>/dev/null || true)
