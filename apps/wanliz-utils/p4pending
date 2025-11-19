@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+if [[ -z $P4CLIENT ]]; then 
+    eval "$(p4env -print)"
+fi 
+
+p4 changes -s pending | awk -F"'" '$2 ~ /^\[patch\]/' | while read -r line; do 
+    changelist=$(echo "$line" | awk '{print $2}')
+    if p4 describe -s -S "$changelist" >/dev/null 2>&1; then
+        echo "$line #shelved"
+    else
+        echo "$line #applied"
+    fi
+done 
