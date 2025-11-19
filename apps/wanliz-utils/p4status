@@ -12,15 +12,15 @@ fi
 
 read -p "Reconcile to collect local changes? [Y/n]: " choice 
 if [[ -z $choice || $choice == "y" ]]; then 
-    echo "=== Files Not Tracked ==="
     afiles=$(p4 reconcile -n -a $P4ROOT/... 2>/dev/null || true)
     if [[ ! -z $afiles ]]; then 
+        echo "=== Files Not Tracked ==="
         echo "$afiles"     
     fi  
     echo 
-    echo "=== Files Deleted ==="
     dfiles=$(p4 reconcile -n -d $P4ROOT/... 2>/dev/null || true)
     if [[ ! -z $dfiles ]]; then 
+        echo "=== Files Deleted ==="
         echo "$dfiles"   
     fi  
 fi 
