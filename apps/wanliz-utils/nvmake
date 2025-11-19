@@ -69,5 +69,5 @@ echo "$branch => $target => linux $arch $config"
 read -p "Press [Enter] to continue: "
 
 cd $workdir || exit 1
-time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args 2>/tmp/err && pwd || cat /tmp/err
+time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args 2>/tmp/std2 && pwd || cat /tmp/std2 | grep -i 'error:\|: \*\*\*'
 
