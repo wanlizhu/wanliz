@@ -73,7 +73,9 @@ echo "$branch => $target => linux $arch $config"
 read -p "Press [Enter] to continue: "
 
 cd $workdir || exit 1
-time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args 2>/tmp/std2 | | grep '[[:space:]]LINK[[:space:]]\|\.so[[:space:]]*$' | grep -v 'HARDLINK' | grep -v 'SYMLINK' | grep -v 'Symlink' | grep -v 'COPY' | grep -v 'Copying' && {
-    pwd 
- } || cat /tmp/std2 | grep -i 'error:\|: \*\*\*'
+time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args 2>/tmp/std2 | grep '[[:space:]]LINK[[:space:]]\|\.so[[:space:]]*$' | grep -v 'HARDLINK' | grep -v 'SYMLINK' | grep -v 'Symlink' | grep -v 'COPY' | grep -v 'Copying' 
 
+if [[ ${PIPESTATUS[0]} -ne 0 ]]; then 
+    cat /tmp/std2 | grep -i 'error:\|: \*\*\*'
+fi 
+pwd 
