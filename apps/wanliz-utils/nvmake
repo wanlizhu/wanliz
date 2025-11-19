@@ -57,6 +57,7 @@ elif [[ $target == "inspect-gpu-page-tables" ]]; then
 elif [[ $target == "microbench" ]]; then 
     workdir="$P4ROOT/apps/gpu/drivers/vulkan/microbench"
 elif [[ $target == "sweep" ]]; then 
+    cd $workdir &&
     $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake sweep 
     exit 0
 else
