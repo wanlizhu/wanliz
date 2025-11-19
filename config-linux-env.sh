@@ -128,46 +128,26 @@ declare -A required_hosts=(
     ["172.16.177.182"]="horizon6"
     ["172.16.177.216"]="horizon7"
     ["10.31.86.235"]="n1x-nvtest"
-    ["10.176.11.106"]="n1x-proxy 4u2g-0110"
+    ["10.176.11.106"]="n1x-proxy"
     ["10.178.94.106"]="gb300"
     ["10.86.160.23"]="gb300-proxy"
 )
-function get_missing_hosts() {
-    local host_ip host_name  
-    local missing=()
-
-    for host_ip in "${!required_hosts[@]}"; do
-        local host_missing=0
-        for host_name in ${required_hosts[$host_ip]}; do 
-            if [[ -z $(grep $host_name /etc/hosts | grep $host_ip) ]]; then
-                host_missing=1
-                break
-            fi
-        done
-        if (( host_missing )); then
-            missing+=("$host_ip")
-        fi 
-    done
-    if (( ${#missing[@]} > 0 )); then
-        printf '%s\n' "${missing[@]}"
-    fi 
-}
 echo -n "Adding known hosts into /etc/hosts ... "
-mapfile -t missing_hosts < <(get_missing_hosts)
-if (( ${#missing_hosts[@]} > 0 )); then 
-    echo -n "Adding ${#missing_hosts[@]} missing hosts ... "
-    for host_ip in "${missing_hosts[@]}"; do 
-        printf '%s\t%s\n' "$host_ip" "${required_hosts[$host_ip]}" | sudo tee -a /etc/hosts >/dev/null || exit 1
-    done 
-    mapfile -t missing_hosts < <(get_missing_hosts)
-    if (( ${#missing_hosts[@]} == 0 )); then
-        echo "[OK]"
-    else
-        echo "[FAILED]"
+missing=()
+for ip in "${!required_hosts[@]}"; do 
+    names="${required_hosts[$ip]}"
+    if ! grep -qE "^[[:space:]]*$ip[[:space:]]+$names([[:space:]]|$)" /etc/hosts; then 
+        missing+=("$ip $names")
     fi 
-else
+done 
+if (( ${#missing[@]} == 0 )); then 
     echo "[SKIPPED]"
-fi
+else
+    for entry in "${missing[@]}"; do 
+        echo "$entry" | sudo tee -a /etc/hosts >/dev/null 
+    done 
+    echo "[OK]"
+fi 
 
 declare -A required_folders=(
     ["/mnt/linuxqa"]="linuxqa.nvidia.com:/storage/people"
