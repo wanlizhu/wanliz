@@ -7,13 +7,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 file(CREATE_LINK 
     "${CMAKE_BINARY_DIR}/compile_commands.json"
     "${CMAKE_SOURCE_DIR}/compile_commands.json"
-    SYMBOLIC)
+    SYMBOLIC
+)
 
 find_package(Vulkan REQUIRED)
 
 add_executable(inspect-gpu-perf-info 
     "main.cpp"
-    "common.h"
+    "VK_common.h"
     "VK_physdev.cpp" 
     "VK_physdev.h" 
     "VK_instance.cpp"
@@ -27,11 +28,12 @@ target_include_directories(inspect-gpu-perf-info PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(inspect-gpu-perf-info PRIVATE Vulkan::Vulkan)
 
 add_library(VkLayer_inspect_gpu_perf_info SHARED
-    "common.h"
+    "VkLayer_common.h"
     "VkLayer_inspect_gpu_perf_info.cpp"
+    "VkLayer_hooked_alloc.cpp"
 )
 configure_file(
-    "${CMAKE_SOURCE_DIR}/VkLayer_inspect_gpu_perf_info.json.in"
+    "${CMAKE_SOURCE_DIR}/VK_LAYER_inspect_gpu_perf_info.json.in"
     "${CMAKE_BINARY_DIR}/VkLayer_inspect_gpu_perf_info.json"
     @ONLY
 )
@@ -40,6 +42,11 @@ install(CODE "
     file(CREATE_LINK 
         \"${CMAKE_BINARY_DIR}/inspect-gpu-perf-info\"
         /usr/local/bin/inspect-gpu-perf-info
+        SYMBOLIC
+    )
+    file(CREATE_LINK 
+        \"${CMAKE_BINARY_DIR}/VkLayer_inspect_gpu_perf_info.json\"
+        /usr/share/vulkan/explicit_layer.d/VkLayer_inspect_gpu_perf_info.json
         SYMBOLIC
     )
 ")

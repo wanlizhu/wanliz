@@ -25,10 +25,10 @@ outdir=$workspace/_out/Linux_$(uname -m | sed 's/x86_64/amd64/g')_${build_config
 mkdir -p $outdir 
 cd $outdir || exit 1
 cmake ../.. || exit 1
-make || exit 1
+cmake --build . || exit 1
 
 if [[ $install -eq 1 ]]; then 
-    make install 
+    sudo cmake --build . --target install
 else
     ./inspect-gpu-perf-info $target 
 fi 

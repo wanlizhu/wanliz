@@ -1,5 +1,5 @@
 #pragma once
-#include "common.h"
+#include "VK_common.h"
 
 struct VK_instance {
     VkInstance handle = NULL;

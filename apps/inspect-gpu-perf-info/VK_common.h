@@ -25,6 +25,7 @@
 #include <vulkan/vulkan.h>
 #include "json.h"
 #ifdef __linux__
+#include <sys/wait.h>
 #include <unistd.h>
 #endif 
 
