@@ -9,6 +9,7 @@ target=.
 config=develop 
 arch=$(uname -m | sed 's/x86_64/amd64/g')
 jobs=$(nproc)
+verbose=
 
 for arg in "$@"; do 
     case $arg in 
@@ -18,6 +19,7 @@ for arg in "$@"; do
         amd64|x64|x86_64) arch=amd64 ;;
         aarch64|arm64) arch=aarch64 ;;
         -j1) jobs=1 ;;
+        -v) verbose=1 ;;
     esac
 done 
 
@@ -73,9 +75,15 @@ echo "$branch => $target => linux $arch $config"
 read -p "Press [Enter] to continue: "
 
 cd $workdir || exit 1
-time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args 2>/tmp/std2 | grep '[[:space:]]LINK[[:space:]]\|\.so[[:space:]]*$' | grep -v 'HARDLINK' | grep -v 'SYMLINK' | grep -v 'Symlink' | grep -v 'COPY' | grep -v 'Copying' 
+
+if [[ $verbose == "1" ]]; then 
+    time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args 2>/tmp/std2
+else
+    time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args 2>/tmp/std2 | grep '[[:space:]]LINK[[:space:]]\|\.so[[:space:]]*$' | grep -v 'HARDLINK' | grep -v 'SYMLINK' | grep -v 'Symlink' | grep -v 'COPY' | grep -v 'Copying' 
+fi 
 
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then 
     cat /tmp/std2 | grep -i 'error:\|: \*\*\*'
 fi 
+
 pwd 
