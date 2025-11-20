@@ -18,6 +18,13 @@ if [[ ! -f ~/.passwd ]]; then
     fi    
 fi
 
+if printf '%s\n' "$PATH" | tr ':' '\n' | grep "$HOME/.local/bin" >/dev/null; then
+    echo "Adding ~/.local/bin to PATH ... [SKIPPED]"
+else
+    echo -e "\nexport PATH=\"\$PATH:\$HOME/.local/bin\"" >> ~/.bashrc
+    echo "Adding ~/.local/bin to PATH ... [OK]"
+fi
+
 declare -A dependencies=(
     [jq]=jq
     [rsync]=rsync
