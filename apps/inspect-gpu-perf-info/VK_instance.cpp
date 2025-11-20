@@ -1,7 +1,7 @@
 #include "VK_instance.h"
 
 std::string VkResult_str(VkResult result) {
-    switch (result) {
+    switch (static_cast<int>(result)) {
         case 0:             return "VK_SUCCESS";
         case 1:             return "VK_NOT_READY";
         case 2:             return "VK_TIMEOUT";

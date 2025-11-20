@@ -5,6 +5,7 @@ build_config=debug
 for arg in "$@"; do 
     if [[ $arg == -s ]]; then 
         sudo apt install -y \
+            build-essential clang \
             mesa-vulkan-drivers \
             vulkan-tools \
             vulkan-validationlayers \

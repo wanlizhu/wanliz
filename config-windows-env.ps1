@@ -129,8 +129,8 @@ if (-not (Test-Path $k) -or ((Get-Item $k).GetValue('', $null) -ne '')) {
     Start-Process explorer.exe
 }
 
-Write-Host "Allow all users to run .ps1 scripts"
-Set-ExecutionPolicy Bypass -Scope LocalMachine -Force
+Write-Host "Allow current user to run .ps1 scripts"
+Set-ExecutionPolicy Bypass -Scope CurrentUser -Force
 
 Write-Host "Disable 'Only allow Windows Hello sign-in'"
 Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\PasswordLess\Device' -Name 'DevicePasswordLessBuildVersion' -Type DWord -Value 0
@@ -243,7 +243,7 @@ function Uninstall-OneDrive {
     }
 }
 
-$answer = Read-Host "Uninstall and disable OneDrive? [Y/n]: "
+$answer = Read-Host "Uninstall and disable OneDrive? [Y/n]"
 if ([string]::IsNullOrWhiteSpace($answer) -or $answer -match '^[Y/y]') {
     Uninstall-OneDrive
 }
