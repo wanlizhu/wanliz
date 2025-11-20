@@ -18,13 +18,6 @@ if [[ ! -f ~/.passwd ]]; then
     fi    
 fi
 
-if printf '%s\n' "$PATH" | tr ':' '\n' | grep "$HOME/.local/bin" >/dev/null; then
-    echo "Adding ~/.local/bin to PATH ... [SKIPPED]"
-else
-    echo -e "\nexport PATH=\"\$PATH:\$HOME/.local/bin\"" >> ~/.bashrc
-    echo "Adding ~/.local/bin to PATH ... [OK]"
-fi
-
 declare -A dependencies=(
     [jq]=jq
     [rsync]=rsync
@@ -156,8 +149,8 @@ else
     echo "[OK]"
 fi 
 
-echo -n "Installing wanliz-utils to ~/.local/bin ..."
-find $HOME/.local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
+echo -n "Installing wanliz-utils to /usr/local/bin ..."
+find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
     real_target=$(readlink -f "$link") || continue 
     if [[ $real_target == *"/wanliz-utils/"* ]]; then 
         sudo rm -f "$link" &>/dev/null 
@@ -167,8 +160,8 @@ failed_msg=""
 for file in "$(realpath $(dirname $0))/apps/wanliz-utils"/*; do 
     [[ -f "$file" && -x "$file" ]] || continue 
     name=$(basename "$file")
-    sudo ln -sf "$file" "$HOME/.local/bin/$name" &>/dev/null || {
-        failed_msg+=$'\n'"Failed to create symbolic link $HOME/.local/bin/$name"
+    sudo ln -sf "$file" "/usr/local/bin/$name" &>/dev/null || {
+        failed_msg+=$'\n'"Failed to create symbolic link /usr/local/bin/$name"
     }
 done 
 if [[ -z $failed_msg ]]; then 
@@ -179,7 +172,7 @@ fi
 
 echo -n "Installing inspect-gpu-perf-info ... "
 $(realpath $(dirname $0))/apps/inspect-gpu-perf-info/run.sh -s -b -r &>/dev/null && {
-    sudo ln -sf $(realpath $(dirname $0))/apps/inspect-gpu-perf-info/_out/Linux_$(uname -m | sed 's/x86_64/amd64/g')_release/inspect-gpu-perf-info $HOME/.local/bin/inspect-gpu-perf-info && echo "[OK]" || echo "[FAILED]"
+    sudo ln -sf $(realpath $(dirname $0))/apps/inspect-gpu-perf-info/_out/Linux_$(uname -m | sed 's/x86_64/amd64/g')_release/inspect-gpu-perf-info /usr/local/bin/inspect-gpu-perf-info && echo "[OK]" || echo "[FAILED]"
 } || echo "[FAILED]"
 
 
