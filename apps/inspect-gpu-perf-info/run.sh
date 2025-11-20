@@ -1,19 +1,22 @@
 #!/usr/bin/env bash
 
-build_only=
+install=
 build_config=debug
+target=
 for arg in "$@"; do 
-    if [[ $arg == -s ]]; then 
+    if [[ $arg == -setup ]]; then 
         sudo apt install -y \
             build-essential clang \
             mesa-vulkan-drivers \
             vulkan-tools \
             vulkan-validationlayers \
             libvulkan-dev
-    elif [[ $arg == -b ]]; then 
-        build_only=1
-    elif [[ $arg == -r ]]; then 
+    elif [[ $arg == -install ]]; then 
+        install=1
+    elif [[ $arg == -release ]]; then 
         build_config=release
+    elif [[ $arg == -target=* ]]; then 
+        target="${arg#-target=}"
     fi 
 done 
 
@@ -24,6 +27,8 @@ cd $outdir || exit 1
 cmake ../.. || exit 1
 make || exit 1
 
-if [[ -z $build_only ]]; then 
-    ./inspect-gpu-perf-info
+if [[ $install -eq 1 ]]; then 
+    make install 
+else
+    ./inspect-gpu-perf-info $target 
 fi 

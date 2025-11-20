@@ -24,5 +24,10 @@
 #include <cstdlib>
 #include <vulkan/vulkan.h>
 #include "json.h"
+#ifdef __linux__
+#include <unistd.h>
+#endif 
 
 #define FIND_IN_VEC(x, vec) (std::find(vec.begin(), vec.end(), x) != vec.end())
+#define LOAD_VK_API_FROM_INST(name, instance) reinterpret_cast<PFN_##name>(vkGetInstanceProcAddr(instance, #name))
+#define LOAD_VK_API(name) LOAD_VK_API_FROM_INST(name, VK_instance::GET().handle)

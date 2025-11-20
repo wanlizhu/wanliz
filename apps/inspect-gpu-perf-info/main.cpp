@@ -7,7 +7,7 @@ int main(int argc, char **argv) {
         pid_t childProc = fork();
         if (childProc == 0) { // Inside child process
             setenv("VK_INSTANCE_LAYERS", "VK_LAYER_inspect_gpu_perf_info", 1);
-            setenv("VK_LAYER_PATH", "/path/to/layers", 1);
+            
         } else if (childProc > 0) { // Inside parent process
             // TODO: communicate with child proc
         }

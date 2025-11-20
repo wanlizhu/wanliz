@@ -149,3 +149,4 @@ VK_instance::~VK_instance() {
     }
     vkDestroyInstance(handle, NULL);
 }
+
