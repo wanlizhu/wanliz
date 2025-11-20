@@ -152,4 +152,100 @@ foreach ($sub in @('*\shell\WhoLocks','Directory\shell\WhoLocks')) {
 }
 $root.Close()
 
+function Uninstall-OneDrive {
+    Write-Host "Stopping OneDrive processes..."
+    Get-Process |
+        Where-Object { $_.Name -like "OneDrive*" } -ErrorAction SilentlyContinue |
+        Stop-Process -Force -ErrorAction SilentlyContinue
+
+    Write-Host "Killing OneDrive.exe if still running..."
+    Start-Process -FilePath "taskkill.exe" -ArgumentList "/f /im OneDrive.exe" -NoNewWindow -Wait -ErrorAction SilentlyContinue
+
+    Write-Host "Uninstalling OneDrive via setup executables..."
+    $setupPaths = @(
+        "$env:SystemRoot\System32\OneDriveSetup.exe",
+        "$env:SystemRoot\SysWOW64\OneDriveSetup.exe"
+    )
+
+    foreach ($p in $setupPaths) {
+        if (Test-Path $p) {
+            Write-Host "Running: $p /uninstall"
+            Start-Process -FilePath $p -ArgumentList "/uninstall" -NoNewWindow -Wait -ErrorAction SilentlyContinue
+        }
+    }
+
+    Write-Host "Trying winget uninstall if available..."
+    if (Get-Command winget -ErrorAction SilentlyContinue) {
+        try {
+            winget uninstall "Microsoft OneDrive"
+        } catch {
+            Write-Host "winget uninstall failed or not applicable, continuing..."
+        }
+    }
+
+    Write-Host "Disabling OneDrive sync by policy..."
+    $policyKey = "HKLM:\Software\Policies\Microsoft\Windows\OneDrive"
+    if (-not (Test-Path $policyKey)) {
+        New-Item -Path $policyKey -Force | Out-Null
+    }
+    New-ItemProperty -Path $policyKey -Name "DisableFileSyncNGSC" -PropertyType DWord -Value 1 -Force | Out-Null
+
+    Write-Host "Removing OneDrive from explorer navigation pane..."
+    $clsidPaths = @(
+        "Registry::HKEY_CLASSES_ROOT\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}",
+        "Registry::HKEY_CLASSES_ROOT\Wow6432Node\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}"
+    )
+
+    foreach ($k in $clsidPaths) {
+        if (-not (Test-Path $k)) {
+            New-Item -Path $k -Force | Out-Null
+        }
+        New-ItemProperty -Path $k -Name "System.IsPinnedToNameSpaceTree" -PropertyType DWord -Value 0 -Force | Out-Null
+    }
+
+    Write-Host "Cleaning run entries so OneDrive does not auto start..."
+    $runKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+    foreach ($name in "OneDrive", "OneDriveSetup") {
+        Remove-ItemProperty -Path $runKey -Name $name -ErrorAction SilentlyContinue
+    }
+
+    Write-Host "Disabling OneDrive related scheduled tasks..."
+    $oneDriveTasks = Get-ScheduledTask -ErrorAction SilentlyContinue |
+        Where-Object { $_.TaskName -like "*OneDrive*" }
+
+    foreach ($t in $oneDriveTasks) {
+        try {
+            Disable-ScheduledTask -TaskName $t.TaskName -TaskPath $t.TaskPath -ErrorAction SilentlyContinue
+        } catch {
+        }
+    }
+
+    Write-Host "Removing leftover OneDrive folders for current user..."
+    $pathsToRemove = @(
+        "$env:LOCALAPPDATA\Microsoft\OneDrive",
+        "$env:PROGRAMDATA\Microsoft OneDrive"
+    )
+
+    foreach ($p in $pathsToRemove) {
+        if (Test-Path $p) {
+            Write-Host "Removing $p"
+            Remove-Item -Path $p -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    Write-Host "Removing per user OneDrive folders under C:\Users..."
+    Get-ChildItem "C:\Users" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+        $od = Join-Path $_.FullName "OneDrive"
+        if (Test-Path $od) {
+            Write-Host "Removing $od"
+            Remove-Item -Path $od -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+$answer = Read-Host "Uninstall and disable OneDrive? [Y/n]: "
+if ([string]::IsNullOrWhiteSpace($answer) -or $answer -match '^[Y/y]') {
+    Uninstall-OneDrive
+}
+
 Read-Host "Press [Enter] to exit"
