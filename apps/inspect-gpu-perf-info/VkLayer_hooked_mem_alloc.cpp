@@ -7,7 +7,6 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
     VkDeviceMemory* pMemory
 ) {
     VK_DEFINE_ORIGINAL_FUNC(vkAllocateMemory);
-    std::cout << "HKed_vkAllocateMemory" << std::endl;
     return original_pfn_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
 }
 
