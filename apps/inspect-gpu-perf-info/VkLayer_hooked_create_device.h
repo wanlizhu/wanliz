@@ -8,11 +8,6 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkCreateDevice(
     VkDevice* pDevice
 );
 
-VKAPI_ATTR void VKAPI_CALL HKed_vkDestroyDevice(
-    VkDevice device,
-    const VkAllocationCallbacks* pAllocator
-);
-
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL HKed_vkGetDeviceProcAddr(
     VkDevice device, 
     const char* pName

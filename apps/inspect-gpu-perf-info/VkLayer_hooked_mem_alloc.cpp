@@ -6,8 +6,9 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
     const VkAllocationCallbacks* pAllocator,
     VkDeviceMemory* pMemory
 ) {
+    VK_DEFINE_ORIGINAL_FUNC(vkAllocateMemory);
     std::cout << "HKed_vkAllocateMemory" << std::endl;
-    return DEVICE_PFN_TABLE(device).pfn_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
+    return original_pfn_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
 }
 
 VKAPI_ATTR void VKAPI_CALL HKed_vkFreeMemory(
@@ -15,6 +16,7 @@ VKAPI_ATTR void VKAPI_CALL HKed_vkFreeMemory(
     VkDeviceMemory memory,
     const VkAllocationCallbacks* pAllocator
 ) {
-    DEVICE_PFN_TABLE(device).pfn_vkFreeMemory(device, memory, pAllocator);
+    VK_DEFINE_ORIGINAL_FUNC(vkFreeMemory);
+    original_pfn_vkFreeMemory(device, memory, pAllocator);
 }
 

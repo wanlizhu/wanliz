@@ -7,11 +7,6 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkCreateInstance(
     VkInstance* pInstance
 );
 
-VKAPI_ATTR void VKAPI_CALL HKed_vkDestroyInstance(
-    VkInstance instance,
-    const VkAllocationCallbacks* pAllocator
-);
-
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL HKed_vkGetInstanceProcAddr(
     VkInstance instance, 
     const char* pName

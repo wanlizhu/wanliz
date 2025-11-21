@@ -6,32 +6,14 @@
 #include <mutex>
 #include <cstring>
 #include <iostream>
+#include <cassert>
 
 #define VK_LAYER_EXPORT __attribute__((visibility("default")))
-#define GET_ID(handle) (*(void**)(handle))
-#define INSTANCE_PFN_TABLE(instance) g_dispatch_map_per_instance.at(GET_ID(instance))
-#define DEVICE_PFN_TABLE(device) g_dispatch_map_per_device.at(GET_ID(device))
+#define VK_DEFINE_ORIGINAL_FUNC(name) static PFN_##name original_pfn_##name = NULL; \
+    if (original_pfn_##name == NULL) { \
+        original_pfn_##name = (PFN_##name)g_pfn_vkGetDeviceProcAddr(device, #name); \
+    } assert(original_pfn_##name)
 
-struct VK_instance_dispatch_table {
-    PFN_vkGetInstanceProcAddr pfn_vkGetInstanceProcAddr;
-    PFN_vkDestroyInstance pfn_vkDestroyInstance;
-    PFN_vkEnumerateDeviceExtensionProperties pfn_vkEnumerateDeviceExtensionProperties;
-
-    VK_instance_dispatch_table(VkInstance instance, PFN_vkGetInstanceProcAddr _vkGetInstanceProcAddr);
-};
-
-struct VK_device_dispatch_table {
-    PFN_vkGetDeviceProcAddr pfn_vkGetDeviceProcAddr;
-    PFN_vkDestroyDevice pfn_vkDestroyDevice;
-    PFN_vkAllocateMemory pfn_vkAllocateMemory;
-    PFN_vkFreeMemory pfn_vkFreeMemory;
-
-    VK_device_dispatch_table(VkDevice device, PFN_vkGetDeviceProcAddr _vkGetDeviceProcAddr);
-};
-
+extern PFN_vkGetInstanceProcAddr g_pfn_vkGetInstanceProcAddr;
+extern PFN_vkGetDeviceProcAddr g_pfn_vkGetDeviceProcAddr;
 extern std::unordered_map<std::string, PFN_vkVoidFunction> g_hooked_functions;
-extern std::unordered_map<void*, VK_instance_dispatch_table> g_dispatch_map_per_instance;
-extern std::unordered_map<void*, VK_device_dispatch_table> g_dispatch_map_per_device;
-extern std::mutex g_dispatch_map_mutex;
-
-
