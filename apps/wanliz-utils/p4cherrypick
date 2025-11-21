@@ -24,7 +24,7 @@ User: $P4USER
 Status: new
 
 Description:
-$desc
+    $desc
 EOF
 )
 if [[ $? != 0 || -z $new_changelist ]]; then
