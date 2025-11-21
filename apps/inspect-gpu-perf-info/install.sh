@@ -6,4 +6,4 @@ mkdir -p $outdir
 cd $outdir  
 cmake ../..  
 cmake --build . 
-sudo cmake --build . --target install
+sudo cmake --build . --target install --config release
