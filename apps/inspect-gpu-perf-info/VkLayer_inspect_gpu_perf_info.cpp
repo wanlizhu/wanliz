@@ -11,20 +11,22 @@ std::mutex g_dispatch_map_mutex;
 VK_instance_dispatch_table::VK_instance_dispatch_table(
     VkInstance instance, 
     PFN_vkGetInstanceProcAddr _vkGetInstanceProcAddr
-) : pfn_vkGetInstanceProcAddr(_vkGetInstanceProcAddr) 
-{
-#define GET_INSTANCE_PFN(name) pfn_##name = (PFN_##name)pfn_vkGetInstanceProcAddr(instance, #name); g_hooked_functions[#name] = (PFN_vkVoidFunction)HKed_##name 
+) {
+#define GET_INSTANCE_PFN(name) pfn_##name = (PFN_##name)_vkGetInstanceProcAddr(instance, #name)
+    GET_INSTANCE_PFN(vkCreateInstance);
     GET_INSTANCE_PFN(vkDestroyInstance);
+    GET_INSTANCE_PFN(vkGetInstanceProcAddr);
 #undef GET_INSTANCE_PFN
 }
 
 VK_device_dispatch_table::VK_device_dispatch_table(
     VkDevice device, 
     PFN_vkGetDeviceProcAddr _vkGetDeviceProcAddr
-) : pfn_vkGetDeviceProcAddr(_vkGetDeviceProcAddr) 
-{
-#define GET_DEVICE_PFN(name) pfn_##name = (PFN_##name)pfn_vkGetDeviceProcAddr(device, #name) 
+) {
+#define GET_DEVICE_PFN(name) pfn_##name = (PFN_##name)_vkGetDeviceProcAddr(device, #name) 
+    GET_DEVICE_PFN(vkCreateDevice);
     GET_DEVICE_PFN(vkDestroyDevice);
+    GET_DEVICE_PFN(vkGetDeviceProcAddr);
     GET_DEVICE_PFN(vkAllocateMemory);
     GET_DEVICE_PFN(vkFreeMemory);    
 #undef GET_DEVICE_PFN
@@ -39,6 +41,13 @@ extern "C" VK_LAYER_EXPORT VKAPI_ATTR VkResult VKAPI_CALL vkNegotiateLoaderLayer
     pVersionStruct->pfnGetInstanceProcAddr = HKed_vkGetInstanceProcAddr;
     pVersionStruct->pfnGetDeviceProcAddr = HKed_vkGetDeviceProcAddr;
     pVersionStruct->pfnGetPhysicalDeviceProcAddr = nullptr;
+
+    g_hooked_functions["vkCreateInstance"] = (PFN_vkVoidFunction)HKed_vkCreateInstance;
+    g_hooked_functions["vkDestroyInstance"] = (PFN_vkVoidFunction)HKed_vkDestroyInstance;
+    g_hooked_functions["vkCreateDevice"] = (PFN_vkVoidFunction)HKed_vkCreateDevice;
+    g_hooked_functions["vkDestroyDevice"] = (PFN_vkVoidFunction)HKed_vkDestroyDevice;
+    g_hooked_functions["vkAllocateMemory"] = (PFN_vkVoidFunction)HKed_vkAllocateMemory;
+    g_hooked_functions["vkFreeMemory"] = (PFN_vkVoidFunction)HKed_vkFreeMemory;
 
     std::cout << "[inspect gpu perf info] Hello World" << std::endl;
     
