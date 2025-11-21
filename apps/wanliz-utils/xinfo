@@ -2,7 +2,7 @@
 
 if [[ -z $DISPLAY ]]; then 
     export DISPLAY=:0
-    echo "Fall back to DISPLAY=$DISPLAY"
+    echo "Fallback to DISPLAY=$DISPLAY"
 fi 
 
 echo "X server info:"

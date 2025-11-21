@@ -2,7 +2,7 @@
 
 if [[ -z $DISPLAY ]]; then 
     export DISPLAY=:0
-    echo "Fall abck to DISPLAY=$DISPLAY"
+    echo "Fallback to DISPLAY=$DISPLAY"
 fi 
 
 read -p "Is this machine a headless system? [Y/n]: " headless
