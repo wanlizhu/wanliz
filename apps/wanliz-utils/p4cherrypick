@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+if [[ -z $P4CLIENT ]]; then 
+    eval "$(p4env -print)"
+fi 
+
+his_changelist=$1
+if [[ -z $changelist ]]; then 
+    echo "Missing cmdline arguments:"
+    echo "    \$1 - changelist to checkout"
+    exit 1
+fi 
+
+read -p "New description (optional): " desc
+if [[ -z $desc ]]; then 
+    desc="[patch] cherry-pick $his_changelist"
+fi 
+
+new_changelist=$(p4 change -i <<EOF | awk '{print $2}'
+Change: new
+
+Client: $P4CLIENT
+User: $P4USER
+Status: new
+
+Description:
+    $desc
+EOF
+)
+
+p4 unshelve -s $his_changelist -c $new_changelist || exit 1
+echo "Changes saved into $new_changelist"
