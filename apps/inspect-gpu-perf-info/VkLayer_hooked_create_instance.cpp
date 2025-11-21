@@ -5,7 +5,6 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkCreateInstance(
     const VkAllocationCallbacks* pAllocator,
     VkInstance* pInstance
 ) {
-    
     VkLayerInstanceCreateInfo* layerCreateInfo = (VkLayerInstanceCreateInfo*)pCreateInfo->pNext;
     while (layerCreateInfo &&
            (layerCreateInfo->sType != VK_STRUCTURE_TYPE_LOADER_INSTANCE_CREATE_INFO ||

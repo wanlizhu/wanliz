@@ -171,7 +171,7 @@ else
 fi 
 
 echo -n "Installing inspect-gpu-perf-info ... "
-$(realpath $(dirname $0))/apps/inspect-gpu-perf-info/run.sh -setup -release -install &>/dev/null && echo "[OK]" || echo "[FAILED]"
+$(realpath $(dirname $0))/apps/inspect-gpu-perf-info/install.sh &>/dev/null && echo "[OK]" || echo "[FAILED]"
 
 declare -A required_folders=(
     ["/mnt/linuxqa"]="linuxqa.nvidia.com:/storage/people"
