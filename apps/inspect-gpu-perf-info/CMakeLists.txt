@@ -13,14 +13,11 @@ file(CREATE_LINK
 find_package(Vulkan REQUIRED)
 
 add_executable(inspect-gpu-perf-info 
-    "main.cpp"
+    "main.cpp" 
     "VK_common.h"
-    "VK_physdev.cpp" 
-    "VK_physdev.h" 
-    "VK_instance.cpp"
-    "VK_instance.h"
-    "VK_queue.cpp"
-    "VK_queue.h"
+    "VK_physdev.cpp" "VK_physdev.h" 
+    "VK_instance.cpp" "VK_instance.h"
+    "VK_queue.cpp" "VK_queue.h"
 )
 
 target_compile_definitions(inspect-gpu-perf-info PRIVATE CMAKE_BINARY_DIR="${CMAKE_BINARY_DIR}")
@@ -28,9 +25,11 @@ target_include_directories(inspect-gpu-perf-info PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(inspect-gpu-perf-info PRIVATE Vulkan::Vulkan)
 
 add_library(VkLayer_inspect_gpu_perf_info SHARED
-    "VkLayer_common.h"
     "VkLayer_inspect_gpu_perf_info.cpp"
-    "VkLayer_hooked_alloc.cpp"
+    "VkLayer_common.h"
+    "VkLayer_hooked_create_instance.cpp" "VkLayer_hooked_create_instance.h"
+    "VkLayer_hooked_create_device.cpp" "VkLayer_hooked_create_device.h"
+    "VkLayer_hooked_mem_alloc.cpp" "VkLayer_hooked_mem_alloc.h"
 )
 configure_file(
     "${CMAKE_SOURCE_DIR}/VK_LAYER_inspect_gpu_perf_info.json.in"
