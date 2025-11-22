@@ -9,16 +9,19 @@ target=.
 config=develop 
 arch=$(uname -m | sed 's/x86_64/amd64/g')
 jobs=$(nproc)
+other_cmdline_args=
 
-for arg in "$@"; do 
-    case $arg in 
-        bugfix_main|r580) branch=$arg ;;
-        sweep|drivers|opengl|inspect-gpu-page-tables|microbench) target=$arg ;;
-        debug|release|develop) config=$arg ;;
+while [[ ! -z $1 ]]; do 
+    case $1 in 
+        bugfix_main|r580) branch=$1 ;;
+        sweep|drivers|opengl|inspect-gpu-page-tables|microbench) target=$1 ;;
+        debug|release|develop) config=$1 ;;
         amd64|x64|x86_64) arch=amd64 ;;
         aarch64|arm64) arch=aarch64 ;;
         -j1) jobs=1 ;;
+        *) other_cmdline_args+=" $1" ;;
     esac
+    shift 
 done 
 
 [[ $config == "release" ]] && trace_code=0 || trace_code=1
@@ -73,7 +76,7 @@ echo "$branch => $target => linux $arch $config"
 read -p "Press [Enter] to continue: "
 
 cd $workdir || exit 1
-time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args 2>/tmp/std2
+time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args $other_cmdline_args 2>/tmp/std2
 
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then 
     cat /tmp/std2 | grep -i 'error:\|: \*\*\*'
