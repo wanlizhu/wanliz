@@ -50,7 +50,7 @@ else
 fi 
 
 p4 unshelve -s $his_changelist -c $local_changelist || exit 1
-echo "Unshelve to local files .. [OK]"
+echo "Unshelve to local files ... [OK]"
 echo 
 
 p4 resolve || true 
