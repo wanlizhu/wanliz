@@ -20,7 +20,7 @@ if [[ -f "$1" ]]; then
         echo "Generated ~/.driver"
     fi 
     if [[ -f /tmp/nvrmmod.restore ]]; then 
-        eval "$(/tmp/nvrmmod.restore)"
+        eval "$(cat /tmp/nvrmmod.restore)"
         sudo rm -f /tmp/nvrmmod.restore
     fi 
 elif [[ $1 == "redo" ]]; then 
