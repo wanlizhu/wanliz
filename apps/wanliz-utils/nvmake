@@ -11,6 +11,7 @@ arch=$(uname -m | sed 's/x86_64/amd64/g')
 jobs=$(nproc)
 print=
 regen=
+install=
 
 while [[ ! -z $1 ]]; do 
     case $1 in 
@@ -22,6 +23,7 @@ while [[ ! -z $1 ]]; do
         -j1) jobs=1 ;;
         -print) print=1 ;;
         -regen) regen=1 ;;
+        -install) install=1 ;;
         *) echo "Unknown option: $1" ;;
     esac
     shift 
@@ -87,10 +89,22 @@ cd $workdir || exit 1
 if [[ $regen -eq 1 ]]; then 
     $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args @regenerate -j$jobs
 fi 
+
 time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args -j$jobs 2>/tmp/std2
 
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then 
     cat /tmp/std2 | grep -i 'error:\|: \*\*\*'
+fi 
+
+if [[ $install -eq 1 ]]; then 
+    if [[ $(basename $(pwd)) == "OpenGL" ]]; then 
+        sys_dso=$(s /usr/lib/x86_64-linux-gnu/libnvidia-glcore.so* | head -1)
+        sudo cp --force --remove-destination --verbose \
+            "$(pwd)/_out/Linux_${arch}_${config}/libnvidia-glcore.so" \
+            "/usr/lib/x86_64-linux-gnu/libnvidia-glcore.so.${sys_dso##*.so.}"
+    else
+        echo "-install option for $(basename $(pwd)) ... [SKIPPED]"
+    fi 
 fi 
 
 pwd 
