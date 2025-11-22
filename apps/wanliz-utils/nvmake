@@ -10,6 +10,7 @@ config=develop
 arch=$(uname -m | sed 's/x86_64/amd64/g')
 jobs=$(nproc)
 nvmake_args_from_cmdline=
+print=
 
 while [[ ! -z $1 ]]; do 
     case $1 in 
@@ -19,6 +20,7 @@ while [[ ! -z $1 ]]; do
         amd64|x64|x86_64) arch=amd64 ;;
         aarch64|arm64) arch=aarch64 ;;
         -j1) jobs=1 ;;
+        -print) print=1 ;;
         *) nvmake_args_from_cmdline+=" $1" ;;
     esac
     shift 
@@ -70,6 +72,11 @@ else
         echo "Invalid target: \"$target\""
         exit 1
     fi 
+fi 
+
+if [[ $print -eq 1 ]]; then 
+    echo "$P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args $nvmake_args_from_cmdline"
+    echo 
 fi 
 
 echo "$branch => $target => linux $arch $config"
