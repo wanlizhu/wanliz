@@ -98,10 +98,18 @@ fi
 
 if [[ $install -eq 1 ]]; then 
     if [[ $(basename $(pwd)) == "OpenGL" ]]; then 
-        sys_dso=$(s /usr/lib/x86_64-linux-gnu/libnvidia-glcore.so* | head -1)
-        sudo cp --force --remove-destination --verbose \
-            "$(pwd)/_out/Linux_${arch}_${config}/libnvidia-glcore.so" \
-            "/usr/lib/x86_64-linux-gnu/libnvidia-glcore.so.${sys_dso##*.so.}"
+        if [[ "${arch/amd64/x86_64}" == "$(uname -m)" ]]; then 
+            sys_dso=$(s /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so* | head -1)
+            backup_dso="/tmp/$(basename $sys_dso)"
+            if [[ ! -f $backup_dso ]]; then 
+                sudo cp --force $sys_dso $backup_dso
+            fi 
+            sudo cp --force --remove-destination --verbose \
+                "$(pwd)/_out/Linux_${arch}_${config}/libnvidia-glcore.so" \
+                "/usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.${sys_dso##*.so.}"
+        else
+            echo "Intall $arch build on a $(uname -m) system ... [SKIPPED]"
+        fi 
     else
         echo "-install option for $(basename $(pwd)) ... [SKIPPED]"
     fi 
