@@ -13,9 +13,11 @@ fi
 
 read -p "Local changelist (optional): " local_changelist 
 if [[ -z $local_changelist ]]; then 
+    his_desc=$(p4 describe -s $his_changelist | head -3 | tail -1 | sed 's/^[[:space:]]*//')
+    echo "$his_desc"
     read -p "New description (optional): " desc
     if [[ -z $desc ]]; then 
-        desc="[patch] cherry-pick $his_changelist"
+        desc="$his_desc"
     fi 
 
     local_changelist=$(p4 change -i <<EOF | awk '{print $2}'
