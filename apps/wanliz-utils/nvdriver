@@ -39,5 +39,6 @@ elif [[ ! -z $1 ]]; then
         fi 
     fi 
 else 
-    echo TODO # TODO: list local built drivers 
+    find /wanliz_sw_linux/dev /wanliz_sw_linux/rel -type d -name '_out' -exec find '{}' -type f -name 'NVIDIA-Linux*.run' \;
+2>/dev/null
 fi 

@@ -26,7 +26,7 @@ target_link_libraries(inspect-gpu-perf-info PRIVATE Vulkan::Vulkan)
 
 add_library(VkLayer_inspect_gpu_perf_info SHARED
     "VkLayer_inspect_gpu_perf_info.cpp"
-    "VkLayer_common.h"
+    "VkLayer_common.cpp" "VkLayer_common.h"
     "VkLayer_hooked_create_instance.cpp" "VkLayer_hooked_create_instance.h"
     "VkLayer_hooked_create_device.cpp" "VkLayer_hooked_create_device.h"
     "VkLayer_hooked_mem_alloc.cpp" "VkLayer_hooked_mem_alloc.h"

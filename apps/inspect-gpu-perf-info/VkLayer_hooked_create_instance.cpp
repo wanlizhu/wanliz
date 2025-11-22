@@ -1,7 +1,5 @@
 #include "VkLayer_hooked_create_instance.h"
 
-PFN_vkGetInstanceProcAddr g_pfn_vkGetInstanceProcAddr = NULL;
-
 VKAPI_ATTR VkResult VKAPI_CALL HKed_vkCreateInstance(
     const VkInstanceCreateInfo* pCreateInfo,
     const VkAllocationCallbacks* pAllocator,

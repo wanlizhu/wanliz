@@ -1,7 +1,5 @@
 #include "VkLayer_hooked_create_device.h"
 
-PFN_vkGetDeviceProcAddr g_pfn_vkGetDeviceProcAddr = NULL;
-
 VKAPI_ATTR VkResult VKAPI_CALL HKed_vkCreateDevice(
     VkPhysicalDevice physicalDevice,
     const VkDeviceCreateInfo* pCreateInfo,

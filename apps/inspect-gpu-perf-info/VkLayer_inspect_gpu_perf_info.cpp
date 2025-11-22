@@ -3,7 +3,7 @@
 #include "VkLayer_hooked_create_device.h"
 #include "VkLayer_hooked_mem_alloc.h"
 
-std::unordered_map<std::string, PFN_vkVoidFunction> g_hooked_functions;
+
 
 extern "C" {
     VK_LAYER_EXPORT VKAPI_ATTR VkResult VKAPI_CALL vkNegotiateLoaderLayerInterfaceVersion(

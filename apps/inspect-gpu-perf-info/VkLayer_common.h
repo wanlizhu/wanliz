@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_layer.h>
 #include <unordered_map>
+#include <filesystem>
 #include <mutex>
 #include <cstring>
 #include <iostream>
@@ -17,3 +18,11 @@
 extern PFN_vkGetInstanceProcAddr g_pfn_vkGetInstanceProcAddr;
 extern PFN_vkGetDeviceProcAddr g_pfn_vkGetDeviceProcAddr;
 extern std::unordered_map<std::string, PFN_vkVoidFunction> g_hooked_functions;
+
+struct VkLayer_redirect_STDOUT {
+    VkLayer_redirect_STDOUT(const char* path);
+    ~VkLayer_redirect_STDOUT();
+
+private:
+    int original_stdout;
+};
