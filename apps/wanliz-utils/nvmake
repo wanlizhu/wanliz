@@ -9,7 +9,6 @@ target=.
 config=develop 
 arch=$(uname -m | sed 's/x86_64/amd64/g')
 jobs=$(nproc)
-nvmake_args_from_cmdline=
 print=
 regen=
 
@@ -23,7 +22,7 @@ while [[ ! -z $1 ]]; do
         -j1) jobs=1 ;;
         -print) print=1 ;;
         -regen) regen=1 ;;
-        *) nvmake_args_from_cmdline+=" $1" ;;
+        *) echo "Unknown option: $1" ;;
     esac
     shift 
 done 
@@ -43,7 +42,7 @@ nvmake_args="NV_COLOR_OUTPUT=1 \
     NV_UNIX_CHECK_DEBUG_INFO=0 \
     NV_MANGLE_SYMBOLS= \
     NV_TRACE_CODE=$trace_code \
-    linux $config $arch -j$jobs"
+    linux $config $arch"
 
 if [[ $branch == "bugfix_main" ]]; then 
     workdir="$P4ROOT/dev/gpu_drv/bugfix_main"
@@ -77,21 +76,18 @@ else
 fi 
 
 if [[ $print -eq 1 ]]; then 
-    echo "$P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args $nvmake_args_from_cmdline"
+    echo "$P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args -j$jobs"
     echo 
 fi 
 
 echo "$branch => $target => linux $arch $config"
-if [[ ! -z $nvmake_args_from_cmdline ]]; then 
-    echo "nvmake args from cmdline: $nvmake_args_from_cmdline"
-fi 
 read -p "Press [Enter] to continue: "
 
 cd $workdir || exit 1
-if [[ $regen == 1 ]]; then 
-    time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake @generate
+if [[ $regen -eq 1 ]]; then 
+    time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args @generate
 fi 
-time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args $nvmake_args_from_cmdline 2>/tmp/std2
+time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args -j$jobs 2>/tmp/std2
 
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then 
     cat /tmp/std2 | grep -i 'error:\|: \*\*\*'
