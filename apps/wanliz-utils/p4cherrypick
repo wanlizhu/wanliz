@@ -36,7 +36,7 @@ EOF
 else
     read -p "Revert all files in $local_changelist? [Y/n]: " choice_revert
     if [[ -z $choice_revert || $choice_revert == y ]]; then 
-        p4 revert -c $local_changelist || exit 1
+        p4 revert -c $local_changelist //... || exit 1
     fi 
 fi 
 
