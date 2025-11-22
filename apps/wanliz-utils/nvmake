@@ -90,9 +90,7 @@ if [[ $regen -eq 1 ]]; then
     $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args @regenerate -j$jobs
 fi 
 
-time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args -j$jobs 2>/tmp/std2
-pwd 
-
+$P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args -j$jobs 2>/tmp/std2
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then 
     cat /tmp/std2 | grep -i 'error:\|: \*\*\*'
     exit 1
