@@ -7,13 +7,18 @@ fi
 if [[ -f "$1" ]]; then 
     rmnvmod
     chmod +x "$1" &>/dev/null || true 
+    failed=
     if [[ $2 == "-i" ]]; then 
-        sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 "$1" || exit 1
+        sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 "$1" || failed=1
     else
-        sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 "$1" -s --no-kernel-module-source --skip-module-load || exit 1
+        sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 "$1" -s --no-kernel-module-source --skip-module-load || failed=1
     fi 
-    echo "$1" >~/.driver 
-    echo "Generated ~/.driver"
+    if [[ $failed -eq 1 ]]; 
+        cat '/var/log/nvidia-installer.log'
+    else 
+        echo "$1" >~/.driver 
+        echo "Generated ~/.driver"
+    fi 
 elif [[ $1 == "redo" ]]; then 
     if [[ ! -f $(cat ~/.driver) ]]; then
         echo "Invalid path in ~/.driver"
