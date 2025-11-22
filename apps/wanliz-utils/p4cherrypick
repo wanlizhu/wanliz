@@ -40,6 +40,6 @@ else
     fi 
 fi 
 
-p4 unshelve -s $his_changelist -c $new_changelist || exit 1
+p4 unshelve -s $his_changelist -c $local_changelist || exit 1
 p4 resolve || true 
-echo "Changes saved into $new_changelist"
+echo "Changes saved into $local_changelist"
