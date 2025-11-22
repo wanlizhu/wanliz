@@ -99,7 +99,7 @@ fi
 if [[ $install -eq 1 ]]; then 
     if [[ $(basename $(pwd)) == "OpenGL" ]]; then 
         if [[ "${arch/amd64/x86_64}" == "$(uname -m)" ]]; then 
-            sys_dso=$(s /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so* | head -1)
+            sys_dso=$(ls /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so* | head -1)
             backup_dso="/tmp/$(basename $sys_dso)"
             if [[ ! -f $backup_dso ]]; then 
                 sudo cp --force $sys_dso $backup_dso
