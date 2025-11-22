@@ -21,6 +21,7 @@ if [[ -f "$1" ]]; then
         if [[ -f /tmp/nvrmmod && $(cat /tmp/nvrmmod) == "multi-user" ]]; then 
             sudo systemctl set-default graphical
             sudo rm -f /tmp/nvrmmod 
+            echo "Set default to graphical"
         fi 
     fi 
 elif [[ $1 == "redo" ]]; then 
