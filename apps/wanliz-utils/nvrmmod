@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-sudo rm -f /tmp/nvrmmod.multi-user 
 sudo rm -f /tmp/nvidia_pids
-sudo systemctl stop gdm sddm lightdm nvidia-persistenced nvidia-dcgm 2>/dev/null || true
+openbox_service=$(systemctl list-units --type=service | grep -i openbox | awk '{print $1}')
+sudo systemctl $openbox_service stop gdm sddm lightdm nvidia-persistenced nvidia-dcgm 2>/dev/null || true
 sudo lsof  -t /dev/nvidia* /dev/dri/{card*,renderD*} 2>/dev/null >>/tmp/nvidia_pids
 sudo grep -El 'lib(nvidia|cuda|GLX_nvidia|EGL_nvidia|nvoptix|nvrm|nvcuvid)' /proc/*/maps 2>/dev/null | sed -E 's@/proc/([0-9]+)/maps@\1@' >>/tmp/nvidia_pids 
 awk '{for (i=1; i<=NF; i++) print $i}' /tmp/nvidia_pids | sort -u | while IFS= read -r pid; do 
@@ -10,11 +10,3 @@ awk '{for (i=1; i<=NF; i++) print $i}' /tmp/nvidia_pids | sort -u | while IFS= r
     [[ $pid -eq 1 || $pid -eq $$ ]] && continue
     sudo kill -9 $pid  && echo "Killing $pid ... [OK]" || echo "Killing $pid ... [FAILED]"
 done 
-
-sleep 3
-
-if [[ ! -z $(pidof Xorg) ]]; then 
-    sudo systemctl isolate multi-user.target
-    echo "Isolate multi-user.target"
-    echo "1" >/tmp/nvrmmod.multi-user
-fi 
