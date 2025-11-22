@@ -19,10 +19,9 @@ if [[ -f "$1" ]]; then
         echo "$1" >~/.driver 
         echo "Generated ~/.driver"
     fi 
-    if [[ -f /tmp/nvrmmod.multi-user ]]; then 
-        sudo rm -f /tmp/nvrmmod.multi-user
-        sudo systemctl isolate graphical.target
-        echo "Isolate graphical.target"
+    if [[ -f /tmp/nvrmmod.restore ]]; then 
+        eval "$(/tmp/nvrmmod.restore)"
+        sudo rm -f /tmp/nvrmmod.restore
     fi 
 elif [[ $1 == "redo" ]]; then 
     if [[ ! -f $(cat ~/.driver) ]]; then
