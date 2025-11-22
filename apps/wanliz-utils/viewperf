@@ -19,6 +19,17 @@ declare -A viewset_names=(
     ["sw"]="solidworks-07"
 )
 
+while [[ ! -z $1 ]]; do 
+    case $1 in 
+        -memalloc5) 
+            export __GL_DEBUG_MASK=MEMALLOC
+            export __GL_DEBUG_LEVEL=5
+        ;;
+        *) echo "Unknown option: $1" ;;
+    esac
+    shift 
+done 
+
 read -p "Viewset (optional): " viewsets
 read -p "Subtest (optional): " subtest 
 read -p "Samples (optional): " samples 
