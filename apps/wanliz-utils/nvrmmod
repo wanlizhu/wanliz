@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+sudo rm -f /tmp/nvrmmod 
 sudo rm -f /tmp/nvidia_pids
 sudo systemctl stop gdm sddm lightdm nvidia-persistenced nvidia-dcgm 2>/dev/null || true
 sudo lsof  -t /dev/nvidia* /dev/dri/{card*,renderD*} 2>/dev/null >>/tmp/nvidia_pids
@@ -9,3 +10,9 @@ awk '{for (i=1; i<=NF; i++) print $i}' /tmp/nvidia_pids | sort -u | while IFS= r
     [[ $pid -eq 1 || $pid -eq $$ ]] && continue
     sudo kill -9 $pid  && echo "Killing $pid ... [OK]" || echo "Killing $pid ... [FAILED]"
 done 
+
+sleep 1
+if [[ ! -z $(pidof Xorg) ]]; then 
+    sudo systemctl set-default multi-user
+    echo -n "multi-user" >/tmp/nvrmmod  
+fi 
