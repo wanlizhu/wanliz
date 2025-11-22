@@ -91,9 +91,11 @@ if [[ $regen -eq 1 ]]; then
 fi 
 
 time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args -j$jobs 2>/tmp/std2
+pwd 
 
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then 
     cat /tmp/std2 | grep -i 'error:\|: \*\*\*'
+    exit 1
 fi 
 
 if [[ $install -eq 1 ]]; then 
@@ -114,5 +116,3 @@ if [[ $install -eq 1 ]]; then
         echo "-install option for $(basename $(pwd)) ... [SKIPPED]"
     fi 
 fi 
-
-pwd 
