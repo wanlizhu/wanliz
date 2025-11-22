@@ -11,7 +11,12 @@ if [[ -z $his_changelist ]]; then
     exit 1
 fi 
 
-read -p "Local changelist (optional): " local_changelist 
+if [[ $2 == to && ! -z $3 ]]; then 
+    local_changelist=$3 
+else 
+    read -p "Local changelist (optional): " local_changelist 
+fi 
+
 if [[ -z $local_changelist ]]; then 
     his_desc=$(p4 describe -s $his_changelist | head -3 | tail -1 | sed 's/^[[:space:]]*//')
     echo "$his_desc"
@@ -39,9 +44,14 @@ else
     read -p "Revert all files in $local_changelist? [Y/n]: " choice_revert
     if [[ -z $choice_revert || $choice_revert == y ]]; then 
         p4 revert -c $local_changelist //... || exit 1
+        echo "Revert all local changes ... [OK]"
+        echo 
     fi 
 fi 
 
 p4 unshelve -s $his_changelist -c $local_changelist || exit 1
+echo "Unshelve to local files .. [OK]"
+echo 
+
 p4 resolve || true 
 echo "Changes saved into $local_changelist"
