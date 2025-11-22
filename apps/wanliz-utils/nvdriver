@@ -13,7 +13,7 @@ if [[ -f "$1" ]]; then
     else
         sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 "$1" -s --no-kernel-module-source --skip-module-load || failed=1
     fi 
-    if [[ $failed -eq 1 ]]; 
+    if [[ $failed -eq 1 ]]; then 
         cat '/var/log/nvidia-installer.log'
     else 
         echo "$1" >~/.driver 
