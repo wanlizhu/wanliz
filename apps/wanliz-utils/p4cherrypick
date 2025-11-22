@@ -11,12 +11,14 @@ if [[ -z $his_changelist ]]; then
     exit 1
 fi 
 
-read -p "New description (optional): " desc
-if [[ -z $desc ]]; then 
-    desc="[patch] cherry-pick $his_changelist"
-fi 
+read -p "Local changelist (optional): " local_changelist 
+if [[ -z $local_changelist ]]; then 
+    read -p "New description (optional): " desc
+    if [[ -z $desc ]]; then 
+        desc="[patch] cherry-pick $his_changelist"
+    fi 
 
-new_changelist=$(p4 change -i <<EOF | awk '{print $2}'
+    local_changelist=$(p4 change -i <<EOF | awk '{print $2}'
 Change: new
 
 Client: $P4CLIENT
@@ -26,11 +28,18 @@ Status: new
 Description:
     $desc
 EOF
-)
-if [[ $? != 0 || -z $new_changelist ]]; then
-    echo "Failed to create changelist" 
-    exit 1
-fi
+    )
+    if [[ $? != 0 || -z $local_changelist ]]; then
+        echo "Failed to create changelist" 
+        exit 1
+    fi
+else
+    read -p "Revert all files in $local_changelist? [Y/n]: " choice_revert
+    if [[ -z $choice_revert || $choice_revert == y ]]; then 
+        p4 revert -c $local_changelist || exit 1
+    fi 
+fi 
 
 p4 unshelve -s $his_changelist -c $new_changelist || exit 1
+p4 resolve || true 
 echo "Changes saved into $new_changelist"
