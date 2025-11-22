@@ -75,6 +75,10 @@ else
     fi 
 fi 
 
+if [[ $regen -eq 1 ]]; then 
+    nvmake_args+=" @regenerate"
+fi 
+
 if [[ $print -eq 1 ]]; then 
     echo "$P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args -j$jobs"
     echo 
@@ -84,9 +88,6 @@ echo "$branch => $target => linux $arch $config"
 read -p "Press [Enter] to continue: "
 
 cd $workdir || exit 1
-if [[ $regen -eq 1 ]]; then 
-    time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args @generate
-fi 
 time $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args -j$jobs 2>/tmp/std2
 
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then 
