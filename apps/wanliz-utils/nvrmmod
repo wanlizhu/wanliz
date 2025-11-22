@@ -4,8 +4,8 @@ sudo rm -f /tmp/nvrmmod.restore
 for name in gdm sddm lightdm openbox; do 
     service_name=$(systemctl list-units --type=service | grep -i $name | awk '{print $1}')
     if [[ ! -z $service_name ]]; then 
-        sudo systemctl stop $service_name 
-        echo "sudo systemctl start $service_name; " >/tmp/nvrmmod.restore
+        sudo systemctl stop $service_name && echo "Stopped $service_name"
+        echo "sudo systemctl start $service_name && echo \"Started $service_name\"; " >/tmp/nvrmmod.restore
     fi 
 done 
 
