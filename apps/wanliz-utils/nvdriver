@@ -18,11 +18,10 @@ if [[ -f "$1" ]]; then
     else 
         echo "$1" >~/.driver 
         echo "Generated ~/.driver"
-        if [[ -f /tmp/nvrmmod && $(cat /tmp/nvrmmod) == "multi-user" ]]; then 
-            sudo systemctl set-default graphical
-            sudo rm -f /tmp/nvrmmod 
-            echo "Set default to graphical"
-        fi 
+    fi 
+    if [[ -f /tmp/nvrmmod.multi-user ]]; then 
+        sudo rm -f /tmp/nvrmmod.multi-user
+        sudo systemctl isolate graphical.target
     fi 
 elif [[ $1 == "redo" ]]; then 
     if [[ ! -f $(cat ~/.driver) ]]; then
