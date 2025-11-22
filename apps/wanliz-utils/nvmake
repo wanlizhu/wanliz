@@ -31,7 +31,7 @@ done
 unixbuild_args="--unshare-namespaces \
     --tools $P4ROOT/tools \
     --devrel $P4ROOT/devrel/SDK/inc/GL "
-nvmake_args="NV_COLOR_OUTPUT=1 
+nvmake_args="NV_COLOR_OUTPUT=1 \
     NV_GUARDWORD= \
     NV_COMPRESS_THREADS=$(nproc) \
     NV_FAST_PACKAGE_COMPRESSION=zstd \
