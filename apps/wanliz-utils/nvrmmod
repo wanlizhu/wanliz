@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+if [[ ! -z $(pidof openbox) ]]; then 
+    sudo systemctl set-default multi-user
+    echo -n "multi-user" >/tmp/nvrmmod  
+    echo "Set default to multi-user"
+fi 
+
 sudo rm -f /tmp/nvrmmod 
 sudo rm -f /tmp/nvidia_pids
 sudo systemctl stop gdm sddm lightdm nvidia-persistenced nvidia-dcgm 2>/dev/null || true
@@ -10,10 +16,3 @@ awk '{for (i=1; i<=NF; i++) print $i}' /tmp/nvidia_pids | sort -u | while IFS= r
     [[ $pid -eq 1 || $pid -eq $$ ]] && continue
     sudo kill -9 $pid  && echo "Killing $pid ... [OK]" || echo "Killing $pid ... [FAILED]"
 done 
-
-sleep 2
-if [[ ! -z $(pidof Xorg) || ! -z $(pidof openbox) ]]; then 
-    sudo systemctl set-default multi-user
-    echo -n "multi-user" >/tmp/nvrmmod  
-    echo "Set default to multi-user"
-fi 
