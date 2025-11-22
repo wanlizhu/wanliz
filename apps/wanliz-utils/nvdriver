@@ -5,6 +5,7 @@ if [[ -z $P4CLIENT ]]; then
 fi 
 
 if [[ -f "$1" ]]; then 
+    rmnvmod
     chmod +x "$1" &>/dev/null || true 
     if [[ $2 == "-i" ]]; then 
         sudo env IGNORE_CC_MISMATCH=1 IGNORE_MISSING_MODULE_SYMVERS=1 "$1" || exit 1
