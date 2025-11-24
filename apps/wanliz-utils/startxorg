@@ -8,6 +8,13 @@ fi
 read -p "Is this machine a headless system? [Y/n]: " headless
 read -p "Do you want to start openbox? [y/N]: " start_openbox
 read -p "Do you want to start x11vnc? [y/N]: " start_x11vnc 
+
+if [[ $(nvidia-smi --query-gpu=name --format=csv,noheader) == "NVIDIA GB10" ]]; then 
+    read -p "Do you want to run spark-config? [Y/n]: " spark_config
+    if [[ -z $spark_config || $spark_config == "y" ]]; then 
+        spark-config 
+    fi 
+fi 
             
 if [[ ! -z $(pidof Xorg) ]]; then 
     read -p "Press [Enter] to kill running X server: "    
