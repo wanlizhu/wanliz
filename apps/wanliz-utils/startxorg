@@ -56,9 +56,5 @@ if [[ $start_openbox == "y" ]]; then
 fi
 
 if [[ $start_x11vnc == "y" ]]; then 
-    if [[ -z $(sudo cat /etc/gdm3/custom.conf | grep -v '^#' | grep "WaylandEnable=false") ]]; then 
-        echo "{RED}Disable wayland before starting VNC server{RESET}"
-        exit 0
-    fi 
-    x11vnc -display :0  -rfbport 5900 -noshm -forever -noxdamage -repeat -shared -bg -o $HOME/x11vnc.log && echo "Starting VNC server on :5900 ... [OK]" || cat $HOME/x11vnc.log
+    startvnc 
 fi
