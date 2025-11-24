@@ -12,7 +12,7 @@ read -p "Do you want to start x11vnc? [y/N]: " start_x11vnc
 if [[ $(nvidia-smi --query-gpu=name --format=csv,noheader) == "NVIDIA GB10" ]]; then 
     read -p "Do you want to run spark-config? [Y/n]: " spark_config
     if [[ -z $spark_config || $spark_config == "y" ]]; then 
-        spark-config 
+        spark-config.sh 
     fi 
 fi 
             
@@ -63,5 +63,5 @@ if [[ $start_openbox == "y" ]]; then
 fi
 
 if [[ $start_x11vnc == "y" ]]; then 
-    startvnc 
+    startvnc.sh 
 fi
