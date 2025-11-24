@@ -21,7 +21,7 @@ declare -A viewset_names=(
 
 while [[ ! -z $1 ]]; do 
     case $1 in 
-        -memalloc5) 
+        -memlog) 
             export __GL_DEBUG_MASK=MEMALLOC
             export __GL_DEBUG_LEVEL=5
         ;;
