@@ -18,22 +18,24 @@ declare -A viewset_names=(
     ["snx"]="snx-04"
     ["sw"]="solidworks-07"
 )
+viewsets=
+subtest=
 
 while [[ ! -z $1 ]]; do 
     case $1 in 
+        catia|creo|energy|maya|medical|snx|sw) viewsets+=" $1" ;;
+        [0-9]*) subtest=$1 ;;
         -memlog) 
             export __GL_DEBUG_MASK=RM
             export __GL_DEBUG_LEVEL=30
             export __GL_DEBUG_OPTIONS=LOG_TO_FILE 
             export __GL_DEBUG_FILENAME=$HOME/viewperf.memlog.txt
+            echo "RM logs dumped to $__GL_DEBUG_FILENAME"
         ;;
         *) echo "Unknown option: $1" ;;
     esac
     shift 
 done 
-
-read -p "Viewset (optional): " viewsets
-read -p "Subtest (optional): " subtest 
 
 if [[ -z $viewsets ]]; then 
     viewsets="catia creo energy maya medical snx sw"
