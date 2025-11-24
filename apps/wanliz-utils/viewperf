@@ -30,7 +30,7 @@ while [[ ! -z $1 ]]; do
             export __GL_DEBUG_LEVEL=30
             export __GL_DEBUG_OPTIONS=LOG_TO_FILE 
             export __GL_DEBUG_FILENAME=$HOME/viewperf.memlog.txt
-            echo "RM logs dumped to $__GL_DEBUG_FILENAME"
+            echo "Log to file $__GL_DEBUG_FILENAME"
         ;;
         *) echo "Unknown option: $1" ;;
     esac
