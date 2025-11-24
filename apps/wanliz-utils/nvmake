@@ -47,9 +47,11 @@ nvmake_args="NV_COLOR_OUTPUT=1 \
     linux $config $arch"
 
 if [[ $branch == "bugfix_main" ]]; then 
-    workdir="$P4ROOT/dev/gpu_drv/bugfix_main"
+    branchdir="$P4ROOT/dev/gpu_drv/bugfix_main"
+    workdir=$branchdir
 elif [[ $branch == "r580" ]]; then
-    workdir="$P4ROOT/rel/gpu_drv/r580/r580_00"
+    branchdir="$P4ROOT/rel/gpu_drv/r580/r580_00"
+    workdir=$branchdir
 else
     echo "Invalid branch \"$branch\""
     exit 1
@@ -58,14 +60,14 @@ fi
 if [[ $target == "drivers" ]]; then 
     nvmake_args+=" drivers dist"
 elif [[ $target == "opengl" ]]; then 
-    workdir+="/drivers/OpenGL"
+    workdir="$branchdir/drivers/OpenGL"
 elif [[ $target == "inspect-gpu-page-tables" ]]; then 
-    unixbuild_args+=" --source $workdir --envvar NV_SOURCE=$workdir --extra $P4ROOT/pvt/aritger"
+    unixbuild_args+=" --source $branchdir --envvar NV_SOURCE=$branchdir --extra $P4ROOT/pvt/aritger"
     workdir="$P4ROOT/pvt/aritger/apps/inspect-gpu-page-tables"
 elif [[ $target == "microbench" ]]; then 
     workdir="$P4ROOT/apps/gpu/drivers/vulkan/microbench"
 elif [[ $target == "sweep" ]]; then 
-    cd $workdir &&
+    cd $branchdir &&
     $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake sweep 
     exit 0
 else
@@ -85,11 +87,13 @@ fi
 echo "$branch => $target => linux $arch $config"
 read -p "Press [Enter] to continue: "
 
-cd $workdir || exit 1
+
 if [[ $regen -eq 1 ]]; then 
+    cd $branchdir/drivers/OpenGL || exit 1
     $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args @regenerate -j$jobs
 fi 
 
+cd $workdir || exit 1
 $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args -j$jobs 2>/tmp/std2
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then 
     cat /tmp/std2 | grep -i 'error:\|: \*\*\*'
