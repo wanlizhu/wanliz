@@ -34,39 +34,19 @@ done
 
 read -p "Viewset (optional): " viewsets
 read -p "Subtest (optional): " subtest 
-read -p "Samples (optional): " samples 
 
 if [[ -z $viewsets ]]; then 
     viewsets="catia creo energy maya medical snx sw"
     rm -rf $HOME/viewperf2020v3/results
     mkdir -p $HOME/viewperf2020v3/results
 fi 
-if [[ -z $samples ]]; then 
-    samples=1
-fi 
 
 cd $HOME/viewperf2020v3 || exit 1
 
-results="${viewsets// /,}"$'\n'
-read -r -a parts <<< "$viewsets"
-column_count=${#parts[@]}
-for i in $(seq $samples); do 
-    column_index=1
-    for viewset in $viewsets; do 
-        $HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml $subtest -resolution 3840x2160 && {
-            results_xml=$HOME/viewperf2020v3/results/${viewset_names[$viewset]}/results.xml
-            composite_score=$(cat $results_xml | grep "Composite" | awk -F'"' '{print $2}')
-        } || {
-            composite_score=0
-        }
-        if [[ $column_index -eq $column_count ]]; then 
-            results+="$composite_score"$'\n'
-        else
-            results+="$composite_score,"
-        fi 
-        cat $results_xml 
-        echo "$results" | column -s, -t
-        echo 
-    done 
-    ((column_index++))
+for viewset in $viewsets; do 
+    $HOME/viewperf2020v3/viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml $subtest -resolution 3840x2160 && {
+        results_xml=$HOME/viewperf2020v3/results/${viewset_names[$viewset]}/results.xml
+        composite_score=$(cat $results_xml | grep "Composite" | awk -F'"' '{print $2}')
+        echo -e "$viewset\t$composite_score"
+    } 
 done 
