@@ -22,8 +22,10 @@ declare -A viewset_names=(
 while [[ ! -z $1 ]]; do 
     case $1 in 
         -memlog) 
-            export __GL_DEBUG_MASK=MEMALLOC
-            export __GL_DEBUG_LEVEL=5
+            export __GL_DEBUG_MASK=RM
+            export __GL_DEBUG_LEVEL=30
+            export __GL_DEBUG_OPTIONS=LOG_TO_FILE 
+            export __GL_DEBUG_FILENAME=$HOME/viewperf.memlog.txt
         ;;
         *) echo "Unknown option: $1" ;;
     esac
