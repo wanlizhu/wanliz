@@ -6,7 +6,7 @@ if [[ -z $DISPLAY ]]; then
 fi 
 
 if [[ ! -d ~/viewperf2020v3 ]]; then
-    rsync -ah --info=progress2 /mnt/linuxqa/wanliz/viewperf2020v3.$(uname -m)/ ~/viewperf2020v3 || exit 1
+    rsync -ha --info=progress2 /mnt/linuxqa/wanliz/viewperf2020v3.$(uname -m)/ ~/viewperf2020v3 || exit 1
 fi 
 
 declare -A viewset_names=(

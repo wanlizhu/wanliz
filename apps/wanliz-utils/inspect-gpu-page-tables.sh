@@ -6,7 +6,7 @@ if [[ ! -e /dev/nvidia-soc-iommu-inspect && $(uname -m) == "aarch64" ]]; then
         exit 1   
     fi 
 
-    rsync -ah --info=progress2 /mnt/wanliz_sw_linux/pvt/aritger/apps/inspect-gpu-page-tables/nvidia-soc-iommu-inspect /tmp  || exit 1
+    rsync -ha --info=progress2 /mnt/wanliz_sw_linux/pvt/aritger/apps/inspect-gpu-page-tables/nvidia-soc-iommu-inspect /tmp  || exit 1
     cd /tmp/nvidia-soc-iommu-inspect  
     make || exit 1
     sudo insmod ./nvidia-soc-iommu-inspect.ko 
