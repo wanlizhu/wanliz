@@ -372,7 +372,7 @@ nlohmann::json VK_physdev::info() const {
         if (nvmlDeviceGetPowerManagementLimitConstraints(dev, &pwrMin, &pwrMax) == NVML_SUCCESS) {
             std::ostringstream oss;
             oss << "(min: " << pwrMin / 1000 << ", max: " << pwrMax / 1000 << ")";
-            power_str = os.str();
+            power_str = oss.str();
         }
 
         nvmlEnableState_t nvlState;
@@ -389,7 +389,7 @@ nlohmann::json VK_physdev::info() const {
 
         nvmlShutdown();
         return nlohmann::json {
-            {"name", name},
+            {"name", std::string(name)},
             {"board", board_str},
             {"brand", brand_str},
             {"PCI", pci_str},
