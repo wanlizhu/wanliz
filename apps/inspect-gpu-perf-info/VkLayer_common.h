@@ -8,6 +8,10 @@
 #include <cstring>
 #include <iostream>
 #include <cassert>
+#ifdef __linux__
+#include <sys/wait.h>
+#include <unistd.h>
+#endif 
 
 #define VK_LAYER_EXPORT __attribute__((visibility("default")))
 #define VK_DEFINE_ORIGINAL_FUNC(name) static PFN_##name original_pfn_##name = NULL; \
