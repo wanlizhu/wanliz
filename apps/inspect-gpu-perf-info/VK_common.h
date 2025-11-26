@@ -27,6 +27,7 @@
 #ifdef __linux__
 #include <sys/wait.h>
 #include <unistd.h>
+#include <fcntl.h>
 #endif 
 
 #define FIND_IN_VEC(x, vec) (std::find(vec.begin(), vec.end(), x) != vec.end())

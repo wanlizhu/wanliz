@@ -11,6 +11,7 @@
 #ifdef __linux__
 #include <sys/wait.h>
 #include <unistd.h>
+#include <fcntl.h>
 #endif 
 
 #define VK_LAYER_EXPORT __attribute__((visibility("default")))
