@@ -10,8 +10,6 @@ file(CREATE_LINK
     SYMBOLIC
 )
 
-find_package(Vulkan REQUIRED)
-
 add_executable(inspect-gpu-perf-info 
     "main.cpp" 
     "VK_common.h"
@@ -20,9 +18,19 @@ add_executable(inspect-gpu-perf-info
     "VK_queue.cpp" "VK_queue.h"
 )
 
-target_compile_definitions(inspect-gpu-perf-info PRIVATE CMAKE_BINARY_DIR="${CMAKE_BINARY_DIR}")
-target_include_directories(inspect-gpu-perf-info PRIVATE ${Vulkan_INCLUDE_DIRS})
+# Link against Vulkan
+find_package(Vulkan REQUIRED)
+target_include_directories(inspect-gpu-perf-info PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(inspect-gpu-perf-info PRIVATE Vulkan::Vulkan)
+
+# Link against NVML (optional)
+find_path(NVML_INCLUDE_DIR nvmk.h PATHS /usr/include /usr/local/include)
+find_path(NVML_LIBRARY nvidia-ml PATHS /usr/lib/${CMAKE_LIBRARY_ARCHITECTURE})
+if (NVML_LIBRARY AND NVML_INCLUDE_DIR)
+    target_compile_definitions(inspect-gpu-perf-info PRIVATE NVML_LINKED=1)
+    target_include_directories(inspect-gpu-perf-info PRIVATE ${NVML_INCLUDE_DIR})
+    target_link_libraries(inspect-gpu-perf-info PRIVATE ${NVML_LIBRARY})
+endif()
 
 add_library(VkLayer_inspect_gpu_perf_info SHARED
     "VkLayer_inspect_gpu_perf_info.cpp"

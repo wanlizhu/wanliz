@@ -15,6 +15,7 @@ struct VK_physdev {
 
     static std::vector<VK_physdev> LIST();
     static std::string INFO();
+    
     VK_physdev(uint32_t idx);
     nlohmann::json info() const;
 };

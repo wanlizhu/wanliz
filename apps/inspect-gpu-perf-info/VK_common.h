@@ -29,6 +29,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #endif 
+#ifdef NVML_LINKED
+#include "nvml.h"
+#endif 
 
 #define FIND_IN_VEC(x, vec) (std::find(vec.begin(), vec.end(), x) != vec.end())
 #define LOAD_VK_API_FROM_INST(name, instance) reinterpret_cast<PFN_##name>(vkGetInstanceProcAddr(instance, #name))

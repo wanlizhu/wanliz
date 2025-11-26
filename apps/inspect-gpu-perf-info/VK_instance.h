@@ -6,6 +6,7 @@ struct VK_instance {
     VkDebugUtilsMessengerEXT debugMessenger = NULL;
 
     static VK_instance& GET();
+    
     ~VK_instance();
     inline operator VkInstance() const { return handle; }
 
