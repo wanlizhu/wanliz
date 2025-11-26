@@ -25,7 +25,7 @@ target_link_libraries(inspect-gpu-perf-info PRIVATE Vulkan::Vulkan)
 
 # Link against NVML (optional)
 find_path(NVML_INCLUDE_DIR nvmk.h PATHS /usr/include /usr/local/include)
-find_path(NVML_LIBRARY nvidia-ml PATHS /usr/lib/${CMAKE_LIBRARY_ARCHITECTURE})
+find_path(NVML_LIBRARY nvidia-ml PATHS /usr/lib/${CMAKE_LIBRARY_ARCHITECTURE} /usr/lib)
 if (NVML_LIBRARY AND NVML_INCLUDE_DIR)
     target_compile_definitions(inspect-gpu-perf-info PRIVATE "NVML_LINKED=1")
     target_include_directories(inspect-gpu-perf-info PRIVATE ${NVML_INCLUDE_DIR})
