@@ -64,6 +64,7 @@ uint64_t GPU_VirtualAddress(VkDevice device, VkDeviceMemory memory, size_t size)
 }
 
 std::string Search_GPU_PageTables(uint64_t va, uint64_t size) {
+#ifdef __linux__
     std::string cmdline = "sudo inspect-gpu-page-tables 2>&1";
     FILE* pipe = popen(cmdline.c_str(), "r");
     if (pipe == NULL) {
@@ -90,5 +91,6 @@ std::string Search_GPU_PageTables(uint64_t va, uint64_t size) {
     }
 
     pclose(pipe);
+#endif 
     return "";
 }
