@@ -18,7 +18,7 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
     uint64_t va = GPU_VirtualAddress(device, *pMemory, pAllocateInfo->allocationSize);
-    std::string vaPage = Search_GPU_PageTables(va);
+    std::string vaPage = Search_GPU_PageTables(va, pAllocateInfo->allocationSize);
     fprintf(stderr, "vkAllocateMemory ENDED AFTER %lld NS (0x%016" PRIx64 ") [%s]\n", duration.count(), va, vaPage.c_str());
 
     return result;
@@ -63,8 +63,30 @@ uint64_t GPU_VirtualAddress(VkDevice device, VkDeviceMemory memory, size_t size)
     return address;
 }
 
-std::string Search_GPU_PageTables(uint64_t va) {
+std::string Search_GPU_PageTables(uint64_t va, uint64_t size) {
     system("sudo rm -f /tmp/page-tables");
     system("sudo inspect-gpu-page-tables &>/tmp/page-tables");
+    std::ifstream file("/tmp/page-tables");
+    if (!file.is_open()) {
+        return "";
+    }
 
+    std::string line;
+    std::regex pattern(R"(^\s*(0x[0-9A-Fa-f]+)\s*-\s*(0x[0-9A-Fa-f]+)\s*=>\s*(0x[0-9A-Fa-f]+)\s*-\s*(0x[0-9A-Fa-f]+)\s*\(([^)]*)\)\s*\(([^)]*)\)\s*$)");
+    std::smatch match;
+    while (std::getline(file, line)) {
+        if (!std::regex_match(line, match, pattern) || match.size() != 7) {
+            uint64_t va_start = std::stoull(match[1].str(), nullptr, 16);
+            uint64_t va_end = std::stoull(match[2].str(), nullptr, 16);
+            //uint64_t pa_start = std::stoull(match[3].str(), nullptr, 16);
+            //uint64_t pa_end = std::stoull(match[4].str(), nullptr, 16);
+            //std::string aperture = match[5].str();
+            //std::string tags = match[6].str();
+            if (va >= va_start && va < va_end) {
+                return line;
+            }
+        }
+    }
+
+    return "";
 }
