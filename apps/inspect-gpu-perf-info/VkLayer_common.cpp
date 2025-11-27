@@ -56,7 +56,7 @@ void VkLayer_profiler::end() {
 }
 
 void VkLayer_profiler::capture_gpu_page_tables(const std::string& path) {
-
+    
 }
 
 void VkLayer_profiler::capture_rm_api_loggings(const std::string& path) {
