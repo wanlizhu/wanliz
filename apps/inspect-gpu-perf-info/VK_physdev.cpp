@@ -316,7 +316,7 @@ nlohmann::json VK_physdev::info() const {
         if (nvmlDeviceGetBoardPartNumber(dev, boardPart, sizeof(boardPart)) == NVML_SUCCESS) {
             if (nvmlDeviceGetBoardId(dev, &boardId) == NVML_SUCCESS) {
                 std::ostringstream oss;
-                oss << boardPart << " {id: " << print_hex(boardId) << "}";
+                oss << boardPart << " (id: " << print_hex(boardId) << ")";
                 board_str = oss.str();
             }
         }
@@ -330,7 +330,7 @@ nlohmann::json VK_physdev::info() const {
             oss << print_brand_name(brand);
             if (nvmlDeviceGetArchitecture(dev, &arch) == NVML_SUCCESS && 
                 nvmlDeviceGetCudaComputeCapability(dev, &ccMajor, &ccMinor) == NVML_SUCCESS) {
-                oss << " (" << print_arch_name(arch) << " " << ccMajor << "." << ccMinor << ")";
+                oss << " (" << print_arch_name(arch) << " CUDA" << ccMajor << "." << ccMinor << ")";
             }
             brand_str = oss.str();
         }
@@ -371,7 +371,7 @@ nlohmann::json VK_physdev::info() const {
         std::string power_str = "";
         if (nvmlDeviceGetPowerManagementLimitConstraints(dev, &pwrMin, &pwrMax) == NVML_SUCCESS) {
             std::ostringstream oss;
-            oss << "{min: " << pwrMin / 1000 << ", max: " << pwrMax / 1000 << "}";
+            oss << "{ min: " << pwrMin / 1000 << ", max: " << pwrMax / 1000 << " }";
             power_str = oss.str();
         }
 
