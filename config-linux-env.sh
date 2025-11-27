@@ -186,7 +186,7 @@ for local_folder in "${!required_folders[@]}"; do
         missing_folders+=("$local_folder")
     fi 
 done 
-echo "Mount linuxqa folders in 2 seconds: " && sleep 2
+
 echo -n "Mounting linuxqa folders ... "
 if (( ${#missing_folders[@]} > 0 )); then
     failed_msg=""
