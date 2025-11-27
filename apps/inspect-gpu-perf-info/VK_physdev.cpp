@@ -294,21 +294,6 @@ nlohmann::json VK_physdev::info() const {
         }
     };
 
-    nlohmann::json object = {
-        {"index", index},
-        {"name", properties.deviceName},
-        {"type", type},
-        {"PCI bus id", pci_bus_id},
-        {"vulkan version", print_version(properties.apiVersion)},
-        {"vendor id", vendorID},
-        {"device id", print_hex(properties.deviceID) + " (" +
-                          std::to_string(properties.deviceID) + ")"},
-        {"driver id", print_driver_id((int)driver.driverID)},
-        {"driver name", driver.driverName},
-        {"driver info", driver.driverInfo},
-        {"memory heaps", print_mem_heaps()}
-    };
-
     #ifdef NVML_LINKED
     auto print_nvml_props = [&]() -> nlohmann::json {
         nvmlReturn_t ec = nvmlInit_v2();
@@ -404,21 +389,37 @@ nlohmann::json VK_physdev::info() const {
 
         nvmlShutdown();
 
-        nlohmann::json nvml_obj = {
-            {"name", std::string(name)},
+        return nlohmann::json {
+            {"name", name},
             {"board", board_str},
             {"brand", brand_str},
             {"PCI", pci_str},
             {"power (watts)", power_str},
-            {"nvlink", nvlink_str}
+            {"nvlink", nvlink_str},
+            {"NVML", mem_obj}
         };
-        nvml_obj["vidmem"] = mem_obj;
-
-        return nvml_obj;
     };
-
-    object["NVML"] = print_nvml_props();
+    #else
+    auto print_nvml_props = [&]() -> nlohmann::json {
+        return "failed to find libnvidia-ml.so";
+    }
     #endif 
+
+    nlohmann::json object = {
+        {"index", index},
+        {"name", properties.deviceName},
+        {"type", type},
+        {"PCI bus id", pci_bus_id},
+        {"vulkan version", print_version(properties.apiVersion)},
+        {"vendor id", vendorID},
+        {"device id", print_hex(properties.deviceID) + " (" +
+                          std::to_string(properties.deviceID) + ")"},
+        {"driver id", print_driver_id((int)driver.driverID)},
+        {"driver name", driver.driverName},
+        {"driver info", driver.driverInfo},
+        {"memory heaps", print_mem_heaps()},
+        {"NVML": print_nvml_props()}
+    };
 
     return object;
 }
