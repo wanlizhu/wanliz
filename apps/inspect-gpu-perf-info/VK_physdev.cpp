@@ -294,8 +294,23 @@ nlohmann::json VK_physdev::info() const {
         }
     };
 
-    auto print_nvml_props = [&]() {
+    nlohmann::json object = {
+        {"index", index},
+        {"name", properties.deviceName},
+        {"type", type},
+        {"PCI bus id", pci_bus_id},
+        {"vulkan version", print_version(properties.apiVersion)},
+        {"vendor id", vendorID},
+        {"device id", print_hex(properties.deviceID) + " (" +
+                          std::to_string(properties.deviceID) + ")"},
+        {"driver id", print_driver_id((int)driver.driverID)},
+        {"driver name", driver.driverName},
+        {"driver info", driver.driverInfo},
+        {"memory heaps", print_mem_heaps()}
+    };
+
     #ifdef NVML_LINKED
+    auto print_nvml_props = [&]() {
         nvmlReturn_t ec = nvmlInit_v2();
         if (ec != NVML_SUCCESS) {
             return "failed to init NVML";
@@ -397,27 +412,8 @@ nlohmann::json VK_physdev::info() const {
             {"power (watts)", power_str},
             {"nvlink", nvlink_str}
         };
-    #else
-        return "failed to find libnvidia-ml.so";
-    #endif 
     };
-
-    nlohmann::json object = {
-        {"index", index},
-        {"name", properties.deviceName},
-        {"type", type},
-        {"PCI bus id", pci_bus_id},
-        {"vulkan version", print_version(properties.apiVersion)},
-        {"vendor id", vendorID},
-        {"device id", print_hex(properties.deviceID) + " (" +
-                          std::to_string(properties.deviceID) + ")"},
-        {"driver id", print_driver_id((int)driver.driverID)},
-        {"driver name", driver.driverName},
-        {"driver info", driver.driverInfo},
-        {"memory heaps", print_mem_heaps()}
-    };
-
-    #ifdef NVML_LINKED
+    
     object["NVML"] = print_nvml_props();
     #endif 
 
