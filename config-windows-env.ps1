@@ -21,21 +21,119 @@ trap {
 
 Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters' -Name 'AllowInsecureGuestAuth' -Type DWord -Value 1
 $ErrorActionPreference = 'Stop'
+Set-ExecutionPolicy Bypass -Scope CurrentUser -Force
+Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\PasswordLess\Device' -Name 'DevicePasswordLessBuildVersion' -Type DWord -Value 0
+Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled False
+Get-NetFirewallProfile | Select-Object Name, Enabled
 
-Write-Host "Checking WSL2 status"
+$hostsFile = "$env:SystemRoot\System32\drivers\etc\hosts"
+[Console]::Write("Updating $hostsFile ... ");
+$added = 0
+$existing = if([System.IO.File]::Exists($hostsFile)) {
+    [System.IO.File]::ReadAllLines($hostsFile)
+} else {
+    @()
+}
+foreach($line in [System.IO.File]::ReadAllLines("$PSScriptRoot\hosts")) {
+    $trim = $line.Trim()
+    if($trim.Length.Equals(0)) { continue }
+    if($trim.StartsWith("#")) { continue }
+    if(!$existing.Contains($line)) {
+        for ($i = 0; $i -lt 5; $i++) {
+            try {
+                Add-Content $hostsFile $line
+                $added = 1
+                break 
+            } catch {
+                Start-Sleep -Milliseconds 200
+                if ($1 -eq 4) { throw }
+            }
+        }
+    }
+}
+if($added.Equals(0)) {
+    Write-Host "[SKIPPED]"
+} else {
+    Write-Host "[OK]"
+}
+
+[Console]::Write("Updating ~/.ssh/ed25519 ... ")
+$ssh = Join-Path $HOME ".ssh"
+if (!(Test-Path $ssh)) {
+    New-Item -ItemType Directory -Path $ssh | Out-Null
+}
+$priv = Join-Path $ssh "id_ed25519"
+$pub = Join-Path $ssh "id_ed25519.pub"
+if (!(Test-Path $priv)) {
+@"
+-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACB8e4c/PmyYwYqGt0Zb5mom/KTEndF05kcF8Gsa094RSwAAAJhfAHP9XwBz
+/QAAAAtzc2gtZWQyNTUxOQAAACB8e4c/PmyYwYqGt0Zb5mom/KTEndF05kcF8Gsa094RSw
+AAAECa55qWiuh60rKkJLljELR5X1FhzceY/beegVBrDPv6yXx7hz8+bJjBioa3Rlvmaib8
+pMSd0XTmRwXwaxrT3hFLAAAAE3dhbmxpekBFbnpvLU1hY0Jvb2sBAg==
+-----END OPENSSH PRIVATE KEY-----
+"@ | Set-Content -Encoding ascii $priv
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook" | Set-Content -Encoding ascii $pub
+    Write-Host "[OK]"
+} else {
+    Write-Host "[SKIPPED]"
+}
+
+
+[Console]::Write("Updating powershell profile ... ")
+if (!(Test-Path $PROFILE)) {
+    New-Item -ItemType File -Path $PROFILE -Force | Out-Null
+} 
+$currentVersion=2
+$content = Get-Content $PROFILE -Raw -ErrorAction SilentlyContinue
+if ($null -eq $content) { $content = "" }
+$match = [regex]::Match($content, '(?ms)^#\s*=== WANLIZ VERSION\s+(\d+)\s*===\s*\r?\n.*?^#\s*=== WANLIZ END ===\s*$')
+if (-not ($match.Success -and [int]$match.Groups[1].Value -ge $currentVersion)) {
+    if ($match.Success) {
+        $content = $content.Remove($match.Index, $match.Length).TrimEnd("`r","`n")
+        Set-Content $PROFILE $content
+    }
+
+    Add-Content $PROFILE ""
+    Add-Content $PROFILE "# === WANLIZ VERSION $currentVersion ==="
+@'
+$ExecutionContext.InvokeCommand.CommandNotFoundAction = {
+    param(
+        [string]$commandName,
+        [System.Management.Automation.CommandLookupEventArgs]$eventArgs
+    )
+    $eventArgs.CommandScriptBlock = {
+        $cmd = $commandName.Replace('get-','')
+        if ($args.Count -gt 0) {
+            $cmd = $cmd + " " + ($args -join " ")
+        }
+        wsl bash -lic "$cmd"
+    }.GetNewClosure()
+    $eventArgs.StopSearch = $true
+}
+# === WANLIZ END ===
+'@ | Add-Content -Path $PROFILE
+    Write-Host "[ OK ]"
+} else {
+    Write-Host "[ SKIPPED ]"
+}
+
+[Console]::Write("Checking WSL2 status ... ")
 if (wsl -l -v 2>$null |
     Select-Object -Skip 1 |
     ForEach-Object { ($_ -replace '\x00','' -split '\s+')[-1] } |
     Where-Object { $_ -eq '2' } |
     Select-Object -First 1
 ) {
-    Write-Host "WSL2 present"
+    Write-Host "[OK]"
 } else {
     Write-Host "No WSL2 distros, install it first" -ForegroundColor Yellow
     Read-Host "Press [Enter] to exit"
     exit 1
 }
 
+[Console]::Write("Updating $env:USERPROFILE\.wslconfig ... ")
 $wsl_cfg = "$env:USERPROFILE\.wslconfig"
 if (Test-Path $wsl_cfg) {
     $invalid_wslconfig = $false
@@ -51,62 +149,31 @@ if (Test-Path $wsl_cfg) {
         Read-Host "Press [Enter] to exit"
         exit 1
     }
+    Write-Host "[SKIPPED]"
 } else {
     "[wsl2]" | Set-Content $wsl_cfg
     "networkingMode=mirrored" | Add-Content $wsl_cfg
     "kernelCommandLine = `"sysctl.vm.max_map_count=262144`"" | Add-Content $wsl_cfg
+    Write-Host "[OK]"
     Write-Host "Restart WSL for the changes of ~/.wslconfig to take effect" -ForegroundColor Yellow
 }
 
-function Enable-SSH-Server-on-Windows {
-    Write-Host "Checking SSH server status"
-    $cap = Get-WindowsCapability -Online -Name OpenSSH.Server* | Select-Object -First 1
-    if ($cap.State -ne 'Installed') {
-        Add-WindowsCapability -Online -Name $cap.Name
-        Set-Service -Name sshd -StartupType Automatic
-    }
-
-    $cap = Get-WindowsCapability -Online -Name OpenSSH.Client* | Select-Object -First 1
-    if (-not $cap -or $cap.State -ne 'Installed') {
-        Add-WindowsCapability -Online -Name $cap.Name
-        Set-Service -Name ssh-agent -StartupType Automatic
-    }
-
-    if ((Get-Service sshd).Status -ne 'Running') { Start-Service sshd }
-    if ((Get-Service ssh-agent -ErrorAction Stop).Status -ne 'Running') { Start-Service ssh-agent }
-
-    if (-not ((Get-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name DefaultShell -ErrorAction SilentlyContinue).DefaultShell -match '\\(powershell|pwsh)\.exe$')) {
-        New-Item -Path 'HKLM:\SOFTWARE\OpenSSH' -Force | Out-Null
-        New-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -PropertyType String -Value 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -Force | Out-Null
-        Restart-Service sshd -Force
-    }
-
-    Start-Sleep -Seconds 1
-    $tcp   = Test-NetConnection -ComputerName localhost -Port 22 -WarningAction SilentlyContinue
-    $state = if ($tcp.TcpTestSucceeded) { 'LISTENING' } else { 'NOT LISTENING' }
-    $sshd  = Get-Service sshd
-    "SSH server status: {0} | Startup: {1} | Port 22: {2}" -f $sshd.Status, $sshd.StartType, $state
+[Console]::Write("Checking SSH server on WSL ... ")
+$sshdService = Get-Service -Name sshd -ErrorAction SilentlyContinue
+if ($sshdService -and $sshdService.Status -eq 'Running') {
+    Stop-Service -Name sshd -Force
+    Set-Service -Name sshd -StartupType Disabled
+}
+$Action  = New-ScheduledTaskAction -Execute "wsl.exe" -Argument "-d Ubuntu -u root -- true"
+$Trigger = New-ScheduledTaskTrigger -AtStartup
+if (-not (Get-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -ErrorAction SilentlyContinue)) {
+    Register-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -Action $Action -Trigger $Trigger -RunLevel Highest
+    Write-Host "[OK]"
+} else {
+    Write-Host "[SKIPPED]"
 }
 
-function Disable-SSH-Server-on-Windows-and-Enable-on-WSL {
-    $svc = Get-Service -Name sshd -ErrorAction SilentlyContinue
-    if ($svc -and $svc.Status -eq 'Running') {
-        Write-Host "Disable SSH server on Windows"
-        Stop-Service -Name sshd -Force
-        Set-Service -Name sshd -StartupType Disabled
-    }
-
-    Write-Host "Checking SSH server on WSL (ensure Auto-Start)"
-    $Action  = New-ScheduledTaskAction -Execute "wsl.exe" -Argument "-d Ubuntu -u root -- true"
-    $Trigger = New-ScheduledTaskTrigger -AtStartup
-    if (-not (Get-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -ErrorAction SilentlyContinue)) {
-        Register-ScheduledTask -TaskName "WSL_Autostart_Ubuntu" -Action $Action -Trigger $Trigger -RunLevel Highest
-    }
-}
-
-Disable-SSH-Server-on-Windows-and-Enable-on-WSL
-
-Write-Host "Checking PATH environment variables"
+[Console]::Write("Updating PATH environment variables ... ")
 $want = @('C:\Program Files', $env:LOCALAPPDATA.TrimEnd('\'))
 $cur  = ($env:Path -split ';') | Where-Object { $_ } | ForEach-Object { $_.Trim('"').TrimEnd('\') }
 $miss = $want | ForEach-Object { $_.Trim('"').TrimEnd('\') } | Where-Object { $cur -notcontains $_ }
@@ -118,39 +185,62 @@ if ($miss) {
 
     $newPath = ($user + ($miss | Where-Object { $user -notcontains $_ })) -join ';'
     [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
+    Write-Host "[OK]"
+} else {
+    Write-Host "[SKIPPED]"
 }
 
-Write-Host "Checking classic context menu"
+[Console]::Write("Restoring classic context menu ... ")
 $k = 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32'
 if (-not (Test-Path $k) -or ((Get-Item $k).GetValue('', $null) -ne '')) {
     New-Item $k -Force | Out-Null
     Set-Item  $k -Value ''
     Stop-Process -Name explorer -Force
     Start-Process explorer.exe
+    Write-Host "[OK]"
+} else {
+    Write-Host "[SKIPPED]"
 }
 
-Write-Host "Allow current user to run .ps1 scripts"
-Set-ExecutionPolicy Bypass -Scope CurrentUser -Force
-
-Write-Host "Disable 'Only allow Windows Hello sign-in'"
-Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\PasswordLess\Device' -Name 'DevicePasswordLessBuildVersion' -Type DWord -Value 0
-
-Write-Host "Disable Windows Firewall for all profiles"
-Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled False
-Get-NetFirewallProfile | Select-Object Name, Enabled
-
-Write-Host "Checking context menu items"
+[Console]::Write("Updating context menu items ... ")
 $root = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\Classes', $true)
-foreach ($sub in @('*\shell\WhoLocks','Directory\shell\WhoLocks')) {
+$psPath = 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+$scriptPath = 'D:\wanliz\apps\wanliz' + [char]45 + 'utils\who' + [char]45 + 'locks' + [char]45 + 'me.ps1'
+$dash = [char]45
+$cmd = 'cmd.exe /c start "" "' + $psPath + '" ' +
+    $dash + 'NoProfile ' +
+    $dash + 'ExecutionPolicy Bypass ' +
+    $dash + 'File "' + $scriptPath + '" "%1"'
+$changed = $false 
+foreach ($sub in @('*\shell\WhoLocks', 'Directory\shell\WhoLocks')) {
     $k = $root.CreateSubKey($sub)
-    $k.SetValue('MUIVerb','Who locks me?',[Microsoft.Win32.RegistryValueKind]::String)
-    $k.SetValue('Icon','%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe',[Microsoft.Win32.RegistryValueKind]::String)
-    $k.SetValue('HasLUAShield','',[Microsoft.Win32.RegistryValueKind]::String)
-    $cmd = 'cmd.exe /c start "" "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "D:\wanliz\apps\wanliz-utils\who-locks-me.ps1" "%1"'
-    ($k.CreateSubKey('command')).SetValue('', $cmd, [Microsoft.Win32.RegistryValueKind]::String)
+    if ([Object]::ReferenceEquals($k.GetValue('MUIVerb'), $null)) {
+        $k.SetValue('MUIVerb', 'Who locks me?', [Microsoft.Win32.RegistryValueKind]::String)
+        $changed = $true 
+    }
+    if ([Object]::ReferenceEquals($k.GetValue('Icon'), $null)) {
+        $k.SetValue('Icon', '%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe', [Microsoft.Win32.RegistryValueKind]::String)
+        $changed = $true 
+    }
+    if ([Object]::ReferenceEquals($k.GetValue('HasLUAShield'), $null)) {
+        $k.SetValue('HasLUAShield', '', [Microsoft.Win32.RegistryValueKind]::String)
+        $changed = $true 
+    }
+    $cmdKey = $k.CreateSubKey('command')
+    if ([Object]::ReferenceEquals($cmdKey.GetValue(''), $null)) {
+        $cmdKey.SetValue('', $cmd, [Microsoft.Win32.RegistryValueKind]::String)
+        $changed = $true 
+    }
+    $cmdKey.Close()
     $k.Close()
 }
 $root.Close()
+if ($changed) {
+    Write-Host "[OK]"
+} else {
+    Write-Host "[SKIPPED]"
+}
+
 
 function Uninstall-OneDrive {
     Write-Host "Stopping OneDrive processes..."
@@ -243,9 +333,11 @@ function Uninstall-OneDrive {
     }
 }
 
-$answer = Read-Host "Uninstall and disable OneDrive? [Y/n]"
-if ([string]::IsNullOrWhiteSpace($answer) -or $answer -match '^[Y/y]') {
-    Uninstall-OneDrive
+if (Get-Process OneDrive -ErrorAction SilentlyContinue) {
+    $answer = Read-Host "Uninstall and disable OneDrive? [Y/n]"
+    if ([string]::IsNullOrWhiteSpace($answer) -or $answer -match '^[Y/y]') {
+        Uninstall-OneDrive
+    }
 }
 
 Read-Host "Press [Enter] to exit"

@@ -122,34 +122,24 @@ EOF
     echo "Generated ~/.screenrc"
 fi 
 
-declare -A required_hosts=(
-    ["172.16.179.143"]="office"
-    ["172.16.178.123"]="horizon5"
-    ["172.16.177.182"]="horizon6"
-    ["172.16.177.216"]="horizon7"
-    ["10.31.86.235"]="n1x-nvtest"
-    ["10.176.11.106"]="n1x-proxy"
-    ["10.178.94.106"]="gb300"
-    ["10.86.160.23"]="gb300-proxy"
-)
-echo -n "Adding known hosts into /etc/hosts ... "
-missing=()
-for ip in "${!required_hosts[@]}"; do 
-    names="${required_hosts[$ip]}"
-    if ! grep -qE "^[[:space:]]*$ip[[:space:]]+$names([[:space:]]|$)" /etc/hosts; then 
-        missing+=("$ip $names")
-    fi 
-done 
-if (( ${#missing[@]} == 0 )); then 
+echo -n "Updating /etc/hosts ... "
+added=0
+while IFS= read line; do 
+    case "$line" in 
+        ""|\#*) continue ;;
+    esac
+    if ! grep "$line" /etc/hosts &>/dev/null; then 
+        echo "$line" | sudo tee -a /etc/hosts >/dev/null 
+        added=1
+    fi  
+done < "$(dirname $0)/hosts"
+if (( $added == 0 )); then 
     echo "[SKIPPED]"
 else
-    for entry in "${missing[@]}"; do 
-        echo "$entry" | sudo tee -a /etc/hosts >/dev/null 
-    done 
     echo "[OK]"
 fi 
 
-echo -n "Installing wanliz-utils to /usr/local/bin ..."
+echo -n "Installing wanliz-utils to /usr/local/bin ... "
 find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
     real_target=$(readlink -f "$link") || continue 
     if [[ $real_target == *"/wanliz-utils/"* ]]; then 
@@ -179,7 +169,7 @@ declare -A required_folders=(
     ["/mnt/data"]="linuxqa.nvidia.com:/storage/data"
     ["/mnt/builds"]="linuxqa.nvidia.com:/storage3/builds"
     ["/mnt/dvsbuilds"]="linuxqa.nvidia.com:/storage5/dvsbuilds"
-    ["/mnt/wanliz_sw_linux"]="office:/wanliz_sw_linux"
+    ["/mnt/wanliz_sw_linux"]="nvhqdesk:/wanliz_sw_linux"
 )
 missing_folders=()
 for local_folder in "${!required_folders[@]}"; do
