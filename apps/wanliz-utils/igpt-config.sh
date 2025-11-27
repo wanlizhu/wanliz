@@ -15,5 +15,4 @@ fi
 
 if [[ -z $(which inspect-gpu-page-tables) ]]; then 
     sudo cp -vf /mnt/linuxqa/wanliz/inspect-gpu-page-tables.$(uname -m) /usr/local/bin/inspect-gpu-page-tables
-    sudo inspect-gpu-page-tables -h 
 fi 
