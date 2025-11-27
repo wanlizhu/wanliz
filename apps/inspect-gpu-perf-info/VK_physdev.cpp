@@ -316,7 +316,7 @@ nlohmann::json VK_physdev::info() const {
         if (nvmlDeviceGetBoardPartNumber(dev, boardPart, sizeof(boardPart)) == NVML_SUCCESS) {
             if (nvmlDeviceGetBoardId(dev, &boardId) == NVML_SUCCESS) {
                 std::ostringstream oss;
-                oss << boardPart << " (id: " << print_hex(boardId) << ")";
+                oss << boardPart << " {id: " << print_hex(boardId) << "}";
                 board_str = oss.str();
             }
         }
@@ -341,9 +341,9 @@ nlohmann::json VK_physdev::info() const {
         if (nvmlDeviceGetPciInfo_v3(dev, &pci) == NVML_SUCCESS) {
             std::ostringstream oss;
             oss << pci.busId;
-            oss << " (device: 0x" << std::hex << std::setw(8) << std::setfill('0') << pci.pciDeviceId;
+            oss << " { device: 0x" << std::hex << std::setw(8) << std::setfill('0') << pci.pciDeviceId;
             oss << ", subsystem: 0x" << std::hex << std::setw(8) << std::setfill('0') << pci.pciSubSystemId;
-            oss << ")";
+            oss << " }";
         }
 
         nvmlMemory_t mem;
@@ -371,7 +371,7 @@ nlohmann::json VK_physdev::info() const {
         std::string power_str = "";
         if (nvmlDeviceGetPowerManagementLimitConstraints(dev, &pwrMin, &pwrMax) == NVML_SUCCESS) {
             std::ostringstream oss;
-            oss << "(min: " << pwrMin / 1000 << ", max: " << pwrMax / 1000 << ")";
+            oss << "{min: " << pwrMin / 1000 << ", max: " << pwrMax / 1000 << "}";
             power_str = oss.str();
         }
 
