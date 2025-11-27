@@ -43,31 +43,11 @@ VkLayer_redirect_STDOUT::~VkLayer_redirect_STDOUT() {
 }
 
 VkLayer_profiler::VkLayer_profiler() {
-    setenv("__GL_DEBUG_MASK", "RM", 1);
-    setenv("__GL_DEBUG_LEVEL", "30", 1);
-    setenv("__GL_DEBUG_OPTIONS", "LOG_TO_FILE", 1);
-    setenv("__GL_DEBUG_FILENAME", "/tmp/rm-api-loggings", 1);
-    system("sudo rm -f /tmp/gpu-page-tables-start /tmp/gpu-page-tables-end");
-    system("sudo inspect-gpu-page-tables >/tmp/gpu-page-tables-start");
     startTime_cpu = std::chrono::high_resolution_clock::now();
 }
 
 void VkLayer_profiler::end() {
     auto endTime_cpu = std::chrono::high_resolution_clock::now();
     auto nanosec_cpu = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime_cpu - startTime_cpu);
-    setenv("__GL_DEBUG_MASK", "", 1);
-    setenv("__GL_DEBUG_LEVEL", "", 1);
-    setenv("__GL_DEBUG_OPTIONS", "", 1);
-    setenv("__GL_DEBUG_FILENAME", "", 1);
-    
     printf("CPU time: %ld ns (%f ms)\n", nanosec_cpu.count(), nanosec_cpu.count() / 1000000.0f);
-    if (std::filesystem::exists("/tmp/rm-api-loggings")) {
-        printf("\n");
-        system("python3 /usr/local/bin/process-vidheap.py /tmp/rm-api-loggings");
-    }
-    if (std::filesystem::exists("/tmp/gpu-page-tables-start")) {
-        printf("\n");
-        system("sudo inspect-gpu-page-tables >/tmp/gpu-page-tables-end");
-        system("python3 /usr/local/bin/process-page-tables.py /tmp/gpu-page-tables-start /tmp/gpu-page-tables-end");
-    }
 }

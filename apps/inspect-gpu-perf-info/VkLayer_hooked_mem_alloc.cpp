@@ -7,9 +7,18 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
     VkDeviceMemory* pMemory
 ) {
     VK_DEFINE_ORIGINAL_FUNC(vkAllocateMemory);
-    VkLayer_profiler profiler;
+
+    setenv("__GL_DEBUG_MASK", "RM", 1);
+    setenv("__GL_DEBUG_LEVEL", "30", 1);
+    setenv("__GL_DEBUG_OPTIONS", "LOG_TO_FILE", 1);
+    setenv("__GL_DEBUG_FILENAME", "/tmp/rm-api-loggings", 1);
+
     VkResult result = original_pfn_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
-    profiler.end();
+    
+    if (std::filesystem::exists("/usr/local/bin/process-vidheap.py")) {
+        system("process-vidheap.py /tmp/rm-api-loggings");
+    }
+
     return result;
 }
 
