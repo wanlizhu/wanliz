@@ -330,7 +330,7 @@ nlohmann::json VK_physdev::info() const {
             oss << print_brand_name(brand);
             if (nvmlDeviceGetArchitecture(dev, &arch) == NVML_SUCCESS && 
                 nvmlDeviceGetCudaComputeCapability(dev, &ccMajor, &ccMinor) == NVML_SUCCESS) {
-                oss << " (" << print_arch_name(arch) << " CUDA" << ccMajor << "." << ccMinor << ")";
+                oss << " (" << print_arch_name(arch) << ", CUDA" << ccMajor << "." << ccMinor << ")";
             }
             brand_str = oss.str();
         }
