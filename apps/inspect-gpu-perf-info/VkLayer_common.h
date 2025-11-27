@@ -64,6 +64,7 @@ struct VkLayer_gpu_page_tables {
     std::vector<va_range> ranges;
 
     static VkLayer_gpu_page_tables capture();
+    static VkLayer_gpu_page_tables load(const std::string& path);
 
     void print() const;
     std::optional<VidMem_range_record> find(uint64_t va) const;
