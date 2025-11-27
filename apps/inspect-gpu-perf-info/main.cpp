@@ -17,10 +17,6 @@ const char* realpath(const char* name) {
 }
 
 int main(int argc, char **argv) {
-    auto tables = VkLayer_gpu_page_tables::load("/mnt/c/Users/WanliZhu/Downloads/p2");
-    tables.print();
-    return 0;
-
     std::cout << VK_physdev::INFO() << std::endl;
 #ifdef __linux__
     if (argc > 1) {
