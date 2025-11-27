@@ -36,7 +36,7 @@ elif [[ $1 == "home" ]]; then
             -o StrictHostKeyChecking=accept-new \
             user@remote 'true' >/dev/null 2>&1; then
             if [[ -f ~/.ssh/id_ed25519 ]]; then 
-                ssh-copy-id -i ~/.ssh/id_ed25519.pub $user@$host
+                ssh-copy-id -i ~/.ssh/id_ed25519.pub $(cat ~/.push_host)
             fi 
         fi
 
