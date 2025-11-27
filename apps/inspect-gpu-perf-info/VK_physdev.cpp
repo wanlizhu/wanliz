@@ -402,7 +402,7 @@ nlohmann::json VK_physdev::info() const {
     #else
     auto print_nvml_props = [&]() -> nlohmann::json {
         return "failed to find libnvidia-ml.so";
-    }
+    };
     #endif 
 
     nlohmann::json object = {
