@@ -10,14 +10,6 @@ if [[ ! -z "$USER" ]]; then
     fi
 fi 
 
-if [[ ! -f ~/.passwd ]]; then 
-    read -r -s -p "OpenSSL Password (optional): " passwd; echo
-    if [[ ! -z $passwd ]]; then 
-        echo -n "$passwd" > ~/.passwd    
-        echo "Generated ~/.passwd"    
-    fi    
-fi
-
 declare -A dependencies=(
     [jq]=jq
     [rsync]=rsync

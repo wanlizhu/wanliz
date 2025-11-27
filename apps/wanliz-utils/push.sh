@@ -2,6 +2,12 @@
 
 if [[ -z $1 ]]; then 
     pushd ~/wanliz >/dev/null || exit 1
+    if grep -q 'url = https://github.com' .git/config; then
+        read -s -p "All-in-one password: " password 
+        echo 
+        token=$(echo 'U2FsdGVkX1/9aV2rUTUL16lv0xm+oXZGRBQ2Sh4BAaAA3IS0Y/ftMKj6Ka8ws+5UcmvtWTpG+I37ykGjBG+EtA==' | openssl enc -aes-256-cbc -d -pbkdf2 -a -pass "pass:$password")
+        sed -i "s|url = https://github.com|url = https://wanliz:$token@github.com|" .git/config
+    fi
     git add .
     git commit -m "auto push from $(hostname) at $(date)"
     git push 
