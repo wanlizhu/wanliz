@@ -65,7 +65,7 @@ void VkLayer_profiler::end() {
         printf("\n");
         system("python3 /usr/local/bin/process-vidheap.py /tmp/rm-api-loggings");
     }
-    if (std::filesystem::exists("/tmp/gpu-page-tables")) {
+    if (std::filesystem::exists("/tmp/gpu-page-tables-start")) {
         printf("\n");
         system("sudo inspect-gpu-page-tables >/tmp/gpu-page-tables-end");
         system("python3 /usr/local/bin/process-page-tables.py /tmp/gpu-page-tables-start /tmp/gpu-page-tables-end");
