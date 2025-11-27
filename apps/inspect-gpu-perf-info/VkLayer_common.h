@@ -70,7 +70,7 @@ private:
 };
 
 struct VkLayer_DeviceAddressFeature {
-    static const bool enable = true;
+    static const bool enable = false;
     static void add(
         VkPhysicalDevice physicalDevice, 
         VkDeviceCreateInfo* pDeviceCreateInfo
