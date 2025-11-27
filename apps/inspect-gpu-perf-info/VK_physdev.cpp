@@ -266,17 +266,17 @@ nlohmann::json VK_physdev::info() const {
             case  4: return "Grid (deprecated)";
             case  5: return "GeForce";
             case  6: return "Titan";
-            case  7: return "Nvidia VAPPS (Virtual Apps)";
-            case  8: return "Nvidia VPC (Virtual PC)";
-            case  9: return "Nvidia VCS (Virtual Compute Server)";
-            case 10: return "Nvidia VWS (Virtual Workstation)";
-            case 11: return "Nvidia Cloud Gaming";
+            case  7: return "NVIDIA VAPPS (Virtual Apps)";
+            case  8: return "NVIDIA VPC (Virtual PC)";
+            case  9: return "NVIDIA VCS (Virtual Compute Server)";
+            case 10: return "NVIDIA VWS (Virtual Workstation)";
+            case 11: return "NVIDIA Cloud Gaming";
             case 12: return "Quadro RTX";
-            case 13: return "Nvidia RTX";
-            case 14: return "Nvidia";
+            case 13: return "NVIDIA RTX";
+            case 14: return "NVIDIA";
             case 15: return "GeForce RTX";
             case 16: return "Titan RTX";
-            default: return "unknown brand";
+            default: return "UnknownBrand";
         }
     };
 
@@ -290,7 +290,7 @@ nlohmann::json VK_physdev::info() const {
             case 7: return "Ampere";
             case 8: return "Ada";
             case 9: return "Hopper";
-            default: return "unknown arch";
+            default: return "UnknownArch";
         }
     };
 
@@ -304,7 +304,7 @@ nlohmann::json VK_physdev::info() const {
         nvmlDevice_t dev;
         ec = nvmlDeviceGetHandleByIndex_v2(index, &dev);
         if (ec != NVML_SUCCESS) {
-            return "Failed to get device by index";
+            return "Failed to get device";
         }
 
         char name[128] = {};
@@ -316,7 +316,7 @@ nlohmann::json VK_physdev::info() const {
         if (nvmlDeviceGetBoardPartNumber(dev, boardPart, sizeof(boardPart)) == NVML_SUCCESS) {
             if (nvmlDeviceGetBoardId(dev, &boardId) == NVML_SUCCESS) {
                 std::ostringstream oss;
-                oss << boardPart << "  (board id: " << print_hex(boardId) << ")";
+                oss << boardPart << " (id: " << print_hex(boardId) << ")";
                 board_str = oss.str();
             }
         }
@@ -341,8 +341,8 @@ nlohmann::json VK_physdev::info() const {
         if (nvmlDeviceGetPciInfo_v3(dev, &pci) == NVML_SUCCESS) {
             std::ostringstream oss;
             oss << pci.busId;
-            oss << " (device id: 0x" << std::hex << std::setw(8) << std::setfill('0') << pci.pciDeviceId;
-            oss << ", subsystem id: 0x" << std::hex << std::setw(8) << std::setfill('0') << pci.pciSubSystemId;
+            oss << " (device: 0x" << std::hex << std::setw(8) << std::setfill('0') << pci.pciDeviceId;
+            oss << ", subsystem: 0x" << std::hex << std::setw(8) << std::setfill('0') << pci.pciSubSystemId;
             oss << ")";
         }
 
@@ -396,7 +396,7 @@ nlohmann::json VK_physdev::info() const {
             {"PCI", pci_str},
             {"power (watts)", power_str},
             {"nvlink", nvlink_str},
-            {"NVML", mem_obj}
+            {"vidmem", mem_obj}
         };
     };
     #else
