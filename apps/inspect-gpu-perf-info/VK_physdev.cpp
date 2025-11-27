@@ -310,7 +310,7 @@ nlohmann::json VK_physdev::info() const {
     };
 
     #ifdef NVML_LINKED
-    auto print_nvml_props = [&]() {
+    auto print_nvml_props = [&]() -> nlohmann::json {
         nvmlReturn_t ec = nvmlInit_v2();
         if (ec != NVML_SUCCESS) {
             return "failed to init NVML";
