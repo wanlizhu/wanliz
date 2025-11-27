@@ -18,7 +18,7 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
     uint64_t va = GPU_VirtualAddress(device, *pMemory, pAllocateInfo->allocationSize);
-    std::string vaPage = Search_GPU_PageTables(va, pAllocateInfo->allocationSize);
+    std::string vaPage = "";// Search_GPU_PageTables(va, pAllocateInfo->allocationSize);
     fprintf(stderr, "vkAllocateMemory ENDED AFTER %lld NS (0x%016" PRIx64 ") [%s]\n", duration.count(), va, vaPage.c_str());
 
     return result;
@@ -64,10 +64,6 @@ uint64_t GPU_VirtualAddress(VkDevice device, VkDeviceMemory memory, size_t size)
 }
 
 std::string Search_GPU_PageTables(uint64_t va, uint64_t size) {
-    return "";
-    system("sudo inspect-gpu-page-tables 2>&1 >/tmp/pages");
-    return "";
-
     std::string cmdline = "sudo inspect-gpu-page-tables 2>&1";
     FILE* pipe = popen(cmdline.c_str(), "r");
     if (pipe == NULL) {
