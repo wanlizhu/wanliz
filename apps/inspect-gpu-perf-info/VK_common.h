@@ -29,7 +29,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #endif 
-#ifdef NVML_LINKED
+#ifdef NVML_FOUND
 #include "nvml.h"
 #endif 
 
