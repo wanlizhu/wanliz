@@ -13,3 +13,5 @@ VKAPI_ATTR void VKAPI_CALL HKed_vkFreeMemory(
     VkDeviceMemory memory,
     const VkAllocationCallbacks* pAllocator
 );
+
+uint64_t GPU_VirtualAddress(VkDevice device, VkDeviceMemory memory, size_t size);

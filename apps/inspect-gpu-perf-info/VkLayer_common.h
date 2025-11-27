@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
-#include <vulkan/vk_layer.h>
+#include "vulkan/vulkan.h"
+#include "vulkan/vk_layer.h"
 #include <unordered_map>
 #include <filesystem>
 #include <mutex>
@@ -28,6 +28,7 @@
 #include <stdexcept>
 #include <thread>
 #include <optional>
+#include <inttypes.h>
 #ifdef __linux__
 #include <sys/wait.h>
 #include <unistd.h>
@@ -35,7 +36,12 @@
 #include <stdlib.h>
 #endif 
 
+#ifdef __linux__
 #define VK_LAYER_EXPORT __attribute__((visibility("default")))
+#else 
+#define VK_LAYER_EXPORT
+#endif 
+
 #define VK_DEFINE_ORIGINAL_FUNC(name) static PFN_##name original_pfn_##name = NULL; \
     if (original_pfn_##name == NULL) { \
         original_pfn_##name = (PFN_##name)g_pfn_vkGetDeviceProcAddr(device, #name); \
@@ -44,6 +50,8 @@
 extern PFN_vkGetInstanceProcAddr g_pfn_vkGetInstanceProcAddr;
 extern PFN_vkGetDeviceProcAddr g_pfn_vkGetDeviceProcAddr;
 extern std::unordered_map<std::string, PFN_vkVoidFunction> g_hooked_functions;
+extern VkInstance g_VkInstance;
+extern std::unordered_map<VkDevice, VkPhysicalDevice> g_physicalDeviceMap;
 
 struct VkLayer_redirect_STDOUT {
     VkLayer_redirect_STDOUT(const char* path);
@@ -53,9 +61,18 @@ private:
     int original_stdout;
 };
 
-struct VkLayer_profiler {
-    std::chrono::high_resolution_clock::time_point startTime_cpu;
+struct VkLayer_redirect_STDERR {
+    VkLayer_redirect_STDERR(const char* path);
+    ~VkLayer_redirect_STDERR();
 
-    VkLayer_profiler();
-    void end();
+private:
+    int original_stderr;
+};
+
+struct VkLayer_DeviceAddressFeature {
+    static const bool enable = true;
+    static void add(
+        VkPhysicalDevice physicalDevice, 
+        VkDeviceCreateInfo* pDeviceCreateInfo
+    );
 };

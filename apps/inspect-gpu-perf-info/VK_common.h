@@ -22,7 +22,7 @@
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
-#include <vulkan/vulkan.h>
+#include "vulkan/vulkan.h"
 #include "json.h"
 #ifdef __linux__
 #include <sys/wait.h>

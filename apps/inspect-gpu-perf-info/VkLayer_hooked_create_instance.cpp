@@ -20,7 +20,12 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkCreateInstance(
     layerCreateInfo->u.pLayerInfo = layerCreateInfo->u.pLayerInfo->pNext;
     
     PFN_vkCreateInstance original_pfn_vkCreateInstance = (PFN_vkCreateInstance)g_pfn_vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkCreateInstance");
-    return original_pfn_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
+    VkResult result = original_pfn_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
+    if (result == VK_SUCCESS) {
+        g_VkInstance = *pInstance;
+    }
+
+    return result;
 }
 
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL HKed_vkGetInstanceProcAddr(

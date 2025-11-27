@@ -1,5 +1,6 @@
 #include "VK_physdev.h"
 
+#ifdef __linux__
 const char* realpath(const char* name) {
     std::string cmdline = std::string("which ")+ name + " 2>/dev/null";
     FILE* pipe = popen(cmdline.c_str(), "r");
@@ -15,6 +16,7 @@ const char* realpath(const char* name) {
     }
     return name;
 }
+#endif 
 
 int main(int argc, char **argv) {
     std::cout << VK_physdev::INFO() << std::endl;

@@ -6,6 +6,8 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkCreateDevice(
     const VkAllocationCallbacks* pAllocator,
     VkDevice* pDevice
 ) {
+    VkLayer_DeviceAddressFeature::add(physicalDevice, const_cast<VkDeviceCreateInfo*>(pCreateInfo));
+
     VkLayerDeviceCreateInfo* layerCreateInfo = (VkLayerDeviceCreateInfo*)pCreateInfo->pNext;
     while (layerCreateInfo && 
            (layerCreateInfo->sType != VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO ||
@@ -22,7 +24,12 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkCreateDevice(
     layerCreateInfo->u.pLayerInfo = layerCreateInfo->u.pLayerInfo->pNext;
     
     PFN_vkCreateDevice original_pfn_vkCreateDevice = (PFN_vkCreateDevice)pfn_vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkCreateDevice");
-    return original_pfn_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
+    VkResult result = original_pfn_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
+    if (result == VK_SUCCESS) {
+        g_physicalDeviceMap[*pDevice] = physicalDevice;
+    }
+
+    return result;
 }
 
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL HKed_vkGetDeviceProcAddr(
