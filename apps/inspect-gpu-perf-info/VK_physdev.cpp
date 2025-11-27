@@ -298,13 +298,13 @@ nlohmann::json VK_physdev::info() const {
     auto print_nvml_props = [&]() -> nlohmann::json {
         nvmlReturn_t ec = nvmlInit_v2();
         if (ec != NVML_SUCCESS) {
-            return "failed to init NVML";
+            return "Failed to init NVML";
         }
 
         nvmlDevice_t dev;
         ec = nvmlDeviceGetHandleByIndex_v2(index, &dev);
         if (ec != NVML_SUCCESS) {
-            return "failed to get device by index";
+            return "Failed to get device by index";
         }
 
         char name[128] = {};
@@ -401,7 +401,7 @@ nlohmann::json VK_physdev::info() const {
     };
     #else
     auto print_nvml_props = [&]() -> nlohmann::json {
-        return "failed to find libnvidia-ml.so";
+        return "Failed to find libnvidia-ml.so";
     };
     #endif 
 
