@@ -9,17 +9,27 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
     VK_DEFINE_ORIGINAL_FUNC(vkAllocateMemory);
 
     static int index = 0;
-    index += 1;
-    auto start = std::chrono::high_resolution_clock::now();
-    fprintf(stderr, "vkAllocateMemory START %d\n", index);
+    static int RMLog = -1;
+    if (RMLog == -1) {
+        RMLog = (getenv("RMLOG") && getenv("RMLOG")[0] == '1') ? 1 : 0;
+    }
+
+    std::chrono::high_resolution_clock::time_point start;
+    if (RMLog == 1) {
+        index += 1;
+        start = std::chrono::high_resolution_clock::now();
+        fprintf(stderr, "vkAllocateMemory START %d\n", index);
+    }
     
     VkResult result = original_pfn_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
     
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-    uint64_t va = GPU_VirtualAddress(device, *pMemory, pAllocateInfo->allocationSize);
-    std::string vaPage = "";// Search_GPU_PageTables(va, pAllocateInfo->allocationSize);
-    fprintf(stderr, "vkAllocateMemory ENDED AFTER %lld NS (0x%016" PRIx64 ") [%s]\n", duration.count(), va, vaPage.c_str());
+    if (RMLog == 1) {
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+        uint64_t va = GPU_VirtualAddress(device, *pMemory, pAllocateInfo->allocationSize);
+        std::string vaPage = Search_GPU_PageTables(va, pAllocateInfo->allocationSize);
+        fprintf(stderr, "vkAllocateMemory ENDED AFTER %ld NS (0x%016" PRIx64 ") [%s]\n", duration.count(), va, vaPage.c_str());
+    }
 
     return result;
 }
@@ -65,7 +75,7 @@ uint64_t GPU_VirtualAddress(VkDevice device, VkDeviceMemory memory, size_t size)
 
 std::string Search_GPU_PageTables(uint64_t va, uint64_t size) {
 #ifdef __linux__
-    std::string cmdline = "sudo inspect-gpu-page-tables 2>&1";
+    std::string cmdline = "timeout 5s sudo inspect-gpu-page-tables 2>&1";
     FILE* pipe = popen(cmdline.c_str(), "r");
     if (pipe == NULL) {
         return "";
@@ -76,7 +86,7 @@ std::string Search_GPU_PageTables(uint64_t va, uint64_t size) {
     char buffer[4096];
     while (std::fgets(buffer, sizeof(buffer), pipe)) {
         std::string line(buffer);
-        if (!std::regex_match(line, match, pattern) || match.size() != 7) {
+        if (std::regex_match(line, match, pattern) && match.size() == 7) {
             uint64_t va_start = std::stoull(match[1].str(), nullptr, 16);
             uint64_t va_end = std::stoull(match[2].str(), nullptr, 16);
             //uint64_t pa_start = std::stoull(match[3].str(), nullptr, 16);
