@@ -47,8 +47,8 @@ VkLayer_profiler::VkLayer_profiler() {
     setenv("__GL_DEBUG_LEVEL", "30", 1);
     setenv("__GL_DEBUG_OPTIONS", "LOG_TO_FILE", 1);
     setenv("__GL_DEBUG_FILENAME", "/tmp/rm-api-loggings", 1);
-    system("sudo rm -f /tmp/gpu-page-tables");
-    system("sudo inspect-gpu-page-tables >/tmp/gpu-page-tables");
+    system("sudo rm -f /tmp/gpu-page-tables-start /tmp/gpu-page-tables-end");
+    system("sudo inspect-gpu-page-tables >/tmp/gpu-page-tables-start");
     startTime_cpu = std::chrono::high_resolution_clock::now();
 }
 
@@ -67,6 +67,7 @@ void VkLayer_profiler::end() {
     }
     if (std::filesystem::exists("/tmp/gpu-page-tables")) {
         printf("\n");
-        system("python3 /usr/local/bin/process-page-tables.py /tmp/gpu-page-tables");
+        system("sudo inspect-gpu-page-tables >/tmp/gpu-page-tables-end");
+        system("python3 /usr/local/bin/process-page-tables.py /tmp/gpu-page-tables-start /tmp/gpu-page-tables-end");
     }
 }
