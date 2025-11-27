@@ -94,7 +94,7 @@ void VkLayer_DeviceAddressFeature::add(
     VkPhysicalDevice physicalDevice,
     VkDeviceCreateInfo* pDeviceCreateInfo
 ) {
-    if (!enable) {
+    if (!enable || !physicalDevice) {
         return;
     }
 
