@@ -4,16 +4,10 @@ project("inspect-gpu-perf-info")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-file(CREATE_LINK 
-    "${CMAKE_BINARY_DIR}/compile_commands.json"
-    "${CMAKE_SOURCE_DIR}/compile_commands.json"
-    SYMBOLIC
-)
 
 add_executable(inspect-gpu-perf-info 
     "main.cpp" 
     "VK_common.h"
-    "VkLayer_common.cpp" "VkLayer_common.h"
     "VK_physdev.cpp" "VK_physdev.h" 
     "VK_instance.cpp" "VK_instance.h"
     "VK_queue.cpp" "VK_queue.h"

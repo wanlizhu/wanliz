@@ -12,24 +12,26 @@
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
             }
         },
-        {
-            "name": "Windows_base",
-            "hidden": true,
-            "inherits": "base",
-            "cacheVariables": {
-                "CMAKE_C_COMPILER": "cl.exe",
-                "CMAKE_CXX_COMPILER": "cl.exe"
-            },
-            "architecture": {
-                "value": "x64",
-                "strategy": "external"
-            },
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Windows"
-            }
+      {
+        "name": "Windows_base",
+        "hidden": true,
+        "inherits": "base",
+        "binaryDir": "${sourceDir}/_out/${presetName}",
+        "installDir": "${sourceDir}/_out/${presetName}",
+        "cacheVariables": {
+          "CMAKE_C_COMPILER": "cl.exe",
+          "CMAKE_CXX_COMPILER": "cl.exe"
         },
+        "architecture": {
+          "value": "x64",
+          "strategy": "external"
+        },
+        "condition": {
+          "type": "equals",
+          "lhs": "${hostSystemName}",
+          "rhs": "Windows"
+        }
+      },
         {
             "name": "Linux_base",
             "hidden": true,

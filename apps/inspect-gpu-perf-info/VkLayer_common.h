@@ -32,6 +32,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #endif 
 
 #define VK_LAYER_EXPORT __attribute__((visibility("default")))
@@ -52,22 +53,23 @@ private:
     int original_stdout;
 };
 
+struct VkLayer_vidmem_range {
+    uint64_t va_start;
+    uint64_t va_end;
+    uint64_t pa_start;
+    uint64_t pa_end;
+    std::string aperture;
+    std::string tags;
+};
+
 struct VkLayer_gpu_page_tables {
-    struct va_range {
-        uint64_t va_start
-        uint64_t va_end;
-        uint32_t pa_start;
-        uint32_t pa_end;
-        std::string aperture;
-        std::string tags;
-    };
-    std::vector<va_range> ranges;
+    std::vector<VkLayer_vidmem_range> ranges;
 
     static VkLayer_gpu_page_tables capture();
     static VkLayer_gpu_page_tables load(const std::string& path);
 
     void print() const;
-    std::optional<VidMem_range_record> find(uint64_t va) const;
+    std::optional<VkLayer_vidmem_range> find(uint64_t va) const;
     VkLayer_gpu_page_tables operator-(const VkLayer_gpu_page_tables& other) const;
 };
 
