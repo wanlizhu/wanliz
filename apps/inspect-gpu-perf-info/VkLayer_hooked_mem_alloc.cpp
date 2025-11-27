@@ -9,9 +9,9 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
     VK_DEFINE_ORIGINAL_FUNC(vkAllocateMemory);
 
     static uint32_t id = 0;
-    printf("vkAllocateMemory => start #%d\n", ++id);
+    fprintf(stderr, "vkAllocateMemory => start #%d\n", ++id);
     VkResult result = original_pfn_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
-    printf("vkAllocateMemory => end\n\n");
+    fprintf(stderr, "vkAllocateMemory => end\n\n");
 
     return result;
 }
