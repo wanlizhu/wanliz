@@ -64,17 +64,17 @@ uint64_t GPU_VirtualAddress(VkDevice device, VkDeviceMemory memory, size_t size)
 }
 
 std::string Search_GPU_PageTables(uint64_t va, uint64_t size) {
-    system("sudo rm -f /tmp/page-tables");
-    system("sudo inspect-gpu-page-tables &>/tmp/page-tables");
-    std::ifstream file("/tmp/page-tables");
-    if (!file.is_open()) {
+    std::string cmdline = "sudo inspect-gpu-page-tables 2>&1";
+    FILE* pipe = popen(cmdline.c_str(), "r");
+    if (pipe == NULL) {
         return "";
     }
 
-    std::string line;
     std::regex pattern(R"(^\s*(0x[0-9A-Fa-f]+)\s*-\s*(0x[0-9A-Fa-f]+)\s*=>\s*(0x[0-9A-Fa-f]+)\s*-\s*(0x[0-9A-Fa-f]+)\s*\(([^)]*)\)\s*\(([^)]*)\)\s*$)");
     std::smatch match;
-    while (std::getline(file, line)) {
+    char buffer[4096];
+    while (std::fgets(buffer, sizeof(buffer), pipe)) {
+        std::string line(buffer);
         if (!std::regex_match(line, match, pattern) || match.size() != 7) {
             uint64_t va_start = std::stoull(match[1].str(), nullptr, 16);
             uint64_t va_end = std::stoull(match[2].str(), nullptr, 16);
@@ -83,10 +83,12 @@ std::string Search_GPU_PageTables(uint64_t va, uint64_t size) {
             //std::string aperture = match[5].str();
             //std::string tags = match[6].str();
             if (va >= va_start && va < va_end) {
+                pclose(pipe);
                 return line;
             }
         }
     }
 
+    pclose(pipe);
     return "";
 }
