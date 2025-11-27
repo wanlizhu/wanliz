@@ -7,7 +7,10 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
     VkDeviceMemory* pMemory
 ) {
     VK_DEFINE_ORIGINAL_FUNC(vkAllocateMemory);
-    return original_pfn_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
+    VkLayer_profiler profiler;
+    VkResult result = original_pfn_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
+    profiler.end();
+    return result;
 }
 
 VKAPI_ATTR void VKAPI_CALL HKed_vkFreeMemory(

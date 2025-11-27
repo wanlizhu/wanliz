@@ -14,7 +14,7 @@ if [[ ! -e /dev/nvidia-soc-iommu-inspect && $(uname -m) == "aarch64" ]]; then
 fi 
 
 if [[ -z $(which inspect-gpu-page-tables) ]]; then 
-    cp -vf /mnt/linuxqa/wanliz/inspect-gpu-page-tables.$(uname -m) /usr/local/bin/inspect-gpu-page-tables
+    sudo cp -vf /mnt/linuxqa/wanliz/inspect-gpu-page-tables.$(uname -m) /usr/local/bin/inspect-gpu-page-tables
 fi 
 
 sudo /usr/local/bin/inspect-gpu-page-tables 

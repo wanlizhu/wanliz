@@ -41,3 +41,27 @@ VkLayer_redirect_STDOUT::~VkLayer_redirect_STDOUT() {
         close(original_stdout);
     }
 }
+
+VkLayer_profiler::VkLayer_profiler() {
+    startPageTablesFilePath = std::filesystem::temp_directory_path() / "gpu_page_tables.txt";
+    rmApiLoggingsFilePath = std::filesystem::temp_directory_path() / "rm_api_loggings.txt";
+    capture_gpu_page_tables(startPageTablesFilePath);
+    capture_rm_api_loggings(rmApiLoggingsFilePath);
+
+    startTime = std::chrono::high_resolution_clock::now();
+}
+
+void VkLayer_profiler::end() {
+
+}
+
+void VkLayer_profiler::capture_gpu_page_tables(const std::string& path) {
+
+}
+
+void VkLayer_profiler::capture_rm_api_loggings(const std::string& path) {
+    setenv("__GL_DEBUG_MASK", "RM");
+    setenv("__GL_DEBUG_LEVEL", "30");
+    setenv("__GL_DEBUG_OPTIONS", "LOG_TO_FILE");
+    setenv("__GL_DEBUG_FILENAME", path.c_str());
+}

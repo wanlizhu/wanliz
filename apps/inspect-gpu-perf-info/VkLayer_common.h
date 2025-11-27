@@ -8,6 +8,7 @@
 #include <cstring>
 #include <iostream>
 #include <cassert>
+#include <chrono>
 #ifdef __linux__
 #include <sys/wait.h>
 #include <unistd.h>
@@ -30,4 +31,17 @@ struct VkLayer_redirect_STDOUT {
 
 private:
     int original_stdout;
+};
+
+struct VkLayer_profiler {
+    std::chrono::high_resolution_clock::time_point startTime;
+    std::string startPageTablesFilePath;
+    std::string rmApiLoggingsFilePath;
+
+    VkLayer_profiler();
+    void end();
+
+private:
+    void capture_gpu_page_tables(const std::string& path);
+    void capture_rm_api_loggings(const std::string& path);
 };

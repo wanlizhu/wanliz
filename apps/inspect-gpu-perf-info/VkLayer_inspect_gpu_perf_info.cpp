@@ -3,8 +3,6 @@
 #include "VkLayer_hooked_create_device.h"
 #include "VkLayer_hooked_mem_alloc.h"
 
-
-
 extern "C" {
     VK_LAYER_EXPORT VKAPI_ATTR VkResult VKAPI_CALL vkNegotiateLoaderLayerInterfaceVersion(
         VkNegotiateLayerInterface* pVersionStruct
