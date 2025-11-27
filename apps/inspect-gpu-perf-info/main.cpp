@@ -22,20 +22,16 @@ int main(int argc, char **argv) {
     std::cout << VK_physdev::INFO() << std::endl;
 #ifdef __linux__
     if (argc > 1) {
-        if (::access(argv[1], X_OK) == 0) {
-            pid_t childProc = fork();
-            if (childProc == 0) { // Inside child process
-                if (getenv("DISPLAY") == NULL) {
-                    setenv("DISPLAY", ":0", 1);
-                    std::cout << "Fallback to DISPLAY=:0" << std::endl;
-                }
-                setenv("VK_INSTANCE_LAYERS", "VK_LAYER_inspect_gpu_perf_info", 1);
-                execv(realpath(argv[1]), argv + 1);
-            } else if (childProc > 0) { // Inside parent process
-                waitpid(childProc, NULL, 0);
+        pid_t childProc = fork();
+        if (childProc == 0) { // Inside child process
+            if (getenv("DISPLAY") == NULL) {
+                setenv("DISPLAY", ":0", 1);
+                std::cout << "Fallback to DISPLAY=:0" << std::endl;
             }
-        } else {
-            printf("%s is not executable!\n", argv[1]);
+            setenv("VK_INSTANCE_LAYERS", "VK_LAYER_inspect_gpu_perf_info", 1);
+            execv(realpath(argv[1]), argv + 1);
+        } else if (childProc > 0) { // Inside parent process
+            waitpid(childProc, NULL, 0);
         }
     }
 #endif
