@@ -53,29 +53,8 @@ private:
     int original_stdout;
 };
 
-struct VkLayer_vidmem_range {
-    uint64_t va_start;
-    uint64_t va_end;
-    uint64_t pa_start;
-    uint64_t pa_end;
-    std::string aperture;
-    std::string tags;
-};
-
-struct VkLayer_gpu_page_tables {
-    std::vector<VkLayer_vidmem_range> ranges;
-
-    static VkLayer_gpu_page_tables capture();
-    static VkLayer_gpu_page_tables load(const std::string& path);
-
-    void print() const;
-    std::optional<VkLayer_vidmem_range> find(uint64_t va) const;
-    VkLayer_gpu_page_tables operator-(const VkLayer_gpu_page_tables& other) const;
-};
-
 struct VkLayer_profiler {
     std::chrono::high_resolution_clock::time_point startTime_cpu;
-    VkLayer_gpu_page_tables startPageTables;
 
     VkLayer_profiler();
     void end();
