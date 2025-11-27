@@ -98,15 +98,19 @@ void VkLayer_DeviceAddressFeature::add(
         return;
     }
 
-    VkPhysicalDeviceBufferDeviceAddressFeatures requiredFeature;
+    VkPhysicalDeviceBufferDeviceAddressFeatures requiredFeature = {};
     requiredFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
     requiredFeature.pNext = NULL;
     requiredFeature.bufferDeviceAddress = VK_FALSE;
 
-    VkPhysicalDeviceFeatures2 physicalDeviceFeatures2;
+    VkPhysicalDeviceFeatures2 physicalDeviceFeatures2 = {};
     physicalDeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
     physicalDeviceFeatures2.pNext = &requiredFeature;
-    vkGetPhysicalDeviceFeatures2(physicalDevice, &physicalDeviceFeatures2);
+
+    auto pfn_vkGetPhysicalDeviceFeatures2 = (PFN_vkGetPhysicalDeviceFeatures2)g_pfn_vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkGetPhysicalDeviceFeatures2");
+    if (pfn_vkGetPhysicalDeviceFeatures2) {
+        pfn_vkGetPhysicalDeviceFeatures2(physicalDevice, &physicalDeviceFeatures2);
+    }
 
     if (!requiredFeature.bufferDeviceAddress) {
         printf("VkPhysicalDeviceBufferDeviceAddressFeatures ... [SKIPPED]");
