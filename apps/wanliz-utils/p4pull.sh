@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ -z $P4CLIENT ]]; then 
-    eval "$(p4env -print)"
+    eval "$(p4env.sh -print)"
 fi 
 
 time p4 sync  

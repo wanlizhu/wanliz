@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ -z $P4CLIENT ]]; then 
-    eval "$(p4env -print)"
+    eval "$(p4env.sh -print)"
 fi 
 
 ofiles=$(p4 opened -C $P4CLIENT //... 2>/dev/null)

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 if [[ -z $P4CLIENT ]]; then 
-    eval "$(p4env -print)"
+    eval "$(p4env.sh -print)"
 fi 
 
 if [[ -f "$1" ]]; then 
-    nvrmmod
+    nvrmmod.sh
     chmod +x "$1" &>/dev/null || true 
     failed=
     if [[ $2 == "-i" ]]; then 
