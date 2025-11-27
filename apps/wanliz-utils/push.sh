@@ -28,7 +28,13 @@ elif [[ $1 == "home" ]]; then
             echo "$user@$host" >~/.push_host
         fi 
 
+        if [[ -f ~/.ssh/id_ed25519 ]]; then 
+            ssh-copy-id -i ~/.ssh/id_ed25519.pub $user@$host
+        fi 
+
+        echo "Making dirs on remote if missing ... "
         ssh $(cat ~/.push_host) "mkdir -p /mnt/d/${USER}@$(hostname)"
+        echo "Uploading home folder files ... "
         rsync -lth --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' "${home_files[@]}" $(cat ~/.push_host):/mnt/d/${USER}@$(hostname)/
     fi 
 fi 
