@@ -330,7 +330,7 @@ nlohmann::json VK_physdev::info() const {
             oss << print_brand_name(brand);
             if (nvmlDeviceGetArchitecture(dev, &arch) == NVML_SUCCESS && 
                 nvmlDeviceGetCudaComputeCapability(dev, &ccMajor, &ccMinor) == NVML_SUCCESS) {
-                oss << " (" << print_arch_name(arch) << ", CUDA" << ccMajor << "." << ccMinor << ")";
+                oss << " (" << print_arch_name(arch) << ", CUDA " << ccMajor << "." << ccMinor << ")";
             }
             brand_str = oss.str();
         }
@@ -354,16 +354,16 @@ nlohmann::json VK_physdev::info() const {
         if (nvmlDeviceGetMemoryInfo(dev, &mem) == NVML_SUCCESS) {
             mem_obj["total"] = print_size(mem.total);
             if (nvmlDeviceGetMemoryBusWidth(dev, &busWidthBits) == NVML_SUCCESS) {
-                mem_obj["bus width (bits)"] = busWidthBits;
+                mem_obj["bus width"] = std::string(busWidthBits) + " bits";
             }
             if (nvmlDeviceGetMaxClockInfo(dev, NVML_CLOCK_MEM, &memClockMHz) == NVML_SUCCESS) {
-                mem_obj["clock (MHz)"] = memClockMHz;
+                mem_obj["max clock"] = std::string(memClockMHz) + " MHz";
             }
             if (busWidthBits > 0 && memClockMHz > 0) {
                 std::ostringstream oss;
                 double bytesPerSecond = (double)busWidthBits / 8.0 * (double)memClockMHz * 2.0 * 1e6;
-                oss << std::fixed << std::setprecision(2) << (bytesPerSecond / 1e9);
-                mem_obj["bandwidth (GB/s)"] = oss.str();
+                oss << std::fixed << std::setprecision(2) << (bytesPerSecond / 1e9) << " GB/s";
+                mem_obj["bandwidth"] = oss.str();
             }
         }
 
@@ -387,6 +387,9 @@ nlohmann::json VK_physdev::info() const {
             }
         }
 
+        unsigned int max_gfx_clock_MHz = 0;
+        nvmlDeviceGetMaxClockInfo(dev, NVML_CLOCK_GRAPHICS, &max_gfx_clock_MHz);
+
         nvmlShutdown();
 
         return nlohmann::json {
@@ -396,7 +399,8 @@ nlohmann::json VK_physdev::info() const {
             {"PCI", pci_str},
             {"power (watts)", power_str},
             {"nvlink", nvlink_str},
-            {"vidmem", mem_obj}
+            {"vidmem", mem_obj},
+            {"max gfx clock", std::to_string(max_gfx_clock_MHz) + " MHz" }
         };
     };
     #else
