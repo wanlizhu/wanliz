@@ -42,26 +42,110 @@ VkLayer_redirect_STDOUT::~VkLayer_redirect_STDOUT() {
     }
 }
 
-VkLayer_profiler::VkLayer_profiler() {
-    startPageTablesFilePath = std::filesystem::temp_directory_path() / "gpu_page_tables.txt";
-    rmApiLoggingsFilePath = std::filesystem::temp_directory_path() / "rm_api_loggings.txt";
-    capture_gpu_page_tables(startPageTablesFilePath);
-    capture_rm_api_loggings(rmApiLoggingsFilePath);
+VkLayer_gpu_page_tables VkLayer_gpu_page_tables::capture() {
+    std::string cmdline = 
+        "sudo rm -f /tmp/gpu_page_tables.txt; " 
+        "sudo inspect-gpu-page-tables > /tmp/gpu_page_tables.txt";
+    if (std::system(cmdline.c_str()) != 0) {
+        printf("Failed to capture GPU page tables\n");
+        return {};
+    }
 
-    startTime = std::chrono::high_resolution_clock::now();
+    return load("/tmp/gpu_page_tables.txt");
 }
 
-void VkLayer_profiler::end() {
+VkLayer_gpu_page_tables VkLayer_gpu_page_tables::load(const std::string& path) {
+    std::ifstream file("/tmp/gpu_page_tables.txt");
+    std::string line;
+    std::regex pattern(R"(^\s*(0x[0-9A-Fa-f]+)\s*-\s*(0x[0-9A-Fa-f]+)\s*=>\s*(0x[0-9A-Fa-f]+)\s*-\s*(0x[0-9A-Fa-f]+)\s*\(([^)]*)\)\s*\(([^)]*)\)\s*$)");
+    std::smatch match;
 
+    VkLayer_gpu_page_tables result;
+    while (std::getline(file, line)) {
+        std::regex_search(line, match, pattern);
+        if (match.size() == 7) {
+            VA_range range;
+            range.va_start = std::stoull(match[1].str(), nullptr, 16);
+            range.va_end = std::stoull(match[2].str(), nullptr, 16);
+            range.pa_start = std::stoull(match[3].str(), nullptr, 16);
+            range.pa_end = std::stoull(match[4].str(), nullptr, 16);
+            range.aperture = match[5].str();
+            range.tags = match[6].str();
+            result.ranges.push_back(range);
+        }
+    }
+
+    return result;
 }
 
-void VkLayer_profiler::capture_gpu_page_tables(const std::string& path) {
+void VkLayer_gpu_page_tables::print() const {
+    std::vector<VA_range> records = ranges;
+    std::sort(records.begin(), records.end(), [](const VA_range& a, const VA_range& b) { return a.va_start < b.va_start; });
+    std::vector<VA_range> merged;
+    merged.push_back(records[0]);
+    for (std::size_t i = 1; i < records.size(); ++i) {
+        auto& last = merged.back();
+        const auto& current = records[i];
+        if (current.va_start == last.va_end + 1 &&
+            current.aperture == last.aperture &&
+            current.tags == last.tags) {
+            last.va_end = current.va_end;
+        } else {
+            merged.push_back(current);
+        }
+    }
+
+    for (const auto& record : merged) {
+        printf("\t0x%016lx - 0x%016lx => 0x%016lx - 0x%016lx (%s) (%s)\n",
+            record.va_start, record.va_end, record.pa_start, record.pa_end,
+            record.aperture.c_str(), record.tags.c_str());
+    }
+}
     
+std::optional<VkLayer_gpu_page_tables::VA_range> VkLayer_gpu_page_tables::find(uint64_t va) const {
+    for (const auto& range : ranges) {
+        if (va >= range.va_start && va < range.va_end) {
+            return range;
+        }
+    }
+
+    return std::nullopt;
 }
 
-void VkLayer_profiler::capture_rm_api_loggings(const std::string& path) {
+VkLayer_gpu_page_tables VkLayer_gpu_page_tables::operator-(const VkLayer_gpu_page_tables& other) const {
+    VkLayer_gpu_page_tables result;
+    for (const auto& range : ranges) {
+        if (other.find(range.va_start) == std::nullopt) {
+            result.ranges.push_back(range);
+        }
+    }
+
+    return result;
+}
+
+VkLayer_profiler::VkLayer_profiler() {
     setenv("__GL_DEBUG_MASK", "RM");
     setenv("__GL_DEBUG_LEVEL", "30");
     setenv("__GL_DEBUG_OPTIONS", "LOG_TO_FILE");
-    setenv("__GL_DEBUG_FILENAME", path.c_str());
+    setenv("__GL_DEBUG_FILENAME", "/tmp/rm_api_loggings.txt");
+    startPageTables.capture();
+    startTime_cpu = std::chrono::high_resolution_clock::now();
+}
+
+void VkLayer_profiler::end() {
+    auto endTime_cpu = std::chrono::high_resolution_clock::now();
+    auto nanosec_cpu = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime_cpu - startTime_cpu);
+    VkLayer_gpu_page_tables newpages = VkLayer_gpu_page_tables::capture() - startPageTables;
+    setenv("__GL_DEBUG_MASK", "");
+    setenv("__GL_DEBUG_LEVEL", "");
+    setenv("__GL_DEBUG_OPTIONS", "");
+    setenv("__GL_DEBUG_FILENAME", "");
+    
+    printf("CPU time: %ld ns (%f ms)\n", nanosec_cpu.count(), nanosec_cpu.count() / 1000000.0f);
+    if (std::filesystem::exists("/tmp/rm_api_loggings.txt")) {
+        print("\n");
+        std::system("python3 /usr/local/bin/process-vidheap.py /tmp/rm_api_loggings.txt");
+    }
+    printf("\n");
+    newpages.print();
 }

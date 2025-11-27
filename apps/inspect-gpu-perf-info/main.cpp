@@ -1,4 +1,5 @@
 #include "VK_physdev.h"
+#include "VkLayer_common.h"
 
 const char* realpath(const char* name) {
     std::string cmdline = std::string("which ")+ name + " 2>/dev/null";
@@ -20,16 +21,29 @@ int main(int argc, char **argv) {
     std::cout << VK_physdev::INFO() << std::endl;
 #ifdef __linux__
     if (argc > 1) {
-        pid_t childProc = fork();
-        if (childProc == 0) { // Inside child process
-            if (getenv("DISPLAY") == NULL) {
-                setenv("DISPLAY", ":0", 1);
-                std::cout << "Fallback to DISPLAY=:0" << std::endl;
+        if (::access(argv[1], X_OK) == 0) {
+            pid_t childProc = fork();
+            if (childProc == 0) { // Inside child process
+                if (getenv("DISPLAY") == NULL) {
+                    setenv("DISPLAY", ":0", 1);
+                    std::cout << "Fallback to DISPLAY=:0" << std::endl;
+                }
+                setenv("VK_INSTANCE_LAYERS", "VK_LAYER_inspect_gpu_perf_info", 1);
+                execv(realpath(argv[1]), argv + 1);
+            } else if (childProc > 0) { // Inside parent process
+                waitpid(childProc, NULL, 0);
             }
-            setenv("VK_INSTANCE_LAYERS", "VK_LAYER_inspect_gpu_perf_info", 1);
-            execv(realpath(argv[1]), argv + 1);
-        } else if (childProc > 0) { // Inside parent process
-            waitpid(childProc, NULL, 0);
+        } else {
+            printf("What is %s:\n", argv[1]);
+            printf("1 - GPU page tables dump\n");
+            printf("2 - RM API loggings\n");
+            printf(">> ");
+            int user_choice = -1;
+            std::cin >> user_choice;
+            if (user_choice == 1) {
+                auto tables = VkLayer_gpu_page_tables::load(argv[1]);
+                tables.print();
+            }
         }
     }
 #endif

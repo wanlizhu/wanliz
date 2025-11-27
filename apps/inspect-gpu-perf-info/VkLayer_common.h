@@ -9,6 +9,25 @@
 #include <iostream>
 #include <cassert>
 #include <chrono>
+#include <string>
+#include <vector>
+#include <regex>
+#include <fstream>
+#include <sstream>
+#include <cstdio>
+#include <cstdlib>
+#include <algorithm>
+#include <functional>
+#include <typeindex>
+#include <typeinfo>
+#include <type_traits>
+#include <cstdint>
+#include <cassert>
+#include <cstring>
+#include <cstdlib>
+#include <stdexcept>
+#include <thread>
+#include <optional>
 #ifdef __linux__
 #include <sys/wait.h>
 #include <unistd.h>
@@ -33,15 +52,28 @@ private:
     int original_stdout;
 };
 
+struct VkLayer_gpu_page_tables {
+    struct va_range {
+        uint64_t va_start
+        uint64_t va_end;
+        uint32_t pa_start;
+        uint32_t pa_end;
+        std::string aperture;
+        std::string tags;
+    };
+    std::vector<va_range> ranges;
+
+    static VkLayer_gpu_page_tables capture();
+
+    void print() const;
+    std::optional<VidMem_range_record> find(uint64_t va) const;
+    VkLayer_gpu_page_tables operator-(const VkLayer_gpu_page_tables& other) const;
+};
+
 struct VkLayer_profiler {
-    std::chrono::high_resolution_clock::time_point startTime;
-    std::string startPageTablesFilePath;
-    std::string rmApiLoggingsFilePath;
+    std::chrono::high_resolution_clock::time_point startTime_cpu;
+    VkLayer_gpu_page_tables startPageTables;
 
     VkLayer_profiler();
     void end();
-
-private:
-    void capture_gpu_page_tables(const std::string& path);
-    void capture_rm_api_loggings(const std::string& path);
 };
