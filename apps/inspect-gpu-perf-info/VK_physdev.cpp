@@ -419,5 +419,5 @@ nlohmann::json VK_physdev::info() const {
         {"driver info", driver.driverInfo},
         {"memory heaps", print_mem_heaps()},
         {"NVML": print_nvml_props()}
-    }
+    };
 }
