@@ -354,10 +354,10 @@ nlohmann::json VK_physdev::info() const {
         if (nvmlDeviceGetMemoryInfo(dev, &mem) == NVML_SUCCESS) {
             mem_obj["total"] = print_size(mem.total);
             if (nvmlDeviceGetMemoryBusWidth(dev, &busWidthBits) == NVML_SUCCESS) {
-                mem_obj["bus width"] = std::string(busWidthBits) + " bits";
+                mem_obj["bus width"] = std::to_string(busWidthBits) + " bits";
             }
             if (nvmlDeviceGetMaxClockInfo(dev, NVML_CLOCK_MEM, &memClockMHz) == NVML_SUCCESS) {
-                mem_obj["max clock"] = std::string(memClockMHz) + " MHz";
+                mem_obj["max clock"] = std::to_string(memClockMHz) + " MHz";
             }
             if (busWidthBits > 0 && memClockMHz > 0) {
                 std::ostringstream oss;
