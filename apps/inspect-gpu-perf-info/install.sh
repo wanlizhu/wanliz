@@ -5,4 +5,4 @@ outdir=$workspace/_out/Linux_$(uname -m | sed 's/x86_64/amd64/g')_release
 mkdir -p $outdir 
 cd $outdir  
 cmake ../..  
-sudo cmake --build . --target install 
+sudo cmake --build . --target install || cmake --build .
