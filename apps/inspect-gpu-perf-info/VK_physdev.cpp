@@ -294,7 +294,7 @@ nlohmann::json VK_physdev::info() const {
         }
     };
 
-    #ifdef NVML_LINKED
+    #ifdef NVML_FOUND
     auto print_nvml_props = [&]() -> nlohmann::json {
         nvmlReturn_t ec = nvmlInit_v2();
         if (ec != NVML_SUCCESS) {
