@@ -404,7 +404,7 @@ nlohmann::json VK_physdev::info() const {
 
         nvmlShutdown();
 
-        nlohmann::json object = {
+        nlohmann::json nvml_obj = {
             {"name", std::string(name)},
             {"board", board_str},
             {"brand", brand_str},
@@ -412,9 +412,9 @@ nlohmann::json VK_physdev::info() const {
             {"power (watts)", power_str},
             {"nvlink", nvlink_str}
         };
-        object["vidmem"] = mem_obj;
-        
-        return object;
+        nvml_obj["vidmem"] = mem_obj;
+
+        return nvml_obj;
     };
 
     object["NVML"] = print_nvml_props();
