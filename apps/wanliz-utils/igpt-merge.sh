@@ -108,7 +108,7 @@ function show_merged_summary {
     END {
         for (attr in size) {
             if (attr != "")
-                printf "%s %s\n", human_size(size[attr]), attr
+                printf "%s %s\n", attr, human_size(size[attr])
             else
                 printf "%s\n", human_size(size[attr])
         }
