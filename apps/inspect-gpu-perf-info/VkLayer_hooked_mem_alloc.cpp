@@ -12,23 +12,30 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
     static int RMLog = -1;
     if (RMLog == -1) {
         RMLog = (getenv("RMLOG") && getenv("RMLOG")[0] == '1') ? 1 : 0;
+        system("sudo igpt-config.sh");
     }
 
-    std::chrono::high_resolution_clock::time_point start;
+    std::chrono::high_resolution_clock::time_point begin;
     if (RMLog == 1) {
         index += 1;
-        start = std::chrono::high_resolution_clock::now();
-        fprintf(stderr, "vkAllocateMemory START %d\n", index);
+        fprintf(stderr, "vkAllocateMemory BEGIN %d\n", index);
+        system("sudo rm -rf /tmp/pages.begin /tmp/pages.end /tmp/pages.new");
+        system("sudo inspect-gpu-page-tables >/tmp/pages.begin 2>&1");
+        begin = std::chrono::high_resolution_clock::now();
     }
     
     VkResult result = original_pfn_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
     
     if (RMLog == 1) {
         auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
         uint64_t va = GPU_VirtualAddress(device, *pMemory, pAllocateInfo->allocationSize);
-        std::string vaPage = Search_GPU_PageTables(va, pAllocateInfo->allocationSize);
-        fprintf(stderr, "vkAllocateMemory ENDED AFTER %ld NS (0x%016" PRIx64 ") [%s]\n", duration.count(), va, vaPage.c_str());
+        system("sudo inspect-gpu-page-tables >/tmp/pages.end 2>&1");
+        system("diff --old-line-format='' --new-line-format='%L' --unchanged-line-format='' /tmp/pages.begin /tmp/pages.end >/tmp/pages.new");
+        system("igpt-merge.sh /tmp/pages.new >/tmp/pages.new.merged");
+        const char* new_pages = VkLayer_readbuf("/tmp/pages.new.merged", true);
+        fprintf(stderr, "vkAllocateMemory ENDED AFTER %ld NS (0x%016" PRIx64 ") [%s]\n", duration.count(), va, new_pages);
+        fprintf(stdout, "vkAllocateMemory ENDED AFTER %ld NS (0x%016" PRIx64 ") [%s]\n", duration.count(), va, new_pages);
     }
 
     return result;
@@ -44,7 +51,7 @@ VKAPI_ATTR void VKAPI_CALL HKed_vkFreeMemory(
 }
 
 uint64_t GPU_VirtualAddress(VkDevice device, VkDeviceMemory memory, size_t size) {
-    if (!VkLayer_DeviceAddressFeature::enable) {
+    if (!VkLayer_DeviceAddressFeature::enabled) {
         return 0;
     }
 
@@ -71,36 +78,4 @@ uint64_t GPU_VirtualAddress(VkDevice device, VkDeviceMemory memory, size_t size)
     vkDestroyBuffer(device, buffer, NULL);
 
     return address;
-}
-
-std::string Search_GPU_PageTables(uint64_t va, uint64_t size) {
-#ifdef __linux__
-    std::string cmdline = "timeout 5s sudo inspect-gpu-page-tables 2>&1";
-    FILE* pipe = popen(cmdline.c_str(), "r");
-    if (pipe == NULL) {
-        return "";
-    }
-
-    std::regex pattern(R"(^\s*(0x[0-9A-Fa-f]+)\s*-\s*(0x[0-9A-Fa-f]+)\s*=>\s*(0x[0-9A-Fa-f]+)\s*-\s*(0x[0-9A-Fa-f]+)\s*\(([^)]*)\)\s*\(([^)]*)\)\s*$)");
-    std::smatch match;
-    char buffer[4096];
-    while (std::fgets(buffer, sizeof(buffer), pipe)) {
-        std::string line(buffer);
-        if (std::regex_match(line, match, pattern) && match.size() == 7) {
-            uint64_t va_start = std::stoull(match[1].str(), nullptr, 16);
-            uint64_t va_end = std::stoull(match[2].str(), nullptr, 16);
-            //uint64_t pa_start = std::stoull(match[3].str(), nullptr, 16);
-            //uint64_t pa_end = std::stoull(match[4].str(), nullptr, 16);
-            //std::string aperture = match[5].str();
-            //std::string tags = match[6].str();
-            if (va >= va_start && va < va_end) {
-                pclose(pipe);
-                return line;
-            }
-        }
-    }
-
-    pclose(pipe);
-#endif 
-    return "";
 }

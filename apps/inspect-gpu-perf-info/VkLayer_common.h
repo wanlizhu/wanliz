@@ -29,6 +29,8 @@
 #include <thread>
 #include <optional>
 #include <inttypes.h>
+#include <iterator>
+#include <cctype>
 #ifdef __linux__
 #include <sys/wait.h>
 #include <unistd.h>
@@ -70,9 +72,12 @@ private:
 };
 
 struct VkLayer_DeviceAddressFeature {
-    static const bool enable = true;
-    static void add(
+    static bool enabled;
+    static void enable(
         VkPhysicalDevice physicalDevice, 
         VkDeviceCreateInfo* pDeviceCreateInfo
     );
 };
+
+const char* VkLayer_readbuf(const char* path, bool trim);
+const char* VkLayer_merge_pages(const char* );

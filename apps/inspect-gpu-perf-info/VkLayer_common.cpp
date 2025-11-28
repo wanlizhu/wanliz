@@ -90,11 +90,12 @@ VkLayer_redirect_STDERR::~VkLayer_redirect_STDERR() {
 #endif 
 }
 
-void VkLayer_DeviceAddressFeature::add(
+bool VkLayer_DeviceAddressFeature::enabled = false;
+void VkLayer_DeviceAddressFeature::enable(
     VkPhysicalDevice physicalDevice,
     VkDeviceCreateInfo* pDeviceCreateInfo
 ) {
-    if (!enable || !physicalDevice) {
+    if (!physicalDevice) {
         return;
     }
 
@@ -113,7 +114,8 @@ void VkLayer_DeviceAddressFeature::add(
     }
 
     if (!requiredFeature.bufferDeviceAddress) {
-        printf("VkPhysicalDeviceBufferDeviceAddressFeatures ... [SKIPPED]");
+        printf("VkPhysicalDeviceBufferDeviceAddressFeatures ... [NOT AVAILABLE]\n");
+        enabled = false;
         return;
     }
 
@@ -124,4 +126,29 @@ void VkLayer_DeviceAddressFeature::add(
     pDeviceCreateInfo->pNext = &bufferAddressFeature;
 
     printf("VkPhysicalDeviceBufferDeviceAddressFeatures ... [ENABLED]");
+    enabled = true;
+}
+
+const char* VkLayer_readbuf(const char* path, bool trim) {
+    static std::string buffer;
+    std::ifstream file(path);
+    if (!file) {
+        return "";
+    }
+
+    buffer.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+    if (trim) {
+        while (!buffer.empty() && std::isspace((unsigned char)buffer.front())) {
+            buffer.erase(buffer.begin());
+        }
+        while (!buffer.empty() && std::isspace((unsigned char)buffer.back())) {
+            buffer.pop_back();
+        }
+    }
+
+    return buffer.c_str();
+}
+
+const char* VkLayer_merge_pages(const char* raw_str) {
+    
 }

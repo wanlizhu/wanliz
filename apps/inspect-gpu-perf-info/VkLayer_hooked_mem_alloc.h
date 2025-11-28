@@ -15,4 +15,3 @@ VKAPI_ATTR void VKAPI_CALL HKed_vkFreeMemory(
 );
 
 uint64_t GPU_VirtualAddress(VkDevice device, VkDeviceMemory memory, size_t size);
-std::string Search_GPU_PageTables(uint64_t va, uint64_t size);
