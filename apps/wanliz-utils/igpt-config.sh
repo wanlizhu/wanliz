@@ -16,3 +16,7 @@ fi
 if [[ -z $(which inspect-gpu-page-tables) ]]; then 
     sudo cp -vf /mnt/linuxqa/wanliz/inspect-gpu-page-tables.$(uname -m) /usr/local/bin/inspect-gpu-page-tables
 fi 
+
+if [[ -z $(which igpt-merge.sh ) ]]; then 
+    sudo ln -sfv $HOME/wanliz/apps/wanliz-utils/igpt-merge.sh /usr/local/bin/igpt-merge.sh 
+fi 
