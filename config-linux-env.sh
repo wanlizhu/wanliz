@@ -171,19 +171,27 @@ declare -A required_folders=(
     ["/mnt/data"]="linuxqa.nvidia.com:/storage/data"
     ["/mnt/builds"]="linuxqa.nvidia.com:/storage3/builds"
     ["/mnt/dvsbuilds"]="linuxqa.nvidia.com:/storage5/dvsbuilds"
+)
+declare -A optional_folders=(
     ["/mnt/wanliz_sw_linux"]="nvhqdesk:/wanliz_sw_linux"
 )
-missing_folders=()
+missing_required_folders=()
 for local_folder in "${!required_folders[@]}"; do
     if ! mountpoint -q "$local_folder"; then 
-        missing_folders+=("$local_folder")
+        missing_required_folders+=("$local_folder")
+    fi 
+done 
+missing_optional_folders=()
+for local_folder in "${!optional_folders[@]}"; do
+    if ! mountpoint -q "$local_folder"; then 
+        missing_optional_folders+=("$local_folder")
     fi 
 done 
 
 echo -n "Mounting linuxqa folders ... "
-if (( ${#missing_folders[@]} > 0 )); then
+if (( ${#missing_required_folders[@]} > 0 )); then
     failed_msg=""
-    for local_folder in "${missing_folders[@]}"; do 
+    for local_folder in "${missing_required_folders[@]}"; do 
         remote_folder="${required_folders[$local_folder]}"
         sudo mkdir -p "$local_folder"
         sudo timeout 3 mount -t nfs "$remote_folder" "$local_folder" || { 
@@ -197,4 +205,11 @@ if (( ${#missing_folders[@]} > 0 )); then
     fi 
 else
     echo "[SKIPPED]"
+fi
+if (( ${#missing_optional_folders[@]} > 0 )); then
+    for local_folder in "${missing_optional_folders[@]}"; do 
+        remote_folder="${optional_folders[$local_folder]}"
+        sudo mkdir -p "$local_folder"
+        sudo timeout 3 mount -t nfs "$remote_folder" "$local_folder" 
+    done 
 fi
