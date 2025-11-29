@@ -6,8 +6,13 @@ std::unordered_map<std::string, PFN_vkVoidFunction> g_hooked_functions;
 VkInstance g_VkInstance = NULL;
 std::unordered_map<VkDevice, VkPhysicalDevice> g_physicalDeviceMap;
 
-VkLayer_redirect_STDOUT::VkLayer_redirect_STDOUT(const char* pathstr) {
+void VkLayer_redirect_STDOUT::begin(const char* pathstr) {
 #ifdef __linux__
+    pathstr = pathstr ? pathstr : getenv("IGPI_LOG_FILE");
+    if (pathstr == nullptr) {
+        return;
+    }
+
     std::cout.flush();
     std::fflush(nullptr);
     
@@ -39,7 +44,7 @@ VkLayer_redirect_STDOUT::VkLayer_redirect_STDOUT(const char* pathstr) {
 #endif 
 }
 
-VkLayer_redirect_STDOUT::~VkLayer_redirect_STDOUT() {
+void VkLayer_redirect_STDOUT::end() {
 #ifdef __linux__
     if (original_stdout >= 0) {
         dup2(original_stdout, STDOUT_FILENO);
@@ -48,8 +53,13 @@ VkLayer_redirect_STDOUT::~VkLayer_redirect_STDOUT() {
 #endif 
 }
 
-VkLayer_redirect_STDERR::VkLayer_redirect_STDERR(const char* pathstr) {
+void VkLayer_redirect_STDERR::begin(const char* pathstr) {
 #ifdef __linux__
+    pathstr = pathstr ? pathstr : getenv("IGPI_LOG_FILE");
+    if (pathstr == nullptr) {
+        return;
+    }
+
     std::cerr.flush();
     std::fflush(nullptr);
 
@@ -81,7 +91,7 @@ VkLayer_redirect_STDERR::VkLayer_redirect_STDERR(const char* pathstr) {
 #endif 
 }
 
-VkLayer_redirect_STDERR::~VkLayer_redirect_STDERR() {
+void VkLayer_redirect_STDERR::end() {
 #ifdef __linux__
     if (original_stderr >= 0) {
         dup2(original_stderr, STDERR_FILENO);
@@ -165,4 +175,167 @@ const char* VkLayer_which(const std::string& cmdname) {
         }
     }
     return nullptr;
+}
+
+void VkLayer_GNU_Linux_perf::record() {
+    int max_freq = 100000;
+    int sys_fd = open("/proc/sys/kernel/perf_event_max_sample_rate", O_RDONLY);
+    if (sys_fd >= 0) {
+        char sysbuf[64];
+        int num = (int)::read(sys_fd, sysbuf, sizeof(sysbuf) - 1);
+        close(sys_fd);
+        if (num > 0) {
+            sysbuf[num] = '\0';
+            max_freq = std::atoi(sysbuf);
+        }
+    } else {
+        fprintf(stderr, "Failed to open /proc/sys/kernel/perf_event_max_sample_rate\n");
+    }
+
+    perf_event_attr attr;
+    std::memset(&attr, 0, sizeof(attr));
+    attr.size = sizeof(attr);
+    attr.type = PERF_TYPE_HARDWARE;
+    attr.config = PERF_COUNT_HW_CPU_CYCLES;
+    attr.disabled = 1;
+    attr.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_CALLCHAIN;
+    attr.freq = 1;
+    attr.sample_freq = (unsigned int)max_freq;
+    attr.exclude_kernel = 0;
+    attr.exclude_hv = 1;
+
+    pid_t thread_id = (pid_t)syscall(SYS_gettid);
+    perf_event_fd = (int)syscall(SYS_perf_event_open, &attr, thread_id, -1, -1, PERF_FLAG_FD_CLOEXEC);
+    if (perf_event_fd < 0) {
+        fprintf(stderr, "Failed to call SYS_perf_event_open\n");
+        return;
+    }
+
+    long pagesize = sysconf(_SC_PAGESIZE);
+    if (pagesize <= 0) { 
+        fprintf(stderr, "Failed to get page size\n");
+        close(perf_event_fd); 
+        return; 
+    }
+
+    perf_mmap_size = (size_t)(pagesize * (1 + 256));
+    perf_mmap_base = mmap(nullptr, perf_mmap_size, PROT_READ | PROT_WRITE, MAP_SHARED, perf_event_fd, 0);
+    if (perf_mmap_base == MAP_FAILED) { 
+        fprintf(stderr, "Failed to map perf_mmap_base\n");
+        close(perf_event_fd); 
+        return; 
+    }
+
+    ioctl(perf_event_fd, PERF_EVENT_IOC_RESET, 0);
+    ioctl(perf_event_fd, PERF_EVENT_IOC_ENABLE, 0);
+}
+
+void VkLayer_GNU_Linux_perf::end(const std::string& suffix) {
+    if (perf_event_fd < 0) {
+        return;
+    }
+
+    ioctl(perf_event_fd, PERF_EVENT_IOC_DISABLE, 0);
+
+    output = std::string("/tmp/perf") + suffix + ".txt";
+    FILE* output_file = fopen(output.c_str(), "w");
+
+    std::vector<char> recordbuf;
+    auto meta = (perf_event_mmap_page*)perf_mmap_base;
+    char* data = (char*)perf_mmap_base + meta->data_offset;
+    size_t buffer_size = meta->data_size;
+    uint64_t head = meta->data_head;
+    uint64_t tail = meta->data_tail;
+
+    __sync_synchronize();
+    while (tail < head) {
+        size_t offset = (size_t)(tail % buffer_size);
+        auto header = (perf_event_header*)(data + offset);
+        if (!header->size) {
+            break;
+        }
+
+        size_t rec_size = header->size;
+        if (rec_size > buffer_size) {
+            tail += rec_size;
+            break;
+        }
+
+        char* rec_ptr = nullptr;
+        if (offset + rec_size <= buffer_size) {
+            rec_ptr = data + offset;
+        } else {
+            if (recordbuf.size() < rec_size) {
+                recordbuf.resize(rec_size);
+            }
+            size_t first = buffer_size - offset;
+            std::memcpy(recordbuf.data(), data + offset, first);
+            std::memcpy(recordbuf.data() + first, data, rec_size - first);
+            rec_ptr = recordbuf.data();
+            header = (perf_event_header*)rec_ptr;
+        }
+
+        if (header->type == PERF_RECORD_SAMPLE) {
+            char* pos = rec_ptr + sizeof(perf_event_header);
+            char* end = rec_ptr + rec_size;
+
+            if (pos + sizeof(uint64_t) * 2 <= end) {
+                uint64_t ip = 0;
+                memcpy(&ip, pos, sizeof(ip));
+                pos += sizeof(ip);
+
+                uint64_t nr = 0;
+                memcpy(&nr, pos, sizeof(nr));
+                pos += sizeof(nr);
+
+                std::vector<std::string> frames;
+                for (uint64_t i = 0;
+                     i < nr && pos + sizeof(std::uint64_t) <= end;
+                     ++i) 
+                {
+                    uint64_t pc = 0;
+                    memcpy(&pc, pos, sizeof(pc));
+                    pos += sizeof(pc);
+
+                    if (pc == PERF_CONTEXT_KERNEL ||
+                        pc == PERF_CONTEXT_USER ||
+                        pc == PERF_CONTEXT_HV ||
+                        pc == PERF_CONTEXT_GUEST ||
+                        pc == PERF_CONTEXT_GUEST_KERNEL) {
+                        continue;
+                    }
+
+                    Dl_info info;
+                    const char* name = nullptr;
+                    if (pc && dladdr((void*)pc, &info) != 0 && info.dli_sname) {
+                        name = info.dli_sname;
+                    }
+
+                    char buf[256];
+                    if (name) snprintf(buf, sizeof(buf), "%s", name);
+                    else snprintf(buf, sizeof(buf), "0x%llx", (unsigned long long)pc);
+                    frames.emplace_back(buf);
+                }
+
+                if (!frames.empty()) {
+                    for (size_t i = frames.size(); i-- > 0;) {
+                        fputs(frames[i].c_str(), output_file);
+                        if (i != 0) std::fputc(';', output_file);
+                    }
+                    fputs(" 1\n", output_file);
+                }
+            }
+        }
+
+        tail += rec_size;
+    }
+    __sync_synchronize();
+    meta->data_tail = tail;
+
+    fclose(output_file);
+    munmap(perf_mmap_base, perf_mmap_size);
+    close(perf_event_fd);
+    perf_mmap_base = nullptr;
+    perf_mmap_size = 0;
+    perf_event_fd = -1;
 }

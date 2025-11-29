@@ -37,8 +37,8 @@
             "hidden": true,
             "inherits": "base",
             "cacheVariables": {
-                "CMAKE_C_COMPILER": "clang",
-                "CMAKE_CXX_COMPILER": "clang++"
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
             },
             "condition": {
                 "type": "equals",
@@ -47,26 +47,26 @@
             }
         },
         {
-            "name": "Windows_amd64_debug",
-            "displayName": "Windows_amd64_debug",
+            "name": "Windows_debug",
+            "displayName": "Windows_debug",
             "inherits": "Windows_base"
         },
         {
-            "name": "Windows_amd64_release",
-            "displayName": "Windows_amd64_release",
+            "name": "Windows_release",
+            "displayName": "Windows_release",
             "inherits": "Windows_base",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
         },
         {
-            "name": "Linux_amd64_debug",
-            "displayName": "Linux_amd64_debug",
+            "name": "Linux_debug",
+            "displayName": "Linux_debug",
             "inherits": "Linux_base"
         },
         {
-            "name": "Linux_amd64_release",
-            "displayName": "Linux_amd64_release",
+            "name": "Linux_release",
+            "displayName": "Linux_release",
             "inherits": "Linux_base",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"

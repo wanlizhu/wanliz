@@ -36,6 +36,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <linux/perf_event.h>
+#include <sys/syscall.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <dlfcn.h>
 #endif 
 
 #ifdef __linux__
@@ -56,19 +62,19 @@ extern VkInstance g_VkInstance;
 extern std::unordered_map<VkDevice, VkPhysicalDevice> g_physicalDeviceMap;
 
 struct VkLayer_redirect_STDOUT {
-    VkLayer_redirect_STDOUT(const char* path);
-    ~VkLayer_redirect_STDOUT();
+    void begin(const char* path = NULL);
+    void end();
 
 private:
-    int original_stdout;
+    int original_stdout = -1;
 };
 
 struct VkLayer_redirect_STDERR {
-    VkLayer_redirect_STDERR(const char* path);
-    ~VkLayer_redirect_STDERR();
+    void begin(const char* path = NULL);
+    void end();
 
 private:
-    int original_stderr;
+    int original_stderr = -1;
 };
 
 struct VkLayer_DeviceAddressFeature {
@@ -77,6 +83,16 @@ struct VkLayer_DeviceAddressFeature {
         VkPhysicalDevice physicalDevice, 
         VkDeviceCreateInfo* pDeviceCreateInfo
     );
+};
+
+struct VkLayer_GNU_Linux_perf {
+    int perf_event_fd = -1;
+    void* perf_mmap_base = nullptr;
+    size_t perf_mmap_size = 0;
+    std::string output = "";
+
+    void record();
+    void end(const std::string& suffix);
 };
 
 char* VkLayer_readbuf(const char* path, bool trim);

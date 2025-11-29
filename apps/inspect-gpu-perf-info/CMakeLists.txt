@@ -8,6 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_executable(inspect-gpu-perf-info 
     "main.cpp" 
     "VK_common.h"
+    "VkLayer_common.cpp" "VkLayer_common.h"
     "VK_physdev.cpp" "VK_physdev.h" 
     "VK_instance.cpp" "VK_instance.h"
     "VK_queue.cpp" "VK_queue.h"
