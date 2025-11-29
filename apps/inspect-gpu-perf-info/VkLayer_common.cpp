@@ -149,3 +149,20 @@ char* VkLayer_readbuf(const char* path, bool trim) {
 
     return buffer.data();
 }
+
+const char* VkLayer_which(const std::string& cmdname) {
+    static std::string out;
+    std::istringstream env_path(std::getenv("PATH"));
+    std::string dir;
+    while (std::getline(env_path, dir, ':')) {
+        out = dir + "/" + cmdname;
+#ifdef __linux__
+        if (access(out.c_str(), X_OK) == 0) {
+#else
+        if (std::filesystem::exists(out)) {
+#endif 
+            return out.c_str();
+        }
+    }
+    return nullptr;
+}

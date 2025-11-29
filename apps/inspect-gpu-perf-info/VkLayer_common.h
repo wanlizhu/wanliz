@@ -80,3 +80,4 @@ struct VkLayer_DeviceAddressFeature {
 };
 
 char* VkLayer_readbuf(const char* path, bool trim);
+const char* VkLayer_which(const std::string& cmdname);

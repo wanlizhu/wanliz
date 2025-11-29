@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-show_merged_va_ranges() {
+main() {
     awk '
     function hex_to_dec(x) { return strtonum(x) }
     match($0,/^[[:space:]]*(0x[0-9A-Fa-f]+)[[:space:]]*-[[:space:]]*(0x[0-9A-Fa-f]+)([[:space:]]*=>[[:space:]]*0x[0-9A-Fa-f]+[[:space:]]*-[[:space:]]*0x[0-9A-Fa-f]+)?[[:space:]]*(.*)$/,m){
@@ -78,48 +78,5 @@ show_merged_va_ranges() {
     }'
 }
 
-function show_merged_summary {
-    awk '
-    function hex_to_dec(x) { return strtonum(x) }
-    function human_size(bytes,   v, unit) {
-        if (bytes >= 1024*1024*1024) {
-            v = bytes / (1024*1024*1024)
-            unit = "GB"
-        } else if (bytes >= 1024*1024) {
-            v = bytes / (1024*1024)
-            unit = "MB"
-        } else if (bytes >= 1024) {
-            v = bytes / 1024
-            unit = "KB"
-        } else {
-            v = bytes
-            unit = "B"
-        }
-        return sprintf("%.2f %s", v, unit)
-    }
-
-    match($0,/^[[:space:]]*(0x[0-9A-Fa-f]+)[[:space:]]*-[[:space:]]*(0x[0-9A-Fa-f]+)([[:space:]]*=>[[:space:]]*0x[0-9A-Fa-f]+[[:space:]]*-[[:space:]]*0x[0-9A-Fa-f]+)?[[:space:]]*(.*)$/,m){
-        attr = m[4]
-        gsub(/^[[:space:]]+|[[:space:]]+$/, "", attr)
-        bytes = hex_to_dec(m[2]) - hex_to_dec(m[1]) + 1
-        size[attr] += bytes
-    }
-
-    END {
-        for (attr in size) {
-            if (attr != "")
-                printf "%s %s\n", attr, human_size(size[attr])
-            else
-                printf "%s\n", human_size(size[attr])
-        }
-    }'
-}
-
-if [[ "$1" == "-s" ]]; then
-    shift
-    [[ "$#" -gt 0 ]] && exec < "$1"
-    show_merged_summary
-else
-    [[ "$#" -gt 0 ]] && exec < "$1"
-    show_merged_va_ranges
-fi
+[[ "$#" -gt 0 ]] && exec < "$1"
+main
