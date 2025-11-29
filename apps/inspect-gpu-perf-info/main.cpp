@@ -3,7 +3,7 @@
 
 #ifdef __linux__
 const char* realpath(const char* name) {
-    std::string cmdline = std::string("which ")+ name + " 2> /dev/null";
+    std::string cmdline = std::string("which ")+ name + " 2>/dev/null";
     FILE* pipe = popen(cmdline.c_str(), "r");
     if (pipe) {
         static char buf[4096] = {};

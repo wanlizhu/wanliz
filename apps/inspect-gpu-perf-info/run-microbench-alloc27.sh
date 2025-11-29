@@ -8,7 +8,7 @@ if [[ ! -e "$nvperf_vulkan_path" ]]; then
     exit 1
 fi 
 
-sudo env DEBUG_MEM_ALLOC=1 inspect-gpu-perf-info $nvperf_vulkan_path -nullDisplay alloc:27 2> /tmp/igpi.txt
+sudo env DEBUG_MEM_ALLOC=1 inspect-gpu-perf-info $nvperf_vulkan_path -nullDisplay alloc:27 2>/tmp/igpi.txt
 
 if [[ -f /tmp/igpi.txt ]]; then 
     vkalloc_logs=
@@ -21,7 +21,7 @@ if [[ -f /tmp/igpi.txt ]]; then
                 vkalloc_logs=""
             ;;
             "vkAllocateMemory ENDED"*)
-                printf "%s\n" "$vkalloc_logs" > /tmp/vkalloc_logs
+                printf "%s\n" "$vkalloc_logs" >/tmp/vkalloc_logs
                 $(realpath $(dirname $0))/process-vidheap.py /tmp/vkalloc_logs
                 vkalloc_logs_begin=0
                 echo "$line"

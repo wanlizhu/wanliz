@@ -64,11 +64,10 @@ fi
 git_editor=$(git config --global core.editor 2>/dev/null || true)
 if [[ -z $git_editor ]]; then
     if [[ -z $(which vim) ]]; then 
-        sudo apt install -y vim 2> /dev/null
+        sudo apt install -y vim 2>/dev/null
     fi 
     git config --global core.editor "vim"
 fi
-
 
 if ! dpkg -s openssh-server >/dev/null 2>&1; then
     read -p "Install and set up OpenSSH server on this system? [Y/n]: " choice
@@ -86,6 +85,13 @@ if ! dpkg -s openssh-server >/dev/null 2>&1; then
         fi
     fi
 fi
+
+if ! grep -qi "^[[:space:]]*ClientAliveInterval" /etc/ssh/sshd_config; then  
+    echo "ClientAliveInterval 60" | sudo tee -a  /etc/ssh/sshd_config >/dev/null 
+fi 
+if ! grep -qi "^[[:space:]]*ClientAliveCountMax" /etc/ssh/sshd_config; then 
+    echo "ClientAliveCountMax 3" | sudo tee -a   /etc/ssh/sshd_config >/dev/null 
+fi 
 
 if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
     mkdir -p ~/.ssh
