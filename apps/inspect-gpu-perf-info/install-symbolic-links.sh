@@ -15,7 +15,6 @@ if [[ -z $(which inspect-gpu-page-tables) ]]; then
     fi 
     if [[ -z $(which inspect-gpu-page-tables) ]]; then 
         echo "Action required to install inspect-gpu-page-tables" >&2
-        exit 1
     fi 
 fi 
 
@@ -23,7 +22,6 @@ fi
 if [[ $(uname -m) == "aarch64" && ! -e /dev/nvidia-soc-iommu-inspect ]]; then 
     if [[ ! -d $P4ROOT/pvt/aritger/apps/inspect-gpu-page-tables/nvidia-soc-iommu-inspect ]]; then 
         echo "Missing folder: \$P4ROOT/pvt/aritger/apps/inspect-gpu-page-tables/nvidia-soc-iommu-inspect" >&2
-        exit 1
     fi 
     cd $P4ROOT/pvt/aritger/apps/inspect-gpu-page-tables/nvidia-soc-iommu-inspect 
     make || exit 1
