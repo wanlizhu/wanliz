@@ -158,12 +158,14 @@ done
 if [[ -z $failed_msg ]]; then 
     echo "[OK]"
 else
-    echo "$failed_msg"
+    echo "Error: $failed_msg"
 fi 
 
 echo -n "Installing inspect-gpu-perf-info ... "
 sudo rm -f /usr/local/bin/inspect-gpu-perf-info
-$(realpath $(dirname $0))/apps/inspect-gpu-perf-info/install-symbolic-links.sh &>/dev/null && echo "[OK]" || echo "[FAILED]"
+$(realpath $(dirname $0))/apps/inspect-gpu-perf-info/install-symbolic-links.sh \
+    >/dev/null 2>/tmp/logs \
+    && echo "[OK]" || echo "Error: $(cat /tmp/logs)"
 
 declare -A required_folders=(
     ["/mnt/linuxqa"]="linuxqa.nvidia.com:/storage/people"
@@ -192,7 +194,7 @@ if (( ${#missing_folders[@]} > 0 )); then
     if [[ -z $failed_msg ]]; then 
         echo "[OK]"
     else
-        echo "$failed_msg"
+        echo "Error: $failed_msg"
     fi 
 else
     echo "[SKIPPED]"
