@@ -140,7 +140,6 @@ else
 fi 
 
 echo -n "Installing wanliz-utils to /usr/local/bin ... "
-sudo ln -sf $(realpath $(dirname $0))/config-linux-env.sh /usr/local/bin/config-linux-env.sh 
 find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
     real_target=$(readlink -f "$link") || continue 
     if [[ $real_target == *"/wanliz-utils/"* ]]; then 
