@@ -10,7 +10,10 @@ if [[ -z $1 ]]; then
     fi
     git add .
     git commit -m "auto push from $(hostname) at $(date)"
-    git push 
+    git push || {
+        git pull 
+        git push 
+    }
     popd >/dev/null 
 elif [[ $1 == "home" ]]; then 
     home_files=()
