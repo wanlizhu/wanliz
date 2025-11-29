@@ -129,11 +129,12 @@ void VkLayer_DeviceAddressFeature::enable(
     enabled = true;
 }
 
-const char* VkLayer_readbuf(const char* path, bool trim) {
+char* VkLayer_readbuf(const char* path, bool trim) {
     static std::string buffer;
     std::ifstream file(path);
     if (!file) {
-        return "";
+        static char nil = '\0';
+        return &nil;
     }
 
     buffer.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
@@ -146,9 +147,5 @@ const char* VkLayer_readbuf(const char* path, bool trim) {
         }
     }
 
-    return buffer.c_str();
-}
-
-const char* VkLayer_merge_pages(const char* raw_str) {
-    
+    return buffer.data();
 }

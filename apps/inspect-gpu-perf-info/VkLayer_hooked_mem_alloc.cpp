@@ -32,9 +32,10 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
         system("sudo inspect-gpu-page-tables >/tmp/pages.end 2>&1");
         system("diff --old-line-format='' --new-line-format='%L' --unchanged-line-format='' /tmp/pages.begin /tmp/pages.end >/tmp/pages.new");
         system("cat /tmp/pages.new | igpt-merge.sh -s >/tmp/pages.new.merged");
-        const char* new_pages = VkLayer_readbuf("/tmp/pages.new.merged", true);
-        fprintf(stderr, "vkAllocateMemory ENDED AFTER %ld NS [%s]\n", duration.count(), new_pages);
-        fprintf(stdout, "vkAllocateMemory ENDED AFTER %ld NS [%s]\n", duration.count(), new_pages);
+        char* new_pages = VkLayer_readbuf("/tmp/pages.new.merged", true);
+        for (char* pos = new_pages; *pos; ++pos) if (*pos == '\n') pos[0] = '\t';
+        fprintf(stderr, "vkAllocateMemory ENDED AFTER %08ld NS => [%s]\n", duration.count(), new_pages);
+        fprintf(stdout, "vkAllocateMemory ENDED AFTER %08ld NS => [%s]\n", duration.count(), new_pages);
     }
 
     return result;

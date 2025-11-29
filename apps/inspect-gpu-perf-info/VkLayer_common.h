@@ -79,5 +79,4 @@ struct VkLayer_DeviceAddressFeature {
     );
 };
 
-const char* VkLayer_readbuf(const char* path, bool trim);
-const char* VkLayer_merge_pages(const char* );
+char* VkLayer_readbuf(const char* path, bool trim);
