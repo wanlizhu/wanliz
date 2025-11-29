@@ -61,6 +61,14 @@ git_name=$(git config --global user.name 2>/dev/null || true)
 if [[ -z $git_name ]]; then
     git config --global user.name "Wanli Zhu"
 fi 
+git_editor=$(git config --global core.editor 2>/dev/null || true)
+if [[ -z $git_editor ]]; then
+    if [[ -z $(which vim) ]]; then 
+        sudo apt install -y vim 2> /dev/null
+    fi 
+    git config --global core.editor "vim"
+fi
+
 
 if ! dpkg -s openssh-server >/dev/null 2>&1; then
     read -p "Install and set up OpenSSH server on this system? [Y/n]: " choice
