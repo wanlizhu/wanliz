@@ -87,9 +87,9 @@ if ! dpkg -s openssh-server >/dev/null 2>&1; then
 fi
 
 echo -n "Updating sshd to keep client alive ... "
-if sudo sshd -T | awk '
-  $1=="clientaliveinterval"  && $2=="60"        {a=1}
-  $1=="clientalivecountmax" && $2=="3"        {b=1}
+if ! sudo sshd -T | awk '
+  $1=="clientaliveinterval" && $2=="60" {a=1}
+  $1=="clientalivecountmax" && $2=="3" {b=1}
   $1=="tcpkeepalive"        && tolower($2)=="yes" {c=1}
   END { exit !(a && b && c) }'; then
     sudo ex /etc/ssh/sshd_config <<'EOF'
