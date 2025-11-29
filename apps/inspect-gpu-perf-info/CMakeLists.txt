@@ -44,16 +44,3 @@ configure_file(
 )
 target_include_directories(VkLayer_inspect_gpu_perf_info PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(VkLayer_inspect_gpu_perf_info PRIVATE Vulkan::Vulkan)
-
-install(CODE "
-    file(CREATE_LINK 
-        \"${CMAKE_BINARY_DIR}/inspect-gpu-perf-info\"
-        /usr/local/bin/inspect-gpu-perf-info
-        SYMBOLIC
-    )
-    file(CREATE_LINK 
-        \"${CMAKE_BINARY_DIR}/VkLayer_inspect_gpu_perf_info.json\"
-        /usr/share/vulkan/explicit_layer.d/VkLayer_inspect_gpu_perf_info.json
-        SYMBOLIC
-    )
-")
