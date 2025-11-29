@@ -11,3 +11,4 @@ if [[ ! -f /tmp/igpi.txt ]] || ! grep -q '[^[:space:]]' /tmp/igpi.txt; then
     exit 1
 fi 
 
+echo "Logs: /tmp/igpi.txt"
