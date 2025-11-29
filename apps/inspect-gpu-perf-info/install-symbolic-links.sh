@@ -10,8 +10,13 @@ sudo ln -sfv $outdir/VkLayer_inspect_gpu_perf_info.json /usr/share/vulkan/explic
 sudo ln -sfv $(realpath $outdir/../..)/merge-gpu-pages.sh /usr/local/bin/merge-gpu-pages.sh || exit 1
 
 if [[ -z $(which inspect-gpu-page-tables) ]]; then 
-    echo "Action required to install inspect-gpu-page-tables" >&2
-    exit 1
+    if [[ -f /mnt/linuxqa/wanliz/inspect-gpu-page-tables.$(uname -m) ]]; then 
+        sudo cp -f /mnt/linuxqa/wanliz/inspect-gpu-page-tables.$(uname -m) /usr/local/bin/inspect-gpu-page-tables &>/dev/null 
+    fi 
+    if [[ -z $(which inspect-gpu-page-tables) ]]; then 
+        echo "Action required to install inspect-gpu-page-tables" >&2
+        exit 1
+    fi 
 fi 
 
 # Install helper to communicate with kernel on aarch64
