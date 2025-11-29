@@ -86,11 +86,25 @@ if ! dpkg -s openssh-server >/dev/null 2>&1; then
     fi
 fi
 
-if ! grep -qi "^[[:space:]]*ClientAliveInterval" /etc/ssh/sshd_config; then  
+echo -n "Updating sshd to keep client alive ... "
+if sudo sshd -T | awk '
+  $1=="clientaliveinterval"  && $2=="60"        {a=1}
+  $1=="clientalivecountmax" && $2=="3"        {b=1}
+  $1=="tcpkeepalive"        && tolower($2)=="yes" {c=1}
+  END { exit !(a && b && c) }'; then
+    sudo ex /etc/ssh/sshd_config <<'EOF'
+g/^[[:space:]]*ClientAliveInterval/d
+g/^[[:space:]]*ClientAliveCountMax/d
+g/^[[:space:]]*TCPKeepAlive/d
+wq
+EOF
     echo "ClientAliveInterval 60" | sudo tee -a  /etc/ssh/sshd_config >/dev/null 
-fi 
-if ! grep -qi "^[[:space:]]*ClientAliveCountMax" /etc/ssh/sshd_config; then 
     echo "ClientAliveCountMax 3" | sudo tee -a   /etc/ssh/sshd_config >/dev/null 
+    echo "TCPKeepAlive yes" | sudo tee -a   /etc/ssh/sshd_config >/dev/null 
+    sudo systemctl restart ssh
+    echo "[OK]"
+else
+    echo "[SKIPPED]"
 fi 
 
 if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
