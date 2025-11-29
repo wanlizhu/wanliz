@@ -28,7 +28,7 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
         index += 1;
         fprintf(stderr, "vkAllocateMemory BEGIN INDEX=%d\n", index);
         system("sudo rm -rf /tmp/pages.begin /tmp/pages.end /tmp/pages.new");
-        system("sudo inspect-gpu-page-tables >/tmp/pages.begin 2>&1");
+        system("sudo inspect-gpu-page-tables > /tmp/pages.begin 2>&1");
 
         perf.record();
         begin = std::chrono::high_resolution_clock::now();
@@ -41,10 +41,11 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
         perf.end(std::string("-vkAllocateMemory-") + std::to_string(index));
 
-        system("sudo inspect-gpu-page-tables >/tmp/pages.end 2>&1");
-        system("diff --old-line-format='' --new-line-format='%L' --unchanged-line-format='' /tmp/pages.begin /tmp/pages.end >/tmp/pages.new");
-        system("merge-gpu-pages.sh /tmp/pages.new >/tmp/pages.new.merged");
-        const char* new_pages = VkLayer_readbuf("/tmp/pages.new.merged", true);
+        system("sudo inspect-gpu-page-tables > /tmp/pages.end 2>&1");
+        system("diff --old-line-format='' --new-line-format='%L' --unchanged-line-format='' /tmp/pages.begin /tmp/pages.end > /tmp/pages.new");
+        system("merge-gpu-pages.sh /tmp/pages.new > /tmp/pages.new.merged");
+        char* new_pages = VkLayer_readbuf("/tmp/pages.new.merged", true);
+        for (int i = 0; i < strlen(new_pages); i++) if (new_pages[i] == '\n') new_pages[i] = '\t';
         fprintf(stderr, "vkAllocateMemory ENDED AFTER %08ld NS => [%s] => %s\n", duration.count(), new_pages, perf.output.c_str());
         fprintf(stdout, "vkAllocateMemory ENDED AFTER %08ld NS => [%s] => %s\n", duration.count(), new_pages, perf.output.c_str());
     }

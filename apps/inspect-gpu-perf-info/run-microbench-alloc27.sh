@@ -17,24 +17,24 @@ if [[ -f /tmp/igpi.txt ]]; then
         case "$line" in 
             "vkAllocateMemory BEGIN"*)
                 echo "$line"
-                vkalloc_logs=""
                 vkalloc_logs_begin=1
+                vkalloc_logs=""
             ;;
             "vkAllocateMemory ENDED"*)
-                echo "$line"
-                vkalloc_logs_begin=0
                 printf "%s\n" "$vkalloc_logs" > /tmp/vkalloc_logs
                 $(realpath $(dirname $0))/process-vidheap.py /tmp/vkalloc_logs
+                vkalloc_logs_begin=0
+                echo "$line"
             ;;
             *)
+                # Ignore logs outside of BEGIN and ENDED markers
                 if [[ "$vkalloc_logs_begin" = 1 ]]; then
                     vkalloc_logs="$vkalloc_logs$line"$'\n'
-                else
-                    echo "$line"
                 fi 
             ;;
         esac
     done < /tmp/igpi.txt > /tmp/igpi_processed.txt
     sudo mv -f /tmp/igpi_processed.txt $HOME/igpi_mb_alloc27.txt
     echo "Logs dumped to $HOME/igpi_mb_alloc27.txt"
+    cat $HOME/igpi_mb_alloc27.txt
 fi 
