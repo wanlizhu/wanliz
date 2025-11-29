@@ -28,7 +28,7 @@ if (NVML_LIBRARY AND NVML_INCLUDE_DIR)
     target_link_libraries(inspect-gpu-perf-info PRIVATE ${NVML_LIBRARY})
     message(STATUS "Found NVML: ${NVML_LIBRARY}")
 else()
-    message(ERROR ": Not Found NVML")
+    message(STATUS "Configure without NVML")
 endif()
 
 add_library(VkLayer_inspect_gpu_perf_info SHARED
