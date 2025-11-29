@@ -20,13 +20,14 @@ fi
 
 # Install helper to communicate with kernel on aarch64
 if [[ $(uname -m) == "aarch64" && ! -e /dev/nvidia-soc-iommu-inspect ]]; then 
-    if [[ ! -d $P4ROOT/pvt/aritger/apps/inspect-gpu-page-tables/nvidia-soc-iommu-inspect ]]; then 
+    if [[ -d $P4ROOT/pvt/aritger/apps/inspect-gpu-page-tables/nvidia-soc-iommu-inspect ]]; then 
+        cd $P4ROOT/pvt/aritger/apps/inspect-gpu-page-tables/nvidia-soc-iommu-inspect 
+        make || exit 1
+        sudo insmod ./nvidia-soc-iommu-inspect.ko || exit 1
+        sudo ./create-dev-node.sh || exit 1
+    else 
         echo "Missing folder: \$P4ROOT/pvt/aritger/apps/inspect-gpu-page-tables/nvidia-soc-iommu-inspect" >&2
     fi 
-    cd $P4ROOT/pvt/aritger/apps/inspect-gpu-page-tables/nvidia-soc-iommu-inspect 
-    make || exit 1
-    sudo insmod ./nvidia-soc-iommu-inspect.ko || exit 1
-    sudo ./create-dev-node.sh || exit 1
 fi 
 
 if [[ -f /mnt/linuxqa/wanliz/nvperf_vulkan.$(uname -m) ]]; then 
