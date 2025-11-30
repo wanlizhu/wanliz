@@ -7,4 +7,10 @@ case $1 in
     clamp)
         echo " | awk '/AAAA/{flag=1; next} /ZZZZ/{flag=0} flag'"
     ;;
+    nsight)
+        echo "Install Nsight  systems: https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk/"
+        echo "Install Nsight graphics: https://ngfx/builds-prerel/Grxa/"
+        echo "Install Nsight graphics: https://ngfx/builds-nightly/Grfx/"
+        echo "Install Nsight graphics: \\devrel\share\Devtools\NomadBuilds\latest\Internal (username is email)"
+    ;;
 esac 
