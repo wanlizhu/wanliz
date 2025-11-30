@@ -12,15 +12,19 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
     static int enableRMLog = -1;
     static int enableGPUPagesDump = -1;
     static int enableGNUPerfRecord = -1;
+    static int testAPIOverhead = -1; // Turn off all switches above 
     if (enableRMLog == -1) {
         enableRMLog = (getenv("ENABLE_RMLOG") && getenv("ENABLE_RMLOG")[0] == '1') ? 1 : 0;
     }
     if (enableGPUPagesDump == -1) {
-        bool foundTools = VkLayer_which("inspect-gpu-page-tables") && VkLayer_which("merge-gpu-pages.sh");
+        enableGPUPagesDump = (getenv("ENABLE_GPU_PAGES_DUMP") && getenv("ENABLE_GPU_PAGES_DUMP")[0] == '1') ? 1 : 0;
+        if (enableGPUPagesDump == 1) {
+            bool foundTools = VkLayer_which("inspect-gpu-page-tables") && VkLayer_which("merge-gpu-pages.sh");
 #ifdef __aarch64__
-        foundTools = foundTools && std::filesystem::exists("/dev/nvidia-soc-iommu-inspect");
+            foundTools = foundTools && std::filesystem::exists("/dev/nvidia-soc-iommu-inspect");
 #endif 
-        enableGPUPagesDump = foundTools ? 1 : 0;
+            enableGPUPagesDump = foundTools ? 1 : 0;
+        }
     }
     if (enableGNUPerfRecord == -1) {
         enableGNUPerfRecord = (getenv("ENABLE_GNU_PERF_RECORD") && getenv("ENABLE_GNU_PERF_RECORD")[0] == '1') ? 1 : 0;
