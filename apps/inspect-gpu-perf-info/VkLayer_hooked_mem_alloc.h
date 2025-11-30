@@ -1,14 +1,14 @@
 #pragma once
 #include "VkLayer_common.h"
 
-VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
+VKAPI_ATTR VkResult VKAPI_CALL hooked_vkAllocateMemory(
     VkDevice device,
     const VkMemoryAllocateInfo* pAllocateInfo,
     const VkAllocationCallbacks* pAllocator,
     VkDeviceMemory* pMemory
 );
 
-VKAPI_ATTR void VKAPI_CALL HKed_vkFreeMemory(
+VKAPI_ATTR void VKAPI_CALL hooked_vkFreeMemory(
     VkDevice device,
     VkDeviceMemory memory,
     const VkAllocationCallbacks* pAllocator

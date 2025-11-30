@@ -10,14 +10,14 @@ extern "C" {
         if (pVersionStruct->loaderLayerInterfaceVersion > 2) {
             pVersionStruct->loaderLayerInterfaceVersion = 2;
         }
-        pVersionStruct->pfnGetInstanceProcAddr = HKed_vkGetInstanceProcAddr;
-        pVersionStruct->pfnGetDeviceProcAddr = HKed_vkGetDeviceProcAddr;
+        pVersionStruct->pfnGetInstanceProcAddr = hooked_vkGetInstanceProcAddr;
+        pVersionStruct->pfnGetDeviceProcAddr = hooked_vkGetDeviceProcAddr;
         pVersionStruct->pfnGetPhysicalDeviceProcAddr = nullptr;
     
-        g_hooked_functions["vkCreateInstance"] = (PFN_vkVoidFunction)HKed_vkCreateInstance;
-        g_hooked_functions["vkCreateDevice"] = (PFN_vkVoidFunction)HKed_vkCreateDevice;
-        g_hooked_functions["vkAllocateMemory"] = (PFN_vkVoidFunction)HKed_vkAllocateMemory;
-        g_hooked_functions["vkFreeMemory"] = (PFN_vkVoidFunction)HKed_vkFreeMemory;
+        g_hooked_functions["vkCreateInstance"] = (PFN_vkVoidFunction)hooked_vkCreateInstance;
+        g_hooked_functions["vkCreateDevice"] = (PFN_vkVoidFunction)hooked_vkCreateDevice;
+        g_hooked_functions["vkAllocateMemory"] = (PFN_vkVoidFunction)hooked_vkAllocateMemory;
+        g_hooked_functions["vkFreeMemory"] = (PFN_vkVoidFunction)hooked_vkFreeMemory;
     
         std::cout << "[inspect gpu perf info] Hello World" << std::endl;
         
@@ -25,10 +25,10 @@ extern "C" {
     }
 
     VK_LAYER_EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instance, const char* pName) {
-        return HKed_vkGetInstanceProcAddr(instance, pName);
+        return hooked_vkGetInstanceProcAddr(instance, pName);
     }
     
     VK_LAYER_EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetDeviceProcAddr(VkDevice device, const char* pName) {
-        return HKed_vkGetDeviceProcAddr(device, pName);
+        return hooked_vkGetDeviceProcAddr(device, pName);
     }
 }

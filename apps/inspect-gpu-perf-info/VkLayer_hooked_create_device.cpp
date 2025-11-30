@@ -1,6 +1,6 @@
 #include "VkLayer_hooked_create_device.h"
 
-VKAPI_ATTR VkResult VKAPI_CALL HKed_vkCreateDevice(
+VKAPI_ATTR VkResult VKAPI_CALL hooked_vkCreateDevice(
     VkPhysicalDevice physicalDevice,
     const VkDeviceCreateInfo* pCreateInfo,
     const VkAllocationCallbacks* pAllocator,
@@ -31,7 +31,7 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkCreateDevice(
     return result;
 }
 
-VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL HKed_vkGetDeviceProcAddr(
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL hooked_vkGetDeviceProcAddr(
     VkDevice device, 
     const char* pName
 ) {

@@ -1,6 +1,6 @@
 #include "VkLayer_hooked_mem_alloc.h"
 
-VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
+VKAPI_ATTR VkResult VKAPI_CALL hooked_vkAllocateMemory(
     VkDevice device,
     const VkMemoryAllocateInfo* pAllocateInfo,
     const VkAllocationCallbacks* pAllocator,
@@ -12,7 +12,6 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
     static int enableRMLog = -1;
     static int enableGPUPagesDump = -1;
     static int enableGNUPerfRecord = -1;
-    static int testAPIOverhead = -1; // Turn off all switches above 
     if (enableRMLog == -1) {
         enableRMLog = (getenv("ENABLE_RMLOG") && getenv("ENABLE_RMLOG")[0] == '1') ? 1 : 0;
     }
@@ -72,7 +71,7 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
     return result;
 }
 
-VKAPI_ATTR void VKAPI_CALL HKed_vkFreeMemory(
+VKAPI_ATTR void VKAPI_CALL hooked_vkFreeMemory(
     VkDevice device,
     VkDeviceMemory memory,
     const VkAllocationCallbacks* pAllocator
