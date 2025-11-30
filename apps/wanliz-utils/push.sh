@@ -25,6 +25,11 @@ elif [[ $1 == "home" ]]; then
     done < <(find "$HOME" -maxdepth 1 -type f -not -name '.*' -print0)
     
     if ((${#home_files[@]})); then 
+        if [[ -f ~/.push_host ]]; then 
+            if ! ping -c 1 -W 3 "$(cat ~/.push_host | awk -F'@' '{print $2}')" &>/dev/null; then 
+                sudo rm -f ~/.push_host
+            fi  
+        fi 
         if [[ ! -f ~/.push_host ]]; then 
             read -p "Host: " host
             read -p "User: " user
@@ -32,6 +37,7 @@ elif [[ $1 == "home" ]]; then
         fi 
 
         if ! ssh \
+            -o ConnectTimeout=3 \
             -o BatchMode=yes \
             -o PreferredAuthentications=publickey \
             -o PasswordAuthentication=no \
