@@ -8,7 +8,7 @@ if [[ ! -e "$nvperf_vulkan_path" ]]; then
     exit 1
 fi 
 
-sudo env DEBUG_MEM_ALLOC=1 inspect-gpu-perf-info $nvperf_vulkan_path -nullDisplay alloc:27 2>/tmp/igpi.txt
+sudo env ENABLE_RMLOG=1 ENABLE_GPU_PAGES_DUMP=1 ENABLE_GNU_PERF_RECORD=1 inspect-gpu-perf-info $nvperf_vulkan_path -nullDisplay alloc:27 2>/tmp/igpi.txt
 
 if [[ -f /tmp/igpi.txt ]]; then 
     vkalloc_logs=

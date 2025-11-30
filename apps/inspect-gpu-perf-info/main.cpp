@@ -28,8 +28,7 @@ int main(int argc, char **argv) {
             setenv("DISPLAY", ":0", 1);
             std::cout << "Fallback to DISPLAY=:0" << std::endl;
         }
-        if (getenv("DEBUG_MEM_ALLOC")) {
-            printf("Found env var: DEBUG_MEM_ALLOC\n");
+        if (getenv("ENABLE_RMLOG")) {
             setenv("__GL_DEBUG_MASK", "RM", 1);
             setenv("__GL_DEBUG_LEVEL", "30", 1);
         }
