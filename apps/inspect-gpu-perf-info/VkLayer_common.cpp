@@ -218,7 +218,7 @@ void VkLayer_GNU_Linux_perf::record() {
         return; 
     }
 
-    perf_mmap_size = (size_t)(pagesize * (1 + 256));
+    perf_mmap_size = (size_t)(pagesize * (1 + 32));
     perf_mmap_base = mmap(nullptr, perf_mmap_size, PROT_READ | PROT_WRITE, MAP_SHARED, perf_event_fd, 0);
     if (perf_mmap_base == MAP_FAILED) { 
         fprintf(stderr, "Failed to map perf_mmap_base\n");

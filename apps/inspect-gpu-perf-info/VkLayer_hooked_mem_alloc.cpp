@@ -27,7 +27,7 @@ VKAPI_ATTR VkResult VKAPI_CALL HKed_vkAllocateMemory(
         index += 1;
         fprintf(stderr, "vkAllocateMemory BEGIN INDEX=%d\n", index);
         if (foundGPUPagesTool) {
-            system("sudo rm -rf /tmp/pages.begin /tmp/pages.end /tmp/pages.new");
+            system("sudo rm -rf /tmp/pages.begin /tmp/pages.end /tmp/pages.new /tmp/pages.new.merged");
             system("sudo inspect-gpu-page-tables >/tmp/pages.begin 2>&1");
         }
 
