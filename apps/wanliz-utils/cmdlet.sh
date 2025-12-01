@@ -2,10 +2,12 @@
 
 case $1 in 
     rmlog) 
+        echo "Envvar to enable RM loggings:"
         echo "__GL_DEBUG_MASK=RM __GL_DEBUG_LEVEL=30 __GL_DEBUG_OPTIONS=LOG_TO_FILE __GL_DEBUG_FILENAME=$HOME/RMLogs.txt"
     ;;
     clamp)
-        echo " | awk '/AAAA/{flag=1; next} /ZZZZ/{flag=0} flag'"
+        echo "Filter text between start and end lines:"
+        echo "<...> | awk '/AAAA/{flag=1; next} /ZZZZ/{flag=0} flag'"
     ;;
     nsight)
         echo "Install Nsight  systems: https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk/"
@@ -39,12 +41,27 @@ case $1 in
                     print s
                     exit
                 }')
-            echo ">> sudo $HOME/nsight_systems/bin/nsys profile --trace=vulkan,opengl,cuda,nvtx,osrt --vulkan-gpu-workload=individual --sample=process-tree --sampling-period=$sampling_period --samples-per-backtrace=1 --backtrace=dwarf --cpuctxsw=process-tree --syscall=process-tree --gpu-metrics-devices=all --gpu-metrics-frequency=$metrics_freq --stats=true --export=sqlite,text --resolve-symbols=true --force-overwrite=true --stop-on-exit=true --wait=all --output=nsys_ --show-output=Nsys_$(hostname)_$(date +%Y%m%d) <exe-and-args>" 
+            echo "sudo $HOME/nsight_systems/bin/nsys profile --trace=vulkan,opengl,cuda,nvtx,osrt --vulkan-gpu-workload=individual --sample=process-tree --sampling-period=$sampling_period --samples-per-backtrace=1 --backtrace=dwarf --cpuctxsw=process-tree --syscall=process-tree --gpu-metrics-devices=all --gpu-metrics-frequency=$metrics_freq --stats=true --export=sqlite,text --resolve-symbols=true --force-overwrite=true --stop-on-exit=true --wait=all --output=nsys_ --show-output=nsys_$(hostname)_$(date +%Y%m%d) <...>" 
         else
-            echo -e "\tError: ~/nsight_systems/bin/nsys doesn't exist"
+            echo "$HOME/nsight_systems/bin/nsys doesn't exist"
         fi 
         echo 
         echo "Launch Nsight graphics from command line:"
-        echo -e "\tTODO"
+        echo "TODO"
+    ;;
+    perf)
+        
+        if [[ ! -z $(which perf) ]]; then 
+            if ! sudo perf stat true &>/dev/null; then 
+                echo "$(which perf) doesn't work with $(uname -r)"
+                exit 1
+            fi 
+        else
+            echo "perf command doesn't exist"
+            exit 1
+        fi 
+
+        echo "Launch GNU perf from command line: "
+        echo "sudo $(which perf) --freq=max --call-graph=dwarf,8192 --timestamp --period --sample-cpu --sample-identifier --data --phys-data --data-page-size --code-page-size --mmap-pages=1024 --inherit --exclude-perf --switch-events --output=perf_$(hostname)_$(date +%Y%m%d) -- <...>"
     ;;
 esac 
