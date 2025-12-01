@@ -15,6 +15,11 @@ case $1 in
         echo "Install Nsight graphics: https://ngfx/builds-nightly/Grfx/"
         echo "Install Nsight graphics: \\devrel\share\Devtools\NomadBuilds\latest\Internal (username is email)"
         echo 
+        $0 nsys 
+        echo 
+        $0 ngfx 
+    ;;
+    nsys)
         echo "Launch Nsight systems from command line: "
         if [[ -e ~/nsight_systems/bin/nsys ]]; then 
             sampling_period=$($HOME/nsight_systems/bin/nsys profile --help=sampling 2>/dev/null | awk '
@@ -45,7 +50,8 @@ case $1 in
         else
             echo "$HOME/nsight_systems/bin/nsys doesn't exist"
         fi 
-        echo 
+    ;;
+    ngfx)
         echo "Launch Nsight graphics from command line:"
         echo "TODO"
     ;;
@@ -62,6 +68,10 @@ case $1 in
         fi 
 
         echo "Launch GNU perf from command line: "
-        echo "sudo $(which perf) --freq=max --call-graph=dwarf,8192 --timestamp --period --sample-cpu --sample-identifier --data --phys-data --data-page-size --code-page-size --mmap-pages=1024 --inherit --exclude-perf --switch-events --output=perf_$(hostname)_$(date +%Y%m%d) -- <...>"
+        echo "sudo $(which perf) record --freq=max --call-graph=dwarf --timestamp --period --sample-cpu --sample-identifier --data --phys-data --data-page-size --code-page-size --mmap-pages=1024 --inherit --switch-events --output=perf_$(hostname)_$(date +%Y%m%d) -- <...>"
+    ;;
+    fg)
+        echo "Command line to generate flame graph:"
+        echo ""
     ;;
 esac 
