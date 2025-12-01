@@ -70,6 +70,10 @@ case $1 in
         echo "Launch GNU perf from command line: "
         echo "sudo $(which perf) record --freq=max --call-graph=dwarf --timestamp --period --sample-cpu --sample-identifier --data --phys-data --data-page-size --code-page-size --mmap-pages=1024 --inherit --switch-events --output=perf_$(hostname)_$(date +%Y%m%d) -- <...>"
     ;;
+    offwaketime)
+        echo "Record off-cpu time and sleep-wakeup pairs:"
+        echo "pid=<...>; sudo offwaketime-bpfcc -p \$pid -f > offwaketime.folded & tracer_pid=\$!; while kill -0 \$pid &>/dev/null; do sleep 1; done; sudo kill -INT \$tracer_pid"
+    ;;
     fg)
         if [[ ! -d $HOME/FlameGraph ]]; then 
             git clone https://github.com/brendangregg/FlameGraph $HOME/FlameGraph 
