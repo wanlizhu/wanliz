@@ -71,7 +71,7 @@ case $1 in
         fi 
 
         echo "Launch GNU perf from command line: "
-        echo "function run-and-profile-perf { sudo $(which perf) record --freq=max --call-graph=dwarf --timestamp --period --sample-cpu --sample-identifier --data --phys-data --data-page-size --code-page-size --mmap-pages=1024 --inherit --switch-events --output=perf.data -- \$@ ; sudo chmod a+r perf.data; perf script --no-inline --force --ns -F +pid -i perf.data > perf.data.perthread; perf script --no-inline --force --ns -i perf.data | $HOME/FlameGraph/stackcollapse-perf.pl | $HOME/FlameGraph/stackcollapse-recursive.pl | $HOME/FlameGraph/flamegraph.pl --title=perf.data --subtitle=\"Host: \$(uname -m), Kernel: \$(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print \$2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname='samples' > perf.data.svg; }; run-and-profile-perf <...>"
+        echo "function run-and-profile-perf { sudo $(which perf) record --freq=max --call-graph=dwarf --timestamp --period --sample-cpu --sample-identifier --data --phys-data --data-page-size --code-page-size --mmap-pages=1024 --inherit --switch-events --output=perf.data -- \$@ ; sudo chmod a+r perf.data; perf script --no-inline --force --ns -F +pid -i perf.data > perf.data.perthread; perf script --no-inline --force --ns -i perf.data | \$HOME/FlameGraph/stackcollapse-perf.pl | \$HOME/FlameGraph/stackcollapse-recursive.pl | \$HOME/FlameGraph/flamegraph.pl --title=perf.data --subtitle=\"Host: \$(uname -m), Kernel: \$(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print \$2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname='samples' > perf.data.svg; }; run-and-profile-perf <...>"
     ;;
     offwake)
         if [[ ! -d $HOME/FlameGraph ]]; then 
@@ -79,7 +79,7 @@ case $1 in
             echo 
         fi 
         echo "Record off-cpu time and sleep-wakeup pairs:"
-        echo "function run-and-profile-offwaketime { \$@ &>/dev/null & pid=\$!; sudo offwaketime-bpfcc -p \$pid -f > offwake.folded & tracer_pid=\$!; while kill -0 \$pid &>/dev/null; do sleep 1; done; sudo kill -INT \$tracer_pid; sudo chmod a+r offwake.folded; cat offwake.folded | $HOME/FlameGraph/flamegraph.pl --title=offwake.folded --subtitle=\"Host: $(uname -m), Kernel: $(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print \$2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname='micro-sec off cpu' > offwake.folded.svg; }; run-and-profile-offwaketime <...>"
+        echo "function run-and-profile-offwaketime { \$@ &>/dev/null & pid=\$!; sudo offwaketime-bpfcc -p \$pid -f > offwake.folded & tracer_pid=\$!; while kill -0 \$pid &>/dev/null; do sleep 1; done; sudo kill -INT \$tracer_pid; sudo chmod a+r offwake.folded; cat offwake.folded | \$HOME/FlameGraph/flamegraph.pl --title=offwake.folded --subtitle=\"Host: \$(uname -m), Kernel: \$(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print \$2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname='micro-sec off cpu' > offwake.folded.svg; }; run-and-profile-offwaketime <...>"
     ;;
     fg)
         if [[ ! -d $HOME/FlameGraph ]]; then 
@@ -91,10 +91,10 @@ case $1 in
         
         echo 
         echo "Flamegraph the output of perf:"
-        echo "sudo chmod a+r perf.data; perf script --no-inline --force --ns -i perf.data | $HOME/FlameGraph/stackcollapse-perf.pl | $HOME/FlameGraph/stackcollapse-recursive.pl | $HOME/FlameGraph/flamegraph.pl --title=perf.data --subtitle=\"Host: \$(uname -m), Kernel: \$(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print \$2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname='samples' > perf.data.svg"
+        echo "sudo chmod a+r perf.data; perf script --no-inline --force --ns -i perf.data | \$HOME/FlameGraph/stackcollapse-perf.pl | \$HOME/FlameGraph/stackcollapse-recursive.pl | \$HOME/FlameGraph/flamegraph.pl --title=perf.data --subtitle=\"Host: \$(uname -m), Kernel: \$(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print \$2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname='samples' > perf.data.svg"
         
         echo 
         echo "Flamegraph the output of offwaketime-pbfcc:"
-        echo "sudo chmod a+r offwake.folded; cat offwake.folded | $HOME/FlameGraph/flamegraph.pl --title=offwake.folded --subtitle=\"Host: $(uname -m), Kernel: $(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print \$2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname='micro-sec off cpu' > offwake.folded.svg"
+        echo "sudo chmod a+r offwake.folded; cat offwake.folded | \$HOME/FlameGraph/flamegraph.pl --title=offwake.folded --subtitle=\"Host: \$(uname -m), Kernel: \$(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print \$2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname='micro-sec off cpu' > offwake.folded.svg"
     ;;
 esac 
