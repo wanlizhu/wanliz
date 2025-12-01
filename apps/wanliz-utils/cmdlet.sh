@@ -76,11 +76,11 @@ case $1 in
             echo 
         fi 
         echo "Generate per-thread output of perf:"
-        echo "perf_data_file=<...>; sudo chmod a+r \$perf_data_file; cat \$perf_data_file | perf script --no-inline --force --ns -F +pid -i - > \$perf_data_file.perthread"
+        echo "perf_data_file=<...>; sudo chmod a+r \$perf_data_file; perf script --no-inline --force --ns -F +pid -i \$perf_data_file > \$perf_data_file.perthread"
         
         echo 
         echo "Flamegraph the output of perf:"
-        echo "perf_data_file=<...>; sudo chmod a+r \$perf_data_file; cat \$perf_data_file | perf script --no-inline --force --ns -i - | $HOME/FlameGraph/stackcollapse-perf.pl | $HOME/FlameGraph/stackcollapse-recursive.pl | $HOME/FlameGraph/flamegraph.pl --title=\"\$perf_data_file\" --subtitle=\"Host: \$(uname -m), Kernel: \$(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print $2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname='samples' >\$perf_data_file.svg"
+        echo "perf_data_file=<...>; sudo chmod a+r \$perf_data_file; perf script --no-inline --force --ns -i \$perf_data_file | $HOME/FlameGraph/stackcollapse-perf.pl | $HOME/FlameGraph/stackcollapse-recursive.pl | $HOME/FlameGraph/flamegraph.pl --title=\"\$perf_data_file\" --subtitle=\"Host: \$(uname -m), Kernel: \$(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print $2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname='samples' >\$perf_data_file.svg"
         
         echo 
         echo "Flamegraph the output of offwaketime-pbfcc:"
