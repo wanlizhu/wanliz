@@ -88,6 +88,6 @@ case $1 in
         
         echo 
         echo "Flamegraph the output of offwaketime-pbfcc:"
-        echo "sudo chmod a+r offwake.folded; cat offwake.folded | $HOME/FlameGraph/flamegraph.pl --title=offwake.folded --subtitle=\"Host: $(uname -m), Kernel: $(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print \$2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname=$'\u03bcs off cpu' >offwake.folded.svg"
+        echo "sudo chmod a+r offwake.folded; cat offwake.folded | $HOME/FlameGraph/flamegraph.pl --title=offwake.folded --subtitle=\"Host: $(uname -m), Kernel: $(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print \$2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname=$'micro-sec off cpu' >offwake.folded.svg"
     ;;
 esac 
