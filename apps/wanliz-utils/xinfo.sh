@@ -32,6 +32,7 @@ nvidia-smi -q | grep -i 'GSP Firmware Version' | sed 's/^[[:space:]]*//'
 
 echo 
 modinfo nvidia | egrep 'filename|version'
+file /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.*
 
 echo 
 echo -e "\nList PIDs using nvidia module:"
