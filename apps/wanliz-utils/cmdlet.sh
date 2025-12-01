@@ -80,7 +80,7 @@ case $1 in
             echo 
         fi 
         echo "Generate per-thread output of perf:"
-        echo "sudo chmod a+r \$perf_data_file; perf script --no-inline --force --ns -F +pid -i perf.data > perf.data.perthread"
+        echo "sudo chmod a+r perf.data; perf script --no-inline --force --ns -F +pid -i perf.data > perf.data.perthread"
         
         echo 
         echo "Flamegraph the output of perf:"
