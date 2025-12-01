@@ -71,7 +71,19 @@ case $1 in
         echo "sudo $(which perf) record --freq=max --call-graph=dwarf --timestamp --period --sample-cpu --sample-identifier --data --phys-data --data-page-size --code-page-size --mmap-pages=1024 --inherit --switch-events --output=perf_$(hostname)_$(date +%Y%m%d) -- <...>"
     ;;
     fg)
-        echo "Command line to generate flame graph:"
-        echo ""
+        if [[ ! -d $HOME/FlameGraph ]]; then 
+            git clone https://github.com/brendangregg/FlameGraph $HOME/FlameGraph 
+            echo 
+        fi 
+        echo "Generate per-thread output of perf:"
+        echo "perf_data_file=<...>; cat \$perf_data_file | perf script --no-inline --force --ns -F +pid -i - > \$perf_data_file.perthread"
+        
+        echo 
+        echo "Flamegraph the output of perf:"
+        echo "perf_data_file=<...>; cat \$perf_data_file | perf script --no-inline --force --ns -i - | $HOME/FlameGraph/stackcollapse-perf.pl | $HOME/FlameGraph/stackcollapse-recursive.pl | $HOME/FlameGraph/flamegraph.pl --title=\"\$perf_data_file\" --subtitle=\"Host: \$(uname -m), Kernel: \$(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print $2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname='samples' >\$perf_data_file.svg"
+        
+        echo 
+        echo "Flamegraph the output of offwaketime-pbfcc:"
+        echo "offwake_data_file=<...>; cat \$offwake_data_file | $HOME/FlameGraph/flamegraph.pl --title=\"\$perf_data_file\" --subtitle=\"Host: $(uname -m), Kernel: $(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print $2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname=$'\u03bcs off cpu' >\$offwake_data_file"
     ;;
 esac 
