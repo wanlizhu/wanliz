@@ -63,5 +63,5 @@ if [[ $start_openbox == "y" ]]; then
 fi
 
 if [[ $start_x11vnc == "y" ]]; then 
-    startvnc.sh 
+    zstartvnc.sh 
 fi
