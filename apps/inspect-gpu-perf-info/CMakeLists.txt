@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Define target: inspect-gpu-perf-info
 add_executable(inspect-gpu-perf-info 
     "main.cpp" 
     "VK_common.h"
@@ -31,6 +32,7 @@ else()
     message(STATUS "Configure without NVML")
 endif()
 
+# Define target: VkLayer_igpi_helper
 add_library(VkLayer_igpi_helper SHARED
     "VkLayer_igpi_helper/dllmain.cpp"
     "VkLayer_igpi_helper/VkLayer_common.cpp" "VkLayer_igpi_helper/VkLayer_common.h"

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-outdir=$(realpath $(dirname $0))/_out/Linux_debug
+outdir=$(realpath $(dirname $0))/../_out/Linux_debug
 mkdir -p $outdir 
-cd $outdir  
+cd $outdir || exit 1
 cmake ../.. || exit 
 sudo cmake --build . --config debug || exit 1
 sudo ln -sfv $outdir/inspect-gpu-perf-info /usr/local/bin/inspect-gpu-perf-info || exit 1
