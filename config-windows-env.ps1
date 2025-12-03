@@ -26,6 +26,26 @@ Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Passw
 Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled False
 Get-NetFirewallProfile | Select-Object Name, Enabled
 
+[Console]::Write("Registering scheduled task ... ");
+if (Get-ScheduledTask -TaskName "WanlizStartupTasks" -ErrorAction SilentlyContinue) {
+    Write-Host "[SKIPPED]"
+} else {
+    $script = "D:\wanliz\apps\wanliz-utils\startup-tasks.ps1"
+    $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -File $script"
+    $trigger = New-ScheduledTaskTrigger -AtLogOn 
+    $principal = New-ScheduledTaskPrincipal -UserId 'NT AUTHORITY\SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+    $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RunOnlyIfNetworkAvailable
+    
+    Register-ScheduledTask -TaskName 'WanlizStartupTasks' `
+        -Action $action `
+        -Trigger $trigger `
+        -Principal $principal `
+        -Settings $settings `
+        -Force
+
+    Write-Host "[OK]"
+}
+
 $hostsFile = "$env:SystemRoot\System32\drivers\etc\hosts"
 [Console]::Write("Updating $hostsFile ... ");
 $added = 0
@@ -205,12 +225,12 @@ if (-not (Test-Path $k) -or ((Get-Item $k).GetValue('', $null) -ne '')) {
 [Console]::Write("Updating context menu items ... ")
 $root = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\Classes', $true)
 $psPath = 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
-$scriptPath = 'D:\wanliz\apps\wanliz' + [char]45 + 'utils\who' + [char]45 + 'locks' + [char]45 + 'me.ps1'
+$script = 'D:\wanliz\apps\wanliz' + [char]45 + 'utils\who' + [char]45 + 'locks' + [char]45 + 'me.ps1'
 $dash = [char]45
 $cmd = 'cmd.exe /c start "" "' + $psPath + '" ' +
     $dash + 'NoProfile ' +
     $dash + 'ExecutionPolicy Bypass ' +
-    $dash + 'File "' + $scriptPath + '" "%1"'
+    $dash + 'File "' + $script + '" "%1"'
 $changed = $false 
 foreach ($sub in @('*\shell\WhoLocks', 'Directory\shell\WhoLocks')) {
     $k = $root.CreateSubKey($sub)
