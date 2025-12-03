@@ -8,8 +8,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Define target: inspect-gpu-perf-info
 add_executable(inspect-gpu-perf-info 
     "main.cpp" 
-    "VK_common.h"
-    "VkLayer_common.cpp" "VkLayer_common.h"
+    "VK_common.h" "VK_common.cpp"
+    "VkLayer_igpi_helper/VkLayer_common.cpp" "VkLayer_igpi_helper/VkLayer_common.h"
     "VK_physdev.cpp" "VK_physdev.h" 
     "VK_instance.cpp" "VK_instance.h"
     "VK_queue.cpp" "VK_queue.h"
@@ -42,7 +42,7 @@ add_library(VkLayer_igpi_helper SHARED
 )
 configure_file(
     "${CMAKE_SOURCE_DIR}/VkLayer_igpi_helper/VK_LAYER_igpi_helper.json.in"
-    "${CMAKE_BINARY_DIR}/VkLayer_igpi_helper/VK_LAYER_igpi_helper.json"
+    "${CMAKE_BINARY_DIR}/VK_LAYER_igpi_helper.json"
     @ONLY
 )
 target_include_directories(VkLayer_igpi_helper PRIVATE 

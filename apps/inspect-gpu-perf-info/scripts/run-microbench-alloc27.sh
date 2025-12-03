@@ -35,6 +35,12 @@ if [[ -f /tmp/igpi.txt ]]; then
         esac
     done < /tmp/igpi.txt > /tmp/igpi_processed.txt
     sudo mv -f /tmp/igpi_processed.txt $HOME/igpi_mb_alloc27.txt
-    echo "Logs dumped to $HOME/igpi_mb_alloc27.txt"
-    cat $HOME/igpi_mb_alloc27.txt
+
+    if ! grep -q '[^[:space:]]' $HOME/igpi_mb_alloc27.txt; then
+        echo "No logs found"
+        cat /tmp/igpi.txt
+    else 
+        echo "Logs dumped to $HOME/igpi_mb_alloc27.txt"
+        cat $HOME/igpi_mb_alloc27.txt
+    fi 
 fi 
