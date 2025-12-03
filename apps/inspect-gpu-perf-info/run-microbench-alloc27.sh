@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-$(realpath $(dirname $0))/install-symbolic-links.sh || exit 1
+$(realpath $(dirname $0))/scripts/install-symbolic-links.sh || exit 1
 
 nvperf_vulkan_path=/mnt/linuxqa/wanliz/nvperf_vulkan.$(uname -m)
 if [[ ! -e "$nvperf_vulkan_path" ]]; then 
