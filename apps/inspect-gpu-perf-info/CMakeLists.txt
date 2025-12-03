@@ -31,17 +31,20 @@ else()
     message(STATUS "Configure without NVML")
 endif()
 
-add_library(VkLayer_inspect_gpu_perf_info SHARED
-    "VkLayer_inspect_gpu_perf_info.cpp"
-    "VkLayer_common.cpp" "VkLayer_common.h"
-    "VkLayer_hooked_create_instance.cpp" "VkLayer_hooked_create_instance.h"
-    "VkLayer_hooked_create_device.cpp" "VkLayer_hooked_create_device.h"
-    "VkLayer_hooked_mem_alloc.cpp" "VkLayer_hooked_mem_alloc.h"
+add_library(VkLayer_igpi_helper SHARED
+    "VkLayer_igpi_helper/dllmain.cpp"
+    "VkLayer_igpi_helper/VkLayer_common.cpp" "VkLayer_igpi_helper/VkLayer_common.h"
+    "VkLayer_igpi_helper/VkLayer_hooked_create_instance.cpp" "VkLayer_igpi_helper/VkLayer_hooked_create_instance.h"
+    "VkLayer_igpi_helper/VkLayer_hooked_create_device.cpp" "VkLayer_igpi_helper/VkLayer_hooked_create_device.h"
+    "VkLayer_igpi_helper/VkLayer_hooked_mem_alloc.cpp" "VkLayer_igpi_helper/VkLayer_hooked_mem_alloc.h"
 )
 configure_file(
-    "${CMAKE_SOURCE_DIR}/VK_LAYER_inspect_gpu_perf_info.json.in"
-    "${CMAKE_BINARY_DIR}/VkLayer_inspect_gpu_perf_info.json"
+    "${CMAKE_SOURCE_DIR}/VkLayer_igpi_helper/VK_LAYER_igpi_helper.json.in"
+    "${CMAKE_BINARY_DIR}/VkLayer_igpi_helper/VK_LAYER_igpi_helper.json"
     @ONLY
 )
-target_include_directories(VkLayer_inspect_gpu_perf_info PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(VkLayer_inspect_gpu_perf_info PRIVATE Vulkan::Vulkan)
+target_include_directories(VkLayer_igpi_helper PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/VkLayer_igpi_helper 
+)
+target_link_libraries(VkLayer_igpi_helper PRIVATE Vulkan::Vulkan)

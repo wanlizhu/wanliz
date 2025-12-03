@@ -6,7 +6,7 @@ cd $outdir
 cmake ../.. || exit 
 sudo cmake --build . --config debug || exit 1
 sudo ln -sfv $outdir/inspect-gpu-perf-info /usr/local/bin/inspect-gpu-perf-info || exit 1
-sudo ln -sfv $outdir/VkLayer_inspect_gpu_perf_info.json /usr/share/vulkan/explicit_layer.d/VkLayer_inspect_gpu_perf_info.json || exit 1
+sudo ln -sfv $outdir/VkLayer_igpi_helper/VkLayer_igpi_helper.json /usr/share/vulkan/explicit_layer.d/VkLayer_igpi_helper.json || exit 1
 sudo ln -sfv $(realpath $outdir/../..)/merge-gpu-pages.sh /usr/local/bin/merge-gpu-pages.sh || exit 1
 
 if [[ -z $(which inspect-gpu-page-tables) ]]; then 

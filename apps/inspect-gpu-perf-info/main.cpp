@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     std::cout << VK_physdev::INFO() << std::endl;
 #ifdef __linux__
     if (argc > 1) {
-        setenv("VK_INSTANCE_LAYERS", "VK_LAYER_inspect_gpu_perf_info", 1);
+        setenv("VK_INSTANCE_LAYERS", "VK_LAYER_igpi_helper", 1);
         if (getenv("DISPLAY") == NULL) {
             setenv("DISPLAY", ":0", 1);
             std::cout << "Fallback to DISPLAY=:0" << std::endl;
