@@ -21,7 +21,7 @@ while [[ ! -z $1 ]]; do
     shift 
 done 
 
-if [[ ! -z $fixfiles ]]; then 
+if [[ $fixfiles == 1 ]]; then 
     [[ -z $(which dos2unix) ]] && sudo apt install -y dos2unix 
     [[ -z $(which parallel) ]] && sudo apt install -y parallel
     function fix_symlink {
