@@ -55,7 +55,7 @@ if [[ $fixfiles == 1 ]]; then
 fi 
 
 cd $P4ROOT/workingbranch/drivers/OpenGL  
-$P4ROOT/tools/linux/unix-build/unix-build \
+time $P4ROOT/tools/linux/unix-build/unix-build \
     --tools $P4ROOT/tools \
     --devrel $P4ROOT/devrel/SDK/inc/GL \
     nvmake \
