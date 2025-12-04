@@ -345,6 +345,6 @@ void VkLayer_exec(const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     vsnprintf(cmdline, sizeof(cmdline), fmt, ap);
-    va_end();
+    va_end(ap);
     system(cmdline);
 }
