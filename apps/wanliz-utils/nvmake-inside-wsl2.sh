@@ -8,7 +8,7 @@ arch=amd64
 config=develop
 jobs=$(nproc)
 fixfiles=
-cmdline_args=
+args=
 while [[ ! -z $1 ]]; do 
     case $1 in 
         debug|release|develop) config=$1 ;;
@@ -16,7 +16,7 @@ while [[ ! -z $1 ]]; do
         aarch64|arm64) arch=aarch64 ;; 
         -j1) jobs=1 ;;
         -fix) fixfiles=1 ;;
-        *) cmdline_args+=" $1" ;;
+        *) args+=" $1" ;;
     esac
     shift 
 done 
@@ -70,5 +70,5 @@ $P4ROOT/tools/linux/unix-build/unix-build \
     NV_UNIX_CHECK_DEBUG_INFO=0 \
     NV_MANGLE_SYMBOLS= \
     NV_TRACE_CODE=1 \
-    linux $arch $config $cmdline_args -j$jobs
+    linux $arch $config $args -j$jobs
 
