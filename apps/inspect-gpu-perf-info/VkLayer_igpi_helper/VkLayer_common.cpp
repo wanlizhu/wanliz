@@ -339,3 +339,12 @@ void VkLayer_GNU_Linux_perf::end(const std::string& suffix) {
     perf_mmap_size = 0;
     perf_event_fd = -1;
 }
+
+void VkLayer_exec(const char* fmt, ...) {
+    char cmdline[4096] = {};
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(cmdline, sizeof(cmdline), fmt, ap);
+    va_end();
+    system(cmdline);
+}

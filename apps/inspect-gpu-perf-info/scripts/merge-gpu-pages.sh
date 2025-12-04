@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-main() {
+function main() {
     awk '
     function hex_to_dec(x) { return strtonum(x) }
     match($0,/^[[:space:]]*(0x[0-9A-Fa-f]+)[[:space:]]*-[[:space:]]*(0x[0-9A-Fa-f]+)([[:space:]]*=>[[:space:]]*0x[0-9A-Fa-f]+[[:space:]]*-[[:space:]]*0x[0-9A-Fa-f]+)?[[:space:]]*(.*)$/,m){

@@ -18,7 +18,7 @@ VKAPI_ATTR VkResult VKAPI_CALL hooked_vkAllocateMemory(
     if (enableGPUPagesDump == -1) {
         enableGPUPagesDump = (getenv("ENABLE_GPU_PAGES_DUMP") && getenv("ENABLE_GPU_PAGES_DUMP")[0] == '1') ? 1 : 0;
         if (enableGPUPagesDump == 1) {
-            bool foundTools = VkLayer_which("inspect-gpu-page-tables") && VkLayer_which("merge-gpu-pages.sh");
+            bool foundTools = VkLayer_which("inspect-gpu-page-tables");
 #ifdef __aarch64__
             foundTools = foundTools && std::filesystem::exists("/dev/nvidia-soc-iommu-inspect");
 #endif 
@@ -57,7 +57,7 @@ VKAPI_ATTR VkResult VKAPI_CALL hooked_vkAllocateMemory(
         if (enableGPUPagesDump == 1) {
             system("sudo inspect-gpu-page-tables >/tmp/pages.end 2>&1");
             system("diff --old-line-format='' --new-line-format='%L' --unchanged-line-format='' /tmp/pages.begin /tmp/pages.end >/tmp/pages.new");
-            system("merge-gpu-pages.sh /tmp/pages.new >/tmp/pages.new.merged");
+            VkLayer_exec("%s/wanliz/apps/inspect-gpu-perf-info/scripts/merge-gpu-pages.sh /tmp/pages.new >/tmp/pages.new.merged", getenv("HOME"));
             new_pages = VkLayer_readbuf("/tmp/pages.new.merged", true);
             for (int i = 0; new_pages && i < strlen(new_pages); i++) 
                 if (new_pages[i] == '\n') 

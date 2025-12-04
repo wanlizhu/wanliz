@@ -2,10 +2,14 @@
 
 $(realpath $(dirname $0))/install-symbolic-links.sh || exit 1
 
-nvperf_vulkan_path=/mnt/linuxqa/wanliz/nvperf_vulkan.$(uname -m)
-if [[ ! -e "$nvperf_vulkan_path" ]]; then 
-    echo "Action required to set up nvperf_vulkan_path in $0" >&2
-    exit 1
+if [[ -z $(which nvperf_vulkan) ]]; then 
+    nvperf_vulkan_path=/mnt/linuxqa/wanliz/nvperf_vulkan.$(uname -m)
+    if [[ ! -e "$nvperf_vulkan_path" ]]; then 
+        echo "Action required to set up nvperf_vulkan_path in $0" >&2
+        exit 1
+    fi 
+else
+    nvperf_vulkan_path=$(which nvperf_vulkan)
 fi 
 
 sudo env ENABLE_RMLOG=1 ENABLE_GPU_PAGES_DUMP=1 ENABLE_GNU_PERF_RECORD=1 inspect-gpu-perf-info $nvperf_vulkan_path -nullDisplay alloc:27 2>/tmp/igpi.txt
@@ -22,7 +26,7 @@ if [[ -f /tmp/igpi.txt ]]; then
             ;;
             "vkAllocateMemory ENDED"*)
                 printf "%s\n" "$vkalloc_logs" >/tmp/vkalloc_logs
-                $(realpath $(dirname $0))/process-vidheap.py /tmp/vkalloc_logs
+                $(realpath $(dirname $0))/process_vidheap.py /tmp/vkalloc_logs
                 vkalloc_logs_begin=0
                 echo "$line"
             ;;

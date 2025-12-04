@@ -31,6 +31,7 @@
 #include <inttypes.h>
 #include <iterator>
 #include <cctype>
+#include <stdarg.h>
 #ifdef __linux__
 #include <sys/wait.h>
 #include <unistd.h>
@@ -97,3 +98,4 @@ struct VkLayer_GNU_Linux_perf {
 
 char* VkLayer_readbuf(const char* path, bool trim);
 const char* VkLayer_which(const std::string& cmdname);
+void VkLayer_exec(const char* fmt, ...);
