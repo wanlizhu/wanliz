@@ -53,112 +53,6 @@ for cmd in "${!dependencies[@]}"; do
     fi
 done
 
-git_email=$(git config --global user.email 2>/dev/null || true)
-if [[ -z $git_email ]]; then
-    git config --global user.email "zhu.wanli@icloud.com"
-fi 
-git_name=$(git config --global user.name 2>/dev/null || true)
-if [[ -z $git_name ]]; then
-    git config --global user.name "Wanli Zhu"
-fi 
-git_editor=$(git config --global core.editor 2>/dev/null || true)
-if [[ -z $git_editor ]]; then
-    if [[ -z $(which vim) ]]; then 
-        sudo apt install -y vim 2>/dev/null
-    fi 
-    git config --global core.editor "vim"
-fi
-
-if ! dpkg -s openssh-server >/dev/null 2>&1; then
-    read -p "Install and set up OpenSSH server on this system? [Y/n]: " choice
-    if [[ -z $choice || "$choice" == "y" ]]; then 
-        echo -n "Installing openssh-server ... "
-        sudo apt install -y openssh-server &>/dev/null 
-        if [[ "$(cat /proc/1/comm 2>/dev/null)" == "systemd" ]] && command -v systemctl >/dev/null 2>&1; then
-            sudo systemctl enable ssh &>/dev/null || true
-            sudo systemctl restart ssh &>/dev/null || true
-        fi
-        if pgrep -x sshd >/dev/null 2>&1; then
-            echo "[OK]"
-        else
-            echo "[FAILED]"
-        fi
-    fi
-fi
-
-echo -n "Updating sshd to keep client alive ... "
-if ! sudo sshd -T | awk '
-  $1=="clientaliveinterval" && $2=="60" {a=1}
-  $1=="clientalivecountmax" && $2=="3" {b=1}
-  $1=="tcpkeepalive"        && tolower($2)=="yes" {c=1}
-  END { exit !(a && b && c) }'; then
-    sudo ex /etc/ssh/sshd_config <<'EOF'
-g/^[[:space:]]*ClientAliveInterval/d
-g/^[[:space:]]*ClientAliveCountMax/d
-g/^[[:space:]]*TCPKeepAlive/d
-wq
-EOF
-    echo "ClientAliveInterval 60" | sudo tee -a  /etc/ssh/sshd_config >/dev/null 
-    echo "ClientAliveCountMax 3" | sudo tee -a   /etc/ssh/sshd_config >/dev/null 
-    echo "TCPKeepAlive yes" | sudo tee -a   /etc/ssh/sshd_config >/dev/null 
-    sudo systemctl restart ssh
-    echo "[OK]"
-else
-    echo "[SKIPPED]"
-fi 
-
-if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
-    mkdir -p ~/.ssh
-    cat >~/.ssh/id_ed25519 <<'EOF'
------BEGIN OPENSSH PRIVATE KEY-----
-b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
-QyNTUxOQAAACB8e4c/PmyYwYqGt0Zb5mom/KTEndF05kcF8Gsa094RSwAAAJhfAHP9XwBz
-/QAAAAtzc2gtZWQyNTUxOQAAACB8e4c/PmyYwYqGt0Zb5mom/KTEndF05kcF8Gsa094RSw
-AAAECa55qWiuh60rKkJLljELR5X1FhzceY/beegVBrDPv6yXx7hz8+bJjBioa3Rlvmaib8
-pMSd0XTmRwXwaxrT3hFLAAAAE3dhbmxpekBFbnpvLU1hY0Jvb2sBAg==
------END OPENSSH PRIVATE KEY-----
-EOF
-    chmod 600 ~/.ssh/id_ed25519
-    echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > ~/.ssh/id_ed25519.pub
-    chmod 644 ~/.ssh/id_ed25519.pub
-    echo "Generated ~/.ssh/id_ed25519"
-fi 
-
-if [[ ! -f ~/.gtl_api_key ]]; then 
-    echo 'eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlODVjZDU4LTM2YWUtNGZkMS1iNzZkLTZkZmZhNDg2ZjIzYSIsInNlY3JldCI6IkpuMjN0RkJuNTVMc3JFOWZIZW9tWk56a1Qvc0hpZVoxTW9LYnVTSkxXZk09In0.NzUoZbUUPQbcwFooMEhG4O0nWjYJPjBiBi78nGkhUAQ' > ~/.gtl_api_key
-    chmod 500 ~/.gtl_api_key
-    echo "Generated ~/.gtl_api_key"
-fi 
-
-if [[ ! -f ~/.screenrc ]]; then 
-    cat >~/.screenrc <<EOF
-startup_message off
-termcapinfo xterm*|xterm-256color* ti@:te@
-defscrollback 100000
-defmousetrack off
-hardstatus alwaysfirstline
-hardstatus string '%{= bW} [SCREEN %H] %=%-Lw %n:%t %+Lw %=%Y-%m-%d %c '
-EOF
-    echo "Generated ~/.screenrc"
-fi 
-
-echo -n "Updating /etc/hosts ... "
-added=0
-while IFS= read line; do 
-    case "$line" in 
-        ""|\#*) continue ;;
-    esac
-    if ! grep "$line" /etc/hosts &>/dev/null; then 
-        echo "$line" | sudo tee -a /etc/hosts >/dev/null 
-        added=1
-    fi  
-done < "$(dirname $0)/hosts"
-if (( $added == 0 )); then 
-    echo "[SKIPPED]"
-else
-    echo "[OK]"
-fi 
-
 echo -n "Installing wanliz-utils to /usr/local/bin ... "
 find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
     real_target=$(readlink -f "$link") || continue 
@@ -183,8 +77,7 @@ fi
 echo -n "Installing inspect-gpu-perf-info ... "
 sudo rm -f /usr/local/bin/inspect-gpu-perf-info
 $(realpath $(dirname $0))/apps/inspect-gpu-perf-info/scripts/install-symbolic-links.sh \
-    >/dev/null 2>/tmp/logs \
-    && echo "[OK]" || echo "Error: $(cat /tmp/logs)"
+    >/dev/null 2>/tmp/logs && echo "[OK]" || echo "Error: $(cat /tmp/logs)"
 
 declare -A required_folders=(
     ["/mnt/linuxqa"]="linuxqa.nvidia.com:/storage/people"
@@ -233,3 +126,107 @@ if (( ${#missing_optional_folders[@]} > 0 )); then
         sudo timeout 3 mount -t nfs "$remote_folder" "$local_folder" 
     done 
 fi
+
+git_email=$(git config --global user.email 2>/dev/null || true)
+if [[ -z $git_email ]]; then
+    git config --global user.email "zhu.wanli@icloud.com"
+fi 
+git_name=$(git config --global user.name 2>/dev/null || true)
+if [[ -z $git_name ]]; then
+    git config --global user.name "Wanli Zhu"
+fi 
+git_editor=$(git config --global core.editor 2>/dev/null || true)
+if [[ -z $git_editor ]]; then
+    if [[ -z $(which vim) ]]; then 
+        sudo apt install -y vim 2>/dev/null
+    fi 
+    git config --global core.editor "vim"
+fi
+
+if ! dpkg -s openssh-server >/dev/null 2>&1; then
+    read -p "Install and set up OpenSSH server on this system? [Y/n]: " choice
+    if [[ -z $choice || "$choice" == "y" ]]; then 
+        echo -n "Installing openssh-server ... "
+        sudo apt install -y openssh-server &>/dev/null 
+        if [[ "$(cat /proc/1/comm 2>/dev/null)" == "systemd" ]] && command -v systemctl >/dev/null 2>&1; then
+            sudo systemctl enable ssh &>/dev/null || true
+            sudo systemctl restart ssh &>/dev/null || true
+        fi
+        if pgrep -x sshd >/dev/null 2>&1; then
+            echo "[OK]"
+        else
+            echo "[FAILED]"
+        fi
+    fi
+fi
+
+if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
+    mkdir -p ~/.ssh
+    cat >~/.ssh/id_ed25519 <<'EOF'
+-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACB8e4c/PmyYwYqGt0Zb5mom/KTEndF05kcF8Gsa094RSwAAAJhfAHP9XwBz
+/QAAAAtzc2gtZWQyNTUxOQAAACB8e4c/PmyYwYqGt0Zb5mom/KTEndF05kcF8Gsa094RSw
+AAAECa55qWiuh60rKkJLljELR5X1FhzceY/beegVBrDPv6yXx7hz8+bJjBioa3Rlvmaib8
+pMSd0XTmRwXwaxrT3hFLAAAAE3dhbmxpekBFbnpvLU1hY0Jvb2sBAg==
+-----END OPENSSH PRIVATE KEY-----
+EOF
+    chmod 600 ~/.ssh/id_ed25519
+    echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > ~/.ssh/id_ed25519.pub
+    chmod 644 ~/.ssh/id_ed25519.pub
+    echo "Generated ~/.ssh/id_ed25519"
+fi 
+
+if [[ ! -f ~/.gtl_api_key ]]; then 
+    echo 'eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlODVjZDU4LTM2YWUtNGZkMS1iNzZkLTZkZmZhNDg2ZjIzYSIsInNlY3JldCI6IkpuMjN0RkJuNTVMc3JFOWZIZW9tWk56a1Qvc0hpZVoxTW9LYnVTSkxXZk09In0.NzUoZbUUPQbcwFooMEhG4O0nWjYJPjBiBi78nGkhUAQ' > ~/.gtl_api_key
+    chmod 500 ~/.gtl_api_key
+    echo "Generated ~/.gtl_api_key"
+fi 
+
+if [[ ! -f ~/.screenrc ]]; then 
+    cat >~/.screenrc <<EOF
+startup_message off
+hardstatus alwaysfirstline
+hardstatus string '%{= bW} [SCREEN %H] %=%-Lw %n:%t %+Lw %=%Y-%m-%d %c '
+EOF
+    echo "Generated ~/.screenrc"
+fi 
+
+echo -n "Updating /etc/hosts ... "
+added=0
+while IFS= read line; do 
+    case "$line" in 
+        ""|\#*) continue ;;
+    esac
+    if ! grep "$line" /etc/hosts &>/dev/null; then 
+        echo "$line" | sudo tee -a /etc/hosts >/dev/null 
+        added=1
+    fi  
+done < "$(dirname $0)/hosts"
+if (( $added == 0 )); then 
+    echo "[SKIPPED]"
+else
+    echo "[OK]"
+fi 
+
+echo -n "Updating sshd to keep client alive ... "
+if ! sudo sshd -T | awk '
+  $1=="clientaliveinterval" && $2=="60" {a=1}
+  $1=="clientalivecountmax" && $2=="3" {b=1}
+  $1=="tcpkeepalive"        && tolower($2)=="yes" {c=1}
+  END { exit !(a && b && c) }'; then
+    sudo ex /etc/ssh/sshd_config <<'EOF'
+g/^[[:space:]]*ClientAliveInterval/d
+g/^[[:space:]]*ClientAliveCountMax/d
+g/^[[:space:]]*TCPKeepAlive/d
+wq
+EOF
+    echo "ClientAliveInterval 60" | sudo tee -a  /etc/ssh/sshd_config >/dev/null 
+    echo "ClientAliveCountMax 3" | sudo tee -a   /etc/ssh/sshd_config >/dev/null 
+    echo "TCPKeepAlive yes" | sudo tee -a   /etc/ssh/sshd_config >/dev/null 
+    sudo systemctl restart ssh
+    echo "[OK]"
+else
+    echo "[SKIPPED]"
+fi 
+

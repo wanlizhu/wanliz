@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+mkdir -p $(dirname $0)/../_out/Linux_debug
 outdir=$(realpath $(dirname $0)/../_out/Linux_debug)
 mkdir -p $outdir 
 cd $outdir || exit 1
