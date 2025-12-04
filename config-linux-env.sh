@@ -103,18 +103,20 @@ done
 
 echo -n "Mounting linuxqa folders ... "
 if (( ${#missing_required_folders[@]} > 0 )); then
-    failed_msg=""
+    failed_to_mount=
     for local_folder in "${missing_required_folders[@]}"; do 
-        remote_folder="${required_folders[$local_folder]}"
-        sudo mkdir -p "$local_folder"
-        sudo timeout 3 mount -t nfs "$remote_folder" "$local_folder" || { 
-            failed_msg+=$'\n'"Failed to mount $remote_folder"
-        }
+        if [[ -z $failed_to_mount ]]; then 
+            remote_folder="${required_folders[$local_folder]}"
+            sudo mkdir -p "$local_folder"
+            sudo timeout 3 mount -t nfs "$remote_folder" "$local_folder" || { 
+                failed_to_mount=1
+            }
+        fi 
     done 
-    if [[ -z $failed_msg ]]; then 
+    if [[ -z $failed_to_mount ]]; then 
         echo "[OK]"
     else
-        echo "Error: $failed_msg"
+        echo "[FAILED]"
     fi 
 else
     echo "[SKIPPED]"
