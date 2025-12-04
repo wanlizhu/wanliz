@@ -17,7 +17,7 @@ add_executable(inspect-gpu-perf-info
 )
 
 # Link against Vulkan
-find_package(Vulkan QUIET)
+find_package(Vulkan REQUIRED)
 if (NOT Vulkan_FOUND)
     if (ARCH STREQUAL "x86_64" OR ARCH STREQUAL "amd64")
         execute_process(COMMAND bash -lic [=[
