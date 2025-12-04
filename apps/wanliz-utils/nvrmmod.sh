@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 sudo rm -f /tmp/nvrmmod.restore 
-for name in gdm sddm lightdm openbox; do 
+for name in gdm sddm lightdm openbox nvidia-dcgm nvsm-core; do 
     service_name=$(systemctl list-units --type=service | grep -i $name | awk '{print $1}')
     if [[ ! -z $service_name ]]; then 
         sudo systemctl stop $service_name && echo "Stopped $service_name"
