@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 
-if [[ -z $P4CLIENT ]]; then 
-    eval "$(p4env.sh -print)"
-fi 
+export P4PORT="p4proxy-sc.nvidia.com:2006"
+export P4USER="wanliz"
+export P4CLIENT="wanliz_sw_windows"
+export P4ROOT="/mnt/d/wanliz_sw_windows"
+export P4IGNORE="$HOME/.p4ignore"
 
 arch=amd64
 config=develop
 jobs=$(nproc)
 fixfiles=
+sync_ext4=
 args=
 while [[ ! -z $1 ]]; do 
     case $1 in 
@@ -16,6 +19,7 @@ while [[ ! -z $1 ]]; do
         aarch64|arm64) arch=aarch64 ;; 
         -j1) jobs=1 ;;
         -fix) fixfiles=1 ;;
+        -ext4) sync_ext4=1 ;;
         *) args="$args $1" ;;
     esac
     shift 
@@ -52,6 +56,15 @@ if [[ $fixfiles == 1 ]]; then
             dos2unix {} >/dev/null 2>&1 && echo "Fixed line ending {}"
         fi
     ' 
+fi 
+
+if [[ $sync_ext4 == 1 ]]; then 
+    [[ -z $(which parallel) ]] && sudo apt install -y parallel
+
+    mkdir -p $HOME/wanliz_sw_windows
+    cd $P4ROOT || exit 1
+    find . -maxdepth 5 -type d -name '_out' -prune -o -print0 | parallel -j$(nproc) rsync -aHAX --delete --exclude='_out/' "{}" "$HOME/wanliz_sw_windows/{}" || exit 1
+    export P4ROOT=$HOME/wanliz_sw_windows
 fi 
 
 cd $P4ROOT/workingbranch/drivers/OpenGL  
