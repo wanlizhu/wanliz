@@ -9,6 +9,7 @@ export P4IGNORE="$HOME/.p4ignore"
 if [[ ! -f ~/.p4ignore ]]; then 
     cat >~/.p4ignore <<EOF
 _out
+_doc
 .git
 .vscode
 .cursorignore

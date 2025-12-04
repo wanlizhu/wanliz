@@ -39,7 +39,7 @@ if [[ $fixfiles == 1 ]]; then
     export -f fix_symlink
 
     echo "Fixing symlinks in //wanliz_sw_windows/..."
-    p4 files //wanliz_sw_windows/... | grep "(symlink)" | parallel -j $(nproc) fix_symlink {}  
+    p4 files //wanliz_sw_windows/... | grep "(symlink)" | parallel --shell /usr/bin/bash -j $(nproc) fix_symlink {}  
 
     echo "Fixing file ending in //wanliz_sw_windows/..."
     find "/mnt/d/wanliz_sw_windows/workingbranch" \( -path "*/_out" -o -path "*/_doc" -o -path "*/.git" \) -prune -o -type f \( \
@@ -52,7 +52,11 @@ if [[ $fixfiles == 1 ]]; then
         -name "*.mk" -o \
         -name "*.rb" -o \
         -name "Makefile*" \
-    \) -print | parallel -j $(nproc) 'dos2unix {} 2>/dev/null && echo "Fixed line ending {}"' 
+    \) -print | parallel -j $(nproc) '
+        if [[ ! -z $(dos2unix -ic {}) ]]; then 
+            dos2unix {} &>/dev/null && echo "Fixed line ending {}"
+        fi
+    ' 
 fi 
 
 cd $P4ROOT/workingbranch/drivers/OpenGL  
