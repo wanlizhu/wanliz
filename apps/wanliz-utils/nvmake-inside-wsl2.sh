@@ -16,7 +16,7 @@ while [[ ! -z $1 ]]; do
         aarch64|arm64) arch=aarch64 ;; 
         -j1) jobs=1 ;;
         -fix) fixfiles=1 ;;
-        *) args+=" $1" ;;
+        *) args="$args $1" ;;
     esac
     shift 
 done 
