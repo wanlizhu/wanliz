@@ -360,4 +360,11 @@ if (Get-Process OneDrive -ErrorAction SilentlyContinue) {
     }
 }
 
+if (-not (fsutil.exe file queryCaseSensitiveInfo "D:\wanliz_sw_windows" 2>$null | Select-String 'enabled' -Quiet)) {
+    fsutil.exe file setCaseSensitiveInfo "D:\wanliz_sw_windows" enable 
+    Get-ChildItem -Directory -Recurse "D:\wanliz_sw_windows" | ForEach-Object {
+        fsutil.exe file setCaseSensitiveInfo $_.FullName enable
+    }
+}
+
 Read-Host "Press [Enter] to exit"

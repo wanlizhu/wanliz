@@ -10,7 +10,6 @@ arch=amd64
 config=develop
 jobs=$(nproc)
 fixfiles=
-sync_ext4=
 args=
 while [[ ! -z $1 ]]; do 
     case $1 in 
@@ -19,7 +18,6 @@ while [[ ! -z $1 ]]; do
         aarch64|arm64) arch=aarch64 ;; 
         -j1) jobs=1 ;;
         -fix) fixfiles=1 ;;
-        -ext4) sync_ext4=1 ;;
         *) args="$args $1" ;;
     esac
     shift 
@@ -29,7 +27,7 @@ if [[ $fixfiles == 1 ]]; then
     [[ -z $(which dos2unix) ]] && sudo apt install -y dos2unix 
     [[ -z $(which parallel) ]] && sudo apt install -y parallel
 
-    echo "Fixing symlinks in //wanliz_sw_windows/..."
+    echo "Fixing symlinks in /mnt/d/wanliz_sw_windows/..."
     p4 files //wanliz_sw_windows/... | grep "(symlink)" | awk -F'#' '{print $1}' | parallel -j $(nproc) '
         depot_file="{}"
         local_file=$(p4 where "$depot_file" 2>/dev/null | awk "{print \$3}")
@@ -43,7 +41,7 @@ if [[ $fixfiles == 1 ]]; then
         fi 
     '
 
-    echo "Fixing file ending in //wanliz_sw_windows/..."
+    echo "Fixing file ending in /mnt/d/wanliz_sw_windows/workingbranch/..."
     find "/mnt/d/wanliz_sw_windows/workingbranch" \( -path "*/_out" -o -path "*/_doc" -o -path "*/.git" \) -prune -o -type f \( \
         -name "*.sh" -o -name "*.bash" -o \
         -name "*.py" -o -name "*.pl" -o -name "*.cmd" -o \
@@ -58,19 +56,14 @@ if [[ $fixfiles == 1 ]]; then
     ' 
 fi 
 
-if [[ $sync_ext4 == 1 ]]; then 
-    [[ -z $(which parallel) ]] && sudo apt install -y parallel
+echo "Syncing from NTFS to EXT4 ..."
+rsync -aHAX --delete --info=progress2 --exclude='_out/' --exclude='.git/' "$P4ROOT/" "$HOME/wanliz_sw_windows/" || exit 1
 
-    mkdir -p $HOME/wanliz_sw_windows
-    cd $P4ROOT || exit 1
-    find . -maxdepth 5 -type d -name '_out' -prune -o -print0 | parallel -j$(nproc) rsync -aHAX --delete --exclude='_out/' "{}" "$HOME/wanliz_sw_windows/{}" || exit 1
-    export P4ROOT=$HOME/wanliz_sw_windows
-fi 
 
-cd $P4ROOT/workingbranch/drivers/OpenGL  
-time $P4ROOT/tools/linux/unix-build/unix-build \
-    --tools $P4ROOT/tools \
-    --devrel $P4ROOT/devrel/SDK/inc/GL \
+cd   $HOME/wanliz_sw_windows/workingbranch/drivers/OpenGL &&  
+time $HOME/wanliz_sw_windows/tools/linux/unix-build/unix-build \
+    --tools $HOME/wanliz_sw_windows/tools \
+    --devrel $HOME/wanliz_sw_windows/devrel/SDK/inc/GL \
     nvmake \
     NV_COLOR_OUTPUT=1 \
     NV_GUARDWORD= \
@@ -84,3 +77,6 @@ time $P4ROOT/tools/linux/unix-build/unix-build \
     NV_TRACE_CODE=1 \
     linux $arch $config $args -j$jobs
 
+
+echo "Syncing from EXT4 to NTFS ..."
+rsync -aHAX --info=progress2 "$HOME/wanliz_sw_windows/workingbranch/drivers/OpenGL/_out/" "$P4ROOT/workingbranch/drivers/OpenGL/_out/"
