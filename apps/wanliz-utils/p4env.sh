@@ -20,6 +20,14 @@ compile-commands.json
 EOF
 fi 
 
+if [[ -z $(which p4) ]]; then
+    sudo cp -f /mnt/d/wanliz/apps/bin/$(uname -m)/p4 /usr/local/bin/
+fi 
+
+if ! p4 login -s &>/dev/null; then 
+    p4 login 
+fi 
+
 if [[ $1 == "-print" ]]; then 
     echo "export P4PORT=$P4PORT; export P4USER=$P4USER; export P4CLIENT=$P4CLIENT; export P4ROOT=$P4ROOT; export P4IGNORE=$P4IGNORE"
 else
