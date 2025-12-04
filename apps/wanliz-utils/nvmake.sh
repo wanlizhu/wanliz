@@ -4,7 +4,7 @@ if [[ -z $P4CLIENT ]]; then
     eval "$(p4env.sh -print)"
 fi 
 
-branch=r580
+branch=r590
 target=.
 config=develop 
 arch=$(uname -m | sed 's/x86_64/amd64/g')
@@ -15,7 +15,7 @@ install=
 
 while [[ ! -z $1 ]]; do 
     case $1 in 
-        bugfix_main|r580) branch=$1 ;;
+        bugfix_main|r580|r590) branch=$1 ;;
         sweep|drivers|opengl|inspect-gpu-page-tables|microbench) target=$1 ;;
         debug|release|develop) config=$1 ;;
         amd64|x64|x86_64) arch=amd64 ;;
@@ -51,6 +51,9 @@ if [[ $branch == "bugfix_main" ]]; then
     workdir=$branchdir
 elif [[ $branch == "r580" ]]; then
     branchdir="$P4ROOT/rel/gpu_drv/r580/r580_00"
+    workdir=$branchdir
+elif [[ $branch == "r590" ]]; then
+    branchdir="$P4ROOT/rel/gpu_drv/r590/r590_00"
     workdir=$branchdir
 else
     echo "Invalid branch \"$branch\""
