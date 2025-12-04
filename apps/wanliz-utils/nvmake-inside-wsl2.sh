@@ -24,37 +24,32 @@ done
 if [[ $fixfiles == 1 ]]; then 
     [[ -z $(which dos2unix) ]] && sudo apt install -y dos2unix 
     [[ -z $(which parallel) ]] && sudo apt install -y parallel
-    function fix_symlink {
-        depot_file="$1"
-        local_file=$(p4 where "$depot_file" 2>/dev/null | awk '{print $3}')
-        target=$(p4 print -q "$depot_file" 2>/dev/null | tr -d '\r')
-        if [[ ! -z "$local_file" && ! -z "$target" ]]; then 
+
+    echo "Fixing symlinks in //wanliz_sw_windows/..."
+    p4 files //wanliz_sw_windows/... | grep "(symlink)" | awk -F'#' '{print $1}' | parallel -j $(nproc) '
+        depot_file="{}"
+        local_file=$(p4 where "$depot_file" 2>/dev/null | awk "{print \$3}")
+        target=$(p4 print -q "$depot_file" 2>/dev/null | tr -d '"'"'\r'"'"')
+        if [ ! -z "$local_file" ] && [ ! -z "$target" ]; then 
             wsl_file=$(wslpath "$local_file" 2>/dev/null || echo "$local_file")
-            [[ -L "$wsl_file" ]] && continue
+            [ -L "$wsl_file" ] && exit 0
             dir=$(dirname "$wsl_file")
             name=$(basename "$wsl_file")
             cd "$dir" && rm -f "$name" && ln -s "$target" "$name" && echo "Fixed symlink $wsl_file"
         fi 
-    }
-    export -f fix_symlink
-
-    echo "Fixing symlinks in //wanliz_sw_windows/..."
-    p4 files //wanliz_sw_windows/... | grep "(symlink)" | parallel --shell /usr/bin/bash -j $(nproc) fix_symlink {}  
+    '
 
     echo "Fixing file ending in //wanliz_sw_windows/..."
     find "/mnt/d/wanliz_sw_windows/workingbranch" \( -path "*/_out" -o -path "*/_doc" -o -path "*/.git" \) -prune -o -type f \( \
-        -name "*.sh" -o \
-        -name "*.bash" -o \
-        -name "*.py" -o \
-        -name "*.pl" -o \
-        -name "*.pm" -o \
-        -name "*.nvmk" -o \
-        -name "*.mk" -o \
-        -name "*.rb" -o \
-        -name "Makefile*" \
+        -name "*.sh" -o -name "*.bash" -o \
+        -name "*.py" -o -name "*.pl" -o -name "*.cmd" -o \
+        -name "*.cfg" -o -name "*.conf" -o -name "*.config" -o \
+        -name "*.nvmk" -o -name "Makefile*" -o -name "*.mk" -o -name "*.cmake" -o \
+        -name "*.pm" -o -name "*.rb" -o \
+        -name "*.yaml" -o -name "*.xml" -o -name "*.json" \
     \) -print | parallel -j $(nproc) '
-        if [[ ! -z $(dos2unix -ic {}) ]]; then 
-            dos2unix {} &>/dev/null && echo "Fixed line ending {}"
+        if [ -n "$(dos2unix -ic {} 2>/dev/null)" ]; then 
+            dos2unix {} >/dev/null 2>&1 && echo "Fixed line ending {}"
         fi
     ' 
 fi 
