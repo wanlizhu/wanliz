@@ -17,22 +17,11 @@ add_executable(inspect-gpu-perf-info
 )
 
 # Link against Vulkan
-find_package(Vulkan REQUIRED)
+find_package(Vulkan)
 if (NOT Vulkan_FOUND)
-    if (ARCH STREQUAL "x86_64" OR ARCH STREQUAL "amd64")
-        execute_process(COMMAND bash -lic [=[
-            mkdir -p $HOME/vulkan_sdk 
-            cd $HOME/vulkan_sdk 
-            echo "Downloading latest Vulkan SDK from LunarG ..."
-            curl -fLo vulkan_sdk.tar.xz https://sdk.lunarg.com/sdk/download/latest/linux/vulkan_sdk.tar.xz
-            VERSIONED_NAME=$(tar -tf vulkan_sdk.tar.xz | head -1 | cut -d/ -f1)
-            tar xf vulkan_sdk.tar.xz 
-            ln -sfn $VERSIONED_NAME current 
-            echo "Installed $HOME/vulkan_sdk/$VERSIONED_NAME"
-        ]=])
-    else()
-        message(FATAL_ERROR "Action required to install Vulkan SDK")
-    endif()
+    execute_process(COMMAND bash -lic [=[
+        sudo apt install -y libvulkan1 libvulkan-dev vulkan-tools vulkan-utility-libraries-dev
+    ]=])
     find_package(Vulkan REQUIRED)
 endif()
 target_include_directories(inspect-gpu-perf-info PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
