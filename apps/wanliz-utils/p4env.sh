@@ -22,7 +22,7 @@ EOF
 fi 
 
 if [[ -z $(which p4) ]]; then
-    sudo cp -f /mnt/d/wanliz/apps/bin/$(uname -m)/p4 /usr/local/bin/
+    sudo cp -f /mnt/linuxqa/wanliz/p4.$(uname -m) /usr/local/bin/
 fi 
 
 if ! p4 login -s &>/dev/null; then 

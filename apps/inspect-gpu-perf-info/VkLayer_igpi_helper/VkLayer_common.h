@@ -62,40 +62,33 @@ extern std::unordered_map<std::string, PFN_vkVoidFunction> g_hooked_functions;
 extern VkInstance g_VkInstance;
 extern std::unordered_map<VkDevice, VkPhysicalDevice> g_physicalDeviceMap;
 
-struct VkLayer_redirect_STDOUT {
-    void begin(const char* path = NULL);
-    void end();
-
-private:
-    int original_stdout = -1;
-};
-
-struct VkLayer_redirect_STDERR {
-    void begin(const char* path = NULL);
-    void end();
-
-private:
-    int original_stderr = -1;
-};
-
-struct VkLayer_DeviceAddressFeature {
-    static bool enabled;
-    static void enable(
-        VkPhysicalDevice physicalDevice, 
-        VkDeviceCreateInfo* pDeviceCreateInfo
-    );
-};
-
-struct VkLayer_GNU_Linux_perf {
-    int perf_event_fd = -1;
-    void* perf_mmap_base = nullptr;
-    size_t perf_mmap_size = 0;
-    std::string output = "";
-
-    void record();
-    void end(const std::string& suffix);
-};
-
 char* VkLayer_readbuf(const char* path, bool trim);
 const char* VkLayer_which(const std::string& cmdname);
 void VkLayer_exec(const char* fmt, ...);
+
+struct VkLayer_gpu_pages {
+    bool enabled = false;
+    std::string start;
+    std::string new_pages;
+
+    void start();
+    void end();
+};
+
+struct VkLayer_RM_logs {
+    bool enabled = false;
+    std::string raw;
+    std::string cooked;
+
+    void start();
+    void end();
+};
+
+struct VkLayer_timer {
+    std::chrono::high_resolution_clock::time_point cpu_start;
+    std::chrono::nanoseconds cpu_time;
+    std::string cpu_time_desc;
+
+    void start();
+    void end();
+};
