@@ -9,19 +9,9 @@ case $1 in
         echo "Filter text between start and end lines:"
         echo "<...> | awk '/AAAA/{flag=1; next} /ZZZZ/{flag=0} flag'"
     ;;
-    nsight)
-        echo "Install Nsight  systems: https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk/"
-        echo "Install Nsight graphics: https://ngfx/builds-prerel/Grxa/"
-        echo "Install Nsight graphics: https://ngfx/builds-nightly/Grfx/"
-        echo "Install Nsight graphics: \\devrel\share\Devtools\NomadBuilds\latest\Internal (username is email)"
-        echo 
-        $0 nsys 
-        echo 
-        $0 ngfx 
-    ;;
     nsys)
-        echo "Launch Nsight systems from command line: "
         if [[ -e ~/nsight_systems/bin/nsys ]]; then 
+            echo "Launch Nsight systems from command line: "
             sampling_period=$($HOME/nsight_systems/bin/nsys profile --help=sampling 2>/dev/null | awk '
                 /--sampling-period=/ {flag=1; next}
                 flag && /Possible values are integers between/ {
@@ -49,11 +39,18 @@ case $1 in
             echo "sudo $HOME/nsight_systems/bin/nsys profile --trace=vulkan,opengl,cuda,nvtx,osrt --vulkan-gpu-workload=individual --sample=process-tree --sampling-period=$sampling_period --samples-per-backtrace=1 --backtrace=dwarf --cpuctxsw=process-tree --syscall=process-tree --gpu-metrics-devices=all --gpu-metrics-frequency=$metrics_freq --stats=true --export=sqlite,text --resolve-symbols=true --force-overwrite=true --stop-on-exit=true --wait=all --show-output=true --output=nsys_\$(hostname)_\$(date +%Y%m%d) <...>" 
         else
             echo "$HOME/nsight_systems/bin/nsys doesn't exist"
+            echo "Install Nsight  systems: https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk/"
         fi 
     ;;
     ngfx)
-        echo "Launch Nsight graphics from command line:"
-        echo "TODO"
+        if [[ -e ~/nsight_systems/bin/nsys ]]; then 
+            echo "Launch Nsight graphics from command line:"
+            echo TODO 
+        else
+            echo "Install Nsight graphics: https://ngfx/builds-prerel/Grxa/"
+            echo "Install Nsight graphics: https://ngfx/builds-nightly/Grfx/"
+            echo "Install Nsight graphics: \\devrel\share\Devtools\NomadBuilds\latest\Internal (username is email)"
+        fi 
     ;;
     perf)
         if [[ ! -d $HOME/FlameGraph ]]; then 
