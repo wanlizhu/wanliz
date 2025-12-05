@@ -56,7 +56,7 @@ if [[ $fixfiles == 1 ]]; then
 fi 
 
 echo "Syncing from NTFS to EXT4 ..."
-rsync -aHAX --delete --info=progress2 --exclude='_out/' --exclude='.git/' "$P4ROOT/" "$HOME/wanliz_sw_windows/" || exit 1
+rsync -aHAX --modify-window=1 --delete --info=progress2 --exclude='_out/' --exclude='.git/' "$P4ROOT/" "$HOME/wanliz_sw_windows/" || exit 1
 
 
 cd   $HOME/wanliz_sw_windows/workingbranch/drivers/OpenGL &&  
@@ -78,4 +78,4 @@ time $HOME/wanliz_sw_windows/tools/linux/unix-build/unix-build \
 
 
 echo "Syncing from EXT4 to NTFS ..."
-rsync -aHAX --info=progress2 "$HOME/wanliz_sw_windows/workingbranch/drivers/OpenGL/_out/" "$P4ROOT/workingbranch/drivers/OpenGL/_out/"
+rsync -aHAX --modify-window=1 --info=progress2 "$HOME/wanliz_sw_windows/workingbranch/drivers/OpenGL/_out/" "$P4ROOT/workingbranch/drivers/OpenGL/_out/"
