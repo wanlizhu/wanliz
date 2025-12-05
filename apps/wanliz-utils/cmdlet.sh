@@ -36,10 +36,10 @@ case $1 in
                     print s
                     exit
                 }')
-            echo "sudo $HOME/nsight_systems/bin/nsys profile --trace=vulkan,opengl,cuda,nvtx,osrt --vulkan-gpu-workload=individual --sample=process-tree --sampling-period=$sampling_period --samples-per-backtrace=1 --backtrace=dwarf --cpuctxsw=process-tree --syscall=process-tree --gpu-metrics-devices=all --gpu-metrics-frequency=$metrics_freq --stats=true --export=sqlite,text --resolve-symbols=true --force-overwrite=true --stop-on-exit=true --wait=all --show-output=true --output=nsys_\$(hostname)_\$(date +%Y%m%d) <...>" 
+            echo "function run-and-profile-inside-nsys() { : \${NAME:=nsys_\$(hostname)_\$(date +%Y%m%d)} ; sudo $HOME/nsight_systems/bin/nsys profile --trace=vulkan,opengl,cuda,nvtx,osrt --vulkan-gpu-workload=individual --sample=process-tree --sampling-period=$sampling_period --samples-per-backtrace=1 --backtrace=dwarf --cpuctxsw=process-tree --syscall=process-tree --gpu-metrics-devices=all --gpu-metrics-frequency=$metrics_freq --stats=true --export=sqlite,text --resolve-symbols=true --force-overwrite=true --stop-on-exit=true --wait=all --show-output=true --output=\$NAME $@ ; }; run-and-profile-inside-nsys <...>" 
         else
             echo "$HOME/nsight_systems/bin/nsys doesn't exist"
-            echo "Install Nsight  systems: https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk/"
+            echo "Install Nsight systems: https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk/"
         fi 
     ;;
     ngfx)
@@ -68,7 +68,7 @@ case $1 in
         fi 
 
         echo "Launch GNU perf from command line: "
-        echo "function run-and-profile-inside-perf { : \${NAME:=perf.data} ; : \${FREQ:=max} ; sudo \$(which perf) record --freq=\$FREQ --call-graph=dwarf --timestamp --period --sample-cpu --sample-identifier --data --phys-data --data-page-size --code-page-size --mmap-pages=1024 --inherit --switch-events --output=\$NAME -- \$@ ; sudo chmod a+r \$NAME; perf script --no-inline --force --ns -F +pid -i \$NAME > \$NAME.perthread; perf script --no-inline --force --ns -i \$NAME | \$HOME/FlameGraph/stackcollapse-perf.pl | \$HOME/FlameGraph/stackcollapse-recursive.pl | \$HOME/FlameGraph/flamegraph.pl --title=\$NAME --subtitle=\"Host: \$(uname -m), Kernel: \$(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print \$2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname='samples' > \$NAME.svg; }; run-and-profile-inside-perf <...>"
+        echo "function run-and-profile-inside-perf() { : \${NAME:=perf_\$(hostname)_\$(date +%Y%m%d)} ; : \${FREQ:=max} ; sudo \$(which perf) record --freq=\$FREQ --call-graph=dwarf --timestamp --period --sample-cpu --sample-identifier --data --phys-data --data-page-size --code-page-size --mmap-pages=1024 --inherit --switch-events --output=\$NAME -- \$@ ; sudo chmod a+r \$NAME; perf script --no-inline --force --ns -F +pid -i \$NAME > \$NAME.perthread; perf script --no-inline --force --ns -i \$NAME | \$HOME/FlameGraph/stackcollapse-perf.pl | \$HOME/FlameGraph/stackcollapse-recursive.pl | \$HOME/FlameGraph/flamegraph.pl --title=\$NAME --subtitle=\"Host: \$(uname -m), Kernel: \$(uname -r), Driver: \$(modinfo nvidia | egrep '^version:' | awk '{print \$2}'), Timestamp: \$(date +'%Y-%m-%d %H:%M:%S')\" --countname='samples' > \$NAME.svg; }; run-and-profile-inside-perf <...>"
     ;;
     offwake)
         if [[ ! -d $HOME/FlameGraph ]]; then 
