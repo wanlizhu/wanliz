@@ -8,15 +8,10 @@ VKAPI_ATTR VkResult VKAPI_CALL hooked_vkAllocateMemory(
 ) {
     VK_DEFINE_ORIGINAL_FUNC(vkAllocateMemory);
 
-    static VkLayer_timer timer;
     static VkLayer_RM_logs rmlogs;
-    rmlogs.begin(timer);
-    timer.begin();
-
+    rmlogs.begin();
     VkResult result = original_pfn_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
-
-    timer.end();
-    rmlogs.end(timer);
+    rmlogs.end();
 
     return result;
 }

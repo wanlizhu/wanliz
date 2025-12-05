@@ -53,11 +53,15 @@ void VkLayer_exec(const char* fmt, ...) {
     system(cmdline);
 }
 
-void VkLayer_RM_logs::begin(const VkLayer_timer& timer) {
+void VkLayer_RM_logs::begin() {
     fprintf(stderr, "vkAllocateMemory begin index=%d\n", (int)timer.index);
+    if (VkLayer_which("dump-gpu-pages.sh")) system("dump-gpu-pages.sh -begin");
+    timer.begin();
 }
 
-void VkLayer_RM_logs::end(const VkLayer_timer& timer) {
+void VkLayer_RM_logs::end() {
+    timer.end();
+    if (VkLayer_which("dump-gpu-pages.sh")) system("dump-gpu-pages.sh -end >&2");
     fprintf(stderr, "vkAllocateMemory end in %s\n", timer.cpu_time_desc.c_str());
 }
 

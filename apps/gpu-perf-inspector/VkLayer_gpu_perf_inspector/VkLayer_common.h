@@ -78,9 +78,10 @@ struct VkLayer_timer {
 };
 
 struct VkLayer_RM_logs {
+    VkLayer_timer timer;
     std::string raw = "";
     std::string cooked = "";
 
-    void begin(const VkLayer_timer& timer);
-    void end(const VkLayer_timer& timer);
+    void begin();
+    void end();
 };
