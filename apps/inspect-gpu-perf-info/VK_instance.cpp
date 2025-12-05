@@ -90,6 +90,7 @@ VK_instance::VK_instance() {
         _vkEnumerateInstanceVersion(&maxApiVersion);
     }
 
+    bool foundRequiredLayers = false;
     std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"
     };
@@ -97,9 +98,20 @@ VK_instance::VK_instance() {
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME
     };
 
+    uint32_t availableLayerCount = 0;
+    vkEnumerateInstanceLayerProperties(&availableLayerCount, nullptr);
+    std::vector<VkLayerProperties> availableLayers(availableLayerCount);
+    vkEnumerateInstanceLayerProperties(&availableLayerCount, availableLayers.data());
+    for (const VkLayerProperties& layer : availableLayers) {
+        if (strcmp(layer.layerName, "VK_LAYER_KHRONOS_validation") == 0) {
+            foundRequiredLayers = true;
+        }
+    }
+    
+
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Inspect GPU Perf Gaps";
+    appInfo.pApplicationName = "Inspect GPU Perf Info";
     appInfo.applicationVersion = 0;
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = 0;
@@ -122,8 +134,8 @@ VK_instance::VK_instance() {
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
-    createInfo.enabledLayerCount = (int)validationLayers.size();
-    createInfo.ppEnabledLayerNames = validationLayers.data();
+    createInfo.enabledLayerCount = foundRequiredLayers ? (int)validationLayers.size() : 0;
+    createInfo.ppEnabledLayerNames = foundRequiredLayers ? validationLayers.data() : nullptr;
     createInfo.enabledExtensionCount = (int)extensions.size();
     createInfo.ppEnabledExtensionNames = extensions.data();
     createInfo.pNext = &debugCreateInfo;
