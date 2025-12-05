@@ -28,14 +28,16 @@ done
 
 echo 
 echo "Nvidia RM kernel version: $(cat /sys/module/nvidia/version)"
-nvidia-smi -q | grep -i 'GSP Firmware Version' | sed 's/^[[:space:]]*//'
+nvidia-smi -q | grep -i 'GSP Firmware Version' | sed 's/^[[:space:]]*//' | tr -s ' ' | sed 's/ : /: /g'
 
 echo 
 modinfo nvidia | egrep 'filename|version|firmware'
+
+echo 
 file /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.*
 
 echo 
-echo -e "\nList PIDs using nvidia module:"
+echo "List PIDs using nvidia module:"
 sudo lsof -w -n /dev/nvidia* | awk 'NR>1{{print $2}}' | sort -un | while read -r pid; do
     printf "PID=%-7s %s\n" "$pid" "$(tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null || ps -o args= -p "$pid")"
 done
