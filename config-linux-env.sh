@@ -52,6 +52,10 @@ for cmd in "${!dependencies[@]}"; do
         }
     fi
 done
+python_version=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
+if ! dpkg -s python${python_version}-dev &>/dev/null; then
+    sudo apt install -y python${python_version}-dev &>/dev/null 
+fi 
 
 echo -n "Installing wanliz-utils to /usr/local/bin ... "
 find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
