@@ -36,19 +36,6 @@ elif [[ $1 == "home" ]]; then
             echo "$user@$host" >~/.push_host
         fi 
 
-        if ! ssh \
-            -o ConnectTimeout=3 \
-            -o BatchMode=yes \
-            -o PreferredAuthentications=publickey \
-            -o PasswordAuthentication=no \
-            -o KbdInteractiveAuthentication=no \
-            -o StrictHostKeyChecking=accept-new \
-            user@remote 'true' >/dev/null 2>&1; then
-            if [[ -f ~/.ssh/id_ed25519 ]]; then 
-                ssh-copy-id -i ~/.ssh/id_ed25519.pub $(cat ~/.push_host)
-            fi 
-        fi
-
         echo "Making dirs on remote if missing ... "
         ssh $(cat ~/.push_host) "mkdir -p /mnt/d/${USER}@$(hostname)"
         echo "Uploading home folder files ... "
