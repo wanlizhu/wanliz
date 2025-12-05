@@ -36,7 +36,7 @@ if (NVML_LIBRARY AND NVML_INCLUDE_DIR)
     target_link_libraries(inspect-gpu-perf-info PRIVATE ${NVML_LIBRARY})
     message(STATUS "Found NVML: ${NVML_LIBRARY}")
 else()
-    message(STATUS "Configure without NVML")
+    message(STATUS "Configuring without NVML")
 endif()
 
 # Define target: VkLayer_igpi_helper
