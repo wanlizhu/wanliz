@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cd $HOME/wanliz/apps/inspect-gpu-perf-info
+cd $HOME/wanliz/apps/inspect-gpu-perf-info || exit 1
 mkdir -p _out/Linux_debug
 cd _out/Linux_debug  
 cmake ../.. || exit 1
