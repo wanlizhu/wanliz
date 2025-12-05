@@ -12,7 +12,7 @@ else
     nvperf_vulkan_path=$(which nvperf_vulkan)
 fi 
 
-sudo env ENABLE_RMLOG=1 ENABLE_GPU_PAGES_DUMP=1 ENABLE_GNU_PERF_RECORD=1 inspect-gpu-perf-info $nvperf_vulkan_path -nullDisplay alloc:27 2>/tmp/igpi.txt
+sudo env ENABLE_RMLOG=1 inspect-gpu-perf-info $nvperf_vulkan_path -nullDisplay alloc:27 2>/tmp/igpi.txt
 
 if [[ -f /tmp/igpi.txt ]]; then 
     vkalloc_logs=
@@ -37,14 +37,14 @@ if [[ -f /tmp/igpi.txt ]]; then
                 fi 
             ;;
         esac
-    done < /tmp/igpi.txt > /tmp/igpi_processed.txt
-    sudo mv -f /tmp/igpi_processed.txt $HOME/igpi_mb_alloc27.txt
+    done < /tmp/igpi.txt > /tmp/igpi_cooked.txt
+    sudo mv -f /tmp/igpi_cooked.txt $HOME/igpi_alloc27.txt
 
-    if ! grep -q '[^[:space:]]' $HOME/igpi_mb_alloc27.txt; then
+    if ! grep -q '[^[:space:]]' $HOME/igpi_alloc27.txt; then
         echo "No logs found"
         cat /tmp/igpi.txt
     else 
-        echo "Logs dumped to $HOME/igpi_mb_alloc27.txt"
-        cat $HOME/igpi_mb_alloc27.txt
+        echo "Logs dumped to $HOME/igpi_alloc27.txt"
+        cat $HOME/igpi_alloc27.txt
     fi 
 fi 

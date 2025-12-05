@@ -21,7 +21,6 @@ VKAPI_ATTR VkResult VKAPI_CALL hooked_vkCreateDevice(
     g_pfn_vkGetDeviceProcAddr = layerCreateInfo->u.pLayerInfo->pfnNextGetDeviceProcAddr;
     layerCreateInfo->u.pLayerInfo = layerCreateInfo->u.pLayerInfo->pNext;
     
-    VkLayer_DeviceAddressFeature::enable(physicalDevice, const_cast<VkDeviceCreateInfo*>(pCreateInfo));
     PFN_vkCreateDevice original_pfn_vkCreateDevice = (PFN_vkCreateDevice)pfn_vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkCreateDevice");
     VkResult result = original_pfn_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
     if (result == VK_SUCCESS) {

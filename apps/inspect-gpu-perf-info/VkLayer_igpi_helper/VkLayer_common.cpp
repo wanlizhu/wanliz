@@ -52,3 +52,24 @@ void VkLayer_exec(const char* fmt, ...) {
     va_end(ap);
     system(cmdline);
 }
+
+void VkLayer_RM_logs::begin(const VkLayer_timer& timer) {
+    fprintf(stderr, "vkAllocateMemory begin index=%d\n", (int)timer.index);
+}
+
+void VkLayer_RM_logs::end(const VkLayer_timer& timer) {
+    fprintf(stderr, "vkAllocateMemory end in %s\n", timer.cpu_time_desc.c_str());
+}
+
+void VkLayer_timer::begin() {
+    cpu_time = {};
+    cpu_time_desc = "";
+    cpu_begin = std::chrono::high_resolution_clock::now();
+}
+
+void VkLayer_timer::end() {
+    auto cpu_end = std::chrono::high_resolution_clock::now();
+    cpu_time = std::chrono::duration_cast<std::chrono::nanoseconds>(cpu_end - cpu_begin);
+    cpu_time_desc = std::to_string(cpu_time.count()) + " nsec";
+    index += 1;
+}

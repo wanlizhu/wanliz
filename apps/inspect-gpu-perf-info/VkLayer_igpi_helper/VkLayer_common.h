@@ -66,29 +66,21 @@ char* VkLayer_readbuf(const char* path, bool trim);
 const char* VkLayer_which(const std::string& cmdname);
 void VkLayer_exec(const char* fmt, ...);
 
-struct VkLayer_gpu_pages {
-    bool enabled = false;
-    std::string start;
-    std::string new_pages;
 
-    void start();
+struct VkLayer_timer {
+    uint64_t index = 0;
+    std::chrono::high_resolution_clock::time_point cpu_begin;
+    std::chrono::nanoseconds cpu_time = {};
+    std::string cpu_time_desc = "";
+
+    void begin();
     void end();
 };
 
 struct VkLayer_RM_logs {
-    bool enabled = false;
-    std::string raw;
-    std::string cooked;
+    std::string raw = "";
+    std::string cooked = "";
 
-    void start();
-    void end();
-};
-
-struct VkLayer_timer {
-    std::chrono::high_resolution_clock::time_point cpu_start;
-    std::chrono::nanoseconds cpu_time;
-    std::string cpu_time_desc;
-
-    void start();
-    void end();
+    void begin(const VkLayer_timer& timer);
+    void end(const VkLayer_timer& timer);
 };

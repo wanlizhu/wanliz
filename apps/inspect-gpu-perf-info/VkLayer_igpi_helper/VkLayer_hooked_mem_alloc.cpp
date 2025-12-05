@@ -8,65 +8,15 @@ VKAPI_ATTR VkResult VKAPI_CALL hooked_vkAllocateMemory(
 ) {
     VK_DEFINE_ORIGINAL_FUNC(vkAllocateMemory);
 
-    static int index = 0;
-    static int enableRMLog = -1;
-    static int enableGPUPagesDump = -1;
-    static int enableGNUPerfRecord = -1;
-    if (enableRMLog == -1) {
-        enableRMLog = (getenv("ENABLE_RMLOG") && getenv("ENABLE_RMLOG")[0] == '1') ? 1 : 0;
-    }
-    if (enableGPUPagesDump == -1) {
-        enableGPUPagesDump = (getenv("ENABLE_GPU_PAGES_DUMP") && getenv("ENABLE_GPU_PAGES_DUMP")[0] == '1') ? 1 : 0;
-        if (enableGPUPagesDump == 1) {
-            bool foundTools = VkLayer_which("inspect-gpu-page-tables");
-#ifdef __aarch64__
-            foundTools = foundTools && std::filesystem::exists("/dev/nvidia-soc-iommu-inspect");
-#endif 
-            enableGPUPagesDump = foundTools ? 1 : 0;
-        }
-    }
-    if (enableGNUPerfRecord == -1) {
-        enableGNUPerfRecord = (getenv("ENABLE_GNU_PERF_RECORD") && getenv("ENABLE_GNU_PERF_RECORD")[0] == '1') ? 1 : 0;
-    }
+    static VkLayer_timer timer;
+    static VkLayer_RM_logs rmlogs;
+    rmlogs.begin(timer);
+    timer.begin();
 
-    std::chrono::high_resolution_clock::time_point begin;
-    VkLayer_GNU_Linux_perf perf;
-    if (enableRMLog == 1 || enableGPUPagesDump == 1 || enableGNUPerfRecord == 1) {
-        index += 1;
-        fprintf(stderr, "vkAllocateMemory BEGIN INDEX=%d\n", index);
-        if (enableGPUPagesDump == 1) {
-            system("sudo rm -rf /tmp/pages.begin /tmp/pages.end /tmp/pages.new /tmp/pages.new.merged");
-            system("sudo inspect-gpu-page-tables >/tmp/pages.begin 2>&1");
-        }
-        if (enableGNUPerfRecord == 1) {
-            perf.record();
-        }
-        begin = std::chrono::high_resolution_clock::now();
-    }
-    
     VkResult result = original_pfn_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
-    
-    if (enableRMLog == 1 || enableGPUPagesDump == 1 || enableGNUPerfRecord == 1) {
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-        if (enableGNUPerfRecord == 1) {
-            perf.end(std::string("-vkAllocateMemory-") + std::to_string(index));
-        }
 
-        char* new_pages = nullptr;
-        if (enableGPUPagesDump == 1) {
-            system("sudo inspect-gpu-page-tables >/tmp/pages.end 2>&1");
-            system("diff --old-line-format='' --new-line-format='%L' --unchanged-line-format='' /tmp/pages.begin /tmp/pages.end >/tmp/pages.new");
-            VkLayer_exec("%s/wanliz/apps/inspect-gpu-perf-info/scripts/merge-gpu-pages.sh /tmp/pages.new >/tmp/pages.new.merged", getenv("HOME"));
-            new_pages = VkLayer_readbuf("/tmp/pages.new.merged", true);
-            for (int i = 0; new_pages && i < strlen(new_pages); i++) 
-                if (new_pages[i] == '\n') 
-                    new_pages[i] = '\t';
-        }
-
-        fprintf(stderr, "vkAllocateMemory ENDED AFTER %08ld NS => NewPages: [%s] => GNUPerf: %s\n", duration.count(), new_pages ? new_pages : "", perf.output.c_str());
-        fprintf(stdout, "vkAllocateMemory ENDED AFTER %08ld NS => NewPages: [%s] => GNUPerf: %s\n", duration.count(), new_pages ? new_pages : "", perf.output.c_str());
-    }
+    timer.end();
+    rmlogs.end(timer);
 
     return result;
 }
@@ -81,10 +31,6 @@ VKAPI_ATTR void VKAPI_CALL hooked_vkFreeMemory(
 }
 
 uint64_t GPU_VirtualAddress(VkDevice device, VkDeviceMemory memory, size_t size) {
-    if (!VkLayer_DeviceAddressFeature::enabled) {
-        return 0;
-    }
-
     VkBufferCreateInfo bufferCreateInfo = {};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferCreateInfo.size = size;
