@@ -33,7 +33,7 @@ fi
 # Install helper to communicate with kernel on aarch64
 if [[ $(uname -m) == "aarch64" && ! -e /dev/nvidia-soc-iommu-inspect ]]; then 
     if [[ ! -d /tmp/nvidia-soc-iommu-inspect ]]; then 
-        check_p4_env -login
+        check_p4_env 
         p4 files "//sw/pvt/aritger/apps/inspect-gpu-page-tables/nvidia-soc-iommu-inspect/..." | awk '{print $1}' | while read depot_file; do 
             local_file=${depot_file#//sw/pvt/aritger/apps/inspect-gpu-page-tables/nvidia-soc-iommu-inspect/}
             local_file=${local_file%%#*}
