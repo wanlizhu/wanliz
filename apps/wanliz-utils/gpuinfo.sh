@@ -17,7 +17,7 @@ else
 fi 
 
 echo 
-echo "Nvidia GPUs detected:"
+echo "NVIDIA GPU Devices Found:"
 nvidia-smi --query-gpu=index,pci.bus_id,name,compute_cap --format=csv,noheader | while IFS=, read -r idx bus name cc; do
     bus=$(echo "$bus" | awk '{{$1=$1}};1' | sed 's/^00000000/0000/' | tr 'A-Z' 'a-z')
     sys="/sys/bus/pci/devices/$bus"
