@@ -108,7 +108,7 @@ if (( ${#missing_required_folders[@]} > 0 )); then
         if [[ -z $failed_to_mount ]]; then 
             remote_folder="${required_folders[$local_folder]}"
             sudo mkdir -p "$local_folder"
-            sudo timeout 3 mount -t nfs "$remote_folder" "$local_folder" || { 
+            sudo timeout 10 mount -t nfs "$remote_folder" "$local_folder" || { 
                 failed_to_mount=1
             }
         fi 
