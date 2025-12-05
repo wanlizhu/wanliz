@@ -48,8 +48,8 @@ add_library(VkLayer_gpu_perf_inspector SHARED
     "VkLayer_gpu_perf_inspector/VkLayer_hooked_mem_alloc.cpp" "VkLayer_gpu_perf_inspector/VkLayer_hooked_mem_alloc.h"
 )
 configure_file(
-    "${CMAKE_SOURCE_DIR}/VkLayer_gpu_perf_inspector/VK_LAYER_gpu_perf_inspector.json.in"
-    "${CMAKE_BINARY_DIR}/VK_LAYER_gpu_perf_inspector.json"
+    "${CMAKE_SOURCE_DIR}/VkLayer_gpu_perf_inspector/VkLayer_gpu_perf_inspector.json.in"
+    "${CMAKE_BINARY_DIR}/VkLayer_gpu_perf_inspector.json"
     @ONLY
 )
 target_include_directories(VkLayer_gpu_perf_inspector PRIVATE 
