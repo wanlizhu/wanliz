@@ -21,12 +21,13 @@ compile-commands.json
 EOF
 fi 
 
-if [[ -z $(which p4) ]]; then
-    sudo cp -f /mnt/linuxqa/wanliz/p4.$(uname -m) /usr/local/bin/p4
-fi 
-
-if ! p4 login -s &>/dev/null; then 
-    p4 login 
+if [[ $1 == "-login" ]]; then 
+    if [[ -z $(which p4) ]]; then
+        sudo cp -f /mnt/linuxqa/wanliz/p4.$(uname -m) /usr/local/bin/p4
+    fi 
+    if ! p4 login -s &>/dev/null; then 
+        p4 login 
+    fi 
 fi 
 
 if [[ $1 == "-print" ]]; then 
