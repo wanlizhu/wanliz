@@ -5,14 +5,7 @@ function check_p4_env() {
     export P4USER="wanliz"
     
     if ! command -v p4 &>/dev/null; then 
-        if [[ ! -f /etc/apt/sources.list.d/perforce.list ]]; then 
-                sudo mkdir -p /usr/share/keyrings
-                wget -qO- https://package.perforce.com/perforce.pubkey | gpg --dearmor | sudo tee /usr/share/keyrings/perforce-archive-keyring.gpg >/dev/null
-                . /etc/os-release 
-                echo "deb [signed-by=/usr/share/keyrings/perforce-archive-keyring.gpg] http://package.perforce.com/apt/ubuntu ${UBUNTU_CODENAME} release" | sudo tee /etc/apt/sources.list.d/perforce.list >/dev/null
-        fi 
-        sudo apt update
-        sudo apt install -y helix-cli 
+        sudo cp -vf /mnt/linuxqa/wanliz/p4.$(uname -m) /usr/local/bin/p4 || exit 1
     fi 
 
     if ! p4 login -s &>/dev/null; then 
