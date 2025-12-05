@@ -74,9 +74,9 @@ else
     echo "Error: $failed_msg"
 fi 
 
-echo -n "Installing inspect-gpu-perf-info ... "
-sudo rm -f /usr/local/bin/inspect-gpu-perf-info
-$(realpath $(dirname $0))/apps/inspect-gpu-perf-info/scripts/install.sh \
+echo -n "Installing gpu-perf-inspector ... "
+sudo rm -f /usr/local/bin/gpu-perf-inspector
+$(realpath $(dirname $0))/apps/gpu-perf-inspector/scripts/install.sh \
     >/dev/null 2>/tmp/logs && echo "[OK]" || echo "Error: $(cat /tmp/logs)"
 
 declare -A required_folders=(

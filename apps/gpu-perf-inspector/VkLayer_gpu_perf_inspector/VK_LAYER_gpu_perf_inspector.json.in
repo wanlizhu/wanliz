@@ -1,9 +1,9 @@
 {
     "file_format_version": "1.2.0",
     "layer": {
-        "name": "VK_LAYER_igpi_helper",
+        "name": "VK_LAYER_gpu_perf_inspector",
         "type": "GLOBAL",
-        "library_path": "@CMAKE_BINARY_DIR@/libVkLayer_igpi_helper.so",
+        "library_path": "@CMAKE_BINARY_DIR@/libVkLayer_gpu_perf_inspector.so",
         "api_version": "1.3.0",
         "implementation_version": "1",
         "description": "inspect gpu perf info"

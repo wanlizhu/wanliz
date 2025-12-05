@@ -1,11 +1,11 @@
 #include "VK_physdev.h"
-#include "VkLayer_igpi_helper/VkLayer_common.h"
+#include "VkLayer_gpu_perf_inspector/VkLayer_common.h"
 
 int main(int argc, char **argv) {
     std::cout << VK_physdev::INFO() << std::endl;
 #ifdef __linux__
     if (argc > 1) {
-        setenv("VK_INSTANCE_LAYERS", "VK_LAYER_igpi_helper", 1);
+        setenv("VK_INSTANCE_LAYERS", "VK_LAYER_gpu_perf_inspector", 1);
         if (getenv("DISPLAY") == NULL) {
             setenv("DISPLAY", ":0", 1);
             std::cout << "Fallback to DISPLAY=:0" << std::endl;
