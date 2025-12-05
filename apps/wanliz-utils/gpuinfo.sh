@@ -28,7 +28,7 @@ done
 
 echo 
 echo "NVIDIA Kernel Version: $(cat /sys/module/nvidia/version)"
-nvidia-smi -q | grep -i 'GSP Firmware Version' | sed 's/^[[:space:]]*//' | tr -s ' ' | sed 's/ : /: /g'
+nvidia-smi -q | grep -i 'GSP Firmware Version' | sed 's/^[[:space:]]*//' | tr -s ' ' 
 
 echo 
 modinfo nvidia | egrep 'filename|version|firmware'
