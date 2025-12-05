@@ -22,7 +22,7 @@ function check_p4_env() {
 
 if [[ -z $(which inspect-gpu-page-tables) ]]; then 
     echo "Action required to install inspect-gpu-page-tables"
-    exit 1
+    exit 
 fi 
 
 # Install helper to communicate with kernel on aarch64

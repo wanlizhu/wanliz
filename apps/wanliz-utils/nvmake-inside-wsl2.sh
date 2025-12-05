@@ -9,7 +9,6 @@ export P4IGNORE="$HOME/.p4ignore"
 arch=amd64
 config=develop
 jobs=$(nproc)
-fixfiles=
 args=
 while [[ ! -z $1 ]]; do 
     case $1 in 
@@ -17,12 +16,12 @@ while [[ ! -z $1 ]]; do
         amd64|x64|x86_64) arch=amd64 ;;
         aarch64|arm64) arch=aarch64 ;; 
         -j1) jobs=1 ;;
-        -fix) fixfiles=1 ;;
         *) args="$args $1" ;;
     esac
     shift 
 done 
 
+fixfiles=
 if [[ $fixfiles == 1 ]]; then 
     [[ -z $(which dos2unix) ]] && sudo apt install -y dos2unix 
     [[ -z $(which parallel) ]] && sudo apt install -y parallel
