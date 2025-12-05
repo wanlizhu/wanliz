@@ -27,7 +27,7 @@ nvidia-smi --query-gpu=index,pci.bus_id,name,compute_cap --format=csv,noheader |
 done
 
 echo 
-echo "RM Kernel Version: $(cat /sys/module/nvidia/version)"
+echo "NVIDIA Kernel Version: $(cat /sys/module/nvidia/version)"
 nvidia-smi -q | grep -i 'GSP Firmware Version' | sed 's/^[[:space:]]*//' | tr -s ' ' | sed 's/ : /: /g'
 
 echo 
