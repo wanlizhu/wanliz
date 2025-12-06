@@ -220,4 +220,140 @@ if [[ -z $git_editor ]]; then
     git config --global core.editor "vim"
 fi
 
+function edit_config_file() {
+    sudo python3 - "-file=$1" "-section=$2" "-name=$3" "-value=$4" <<'PY'
+import pathlib
+import sys
+
+
+def parse_args(argv):
+    result = {}
+    for arg in argv:
+        if arg.startswith("-") and "=" in arg:
+            key, val = arg.lstrip("-").split("=", 1)
+            result[key.lower()] = val
+    return result
+
+
+def normalize_section(raw):
+    if raw is None:
+        return ""
+    raw = raw.strip()
+    if raw.startswith("[") and raw.endswith("]"):
+        raw = raw[1:-1]
+    return raw.strip()
+
+
+def split_kv(line):
+    if not line or line.lstrip().startswith("#"):
+        return None, None
+    if "=" not in line:
+        return None, None
+    key, val = line.split("=", 1)
+    key = key.strip()
+    if not key:
+        return None, None
+    return key, val.strip()
+
+
+def ensure_setting(path, section_raw, name, value):
+    section = normalize_section(section_raw)
+    conf = pathlib.Path(path)
+    lines = conf.read_text().splitlines(keepends=True) if conf.exists() else []
+
+    def ensure_trailing_newline():
+        if lines and not lines[-1].endswith("\n"):
+            lines[-1] += "\n"
+
+    def is_section(line):
+        stripped = line.strip()
+        return stripped.startswith("[") and stripped.endswith("]")
+
+    def section_name(line):
+        return line.strip()[1:-1].strip()
+
+    changed = False
+
+    if not section:
+        for idx, line in enumerate(lines):
+            key, val = split_kv(line)
+            if key and key.lower() == name.lower():
+                if val != value:
+                    lines[idx] = f"{name}={value}\n"
+                    changed = True
+                break
+        else:
+            ensure_trailing_newline()
+            lines.append(f"{name}={value}\n")
+            changed = True
+    else:
+        sec_start = None
+        for idx, line in enumerate(lines):
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue
+            if is_section(line) and section_name(line).lower() == section.lower():
+                sec_start = idx
+                break
+
+        if sec_start is None:
+            ensure_trailing_newline()
+            lines.extend([f"[{section}]\n", f"{name}={value}\n"])
+            changed = True
+        else:
+            sec_end = len(lines)
+            for idx in range(sec_start + 1, len(lines)):
+                if not lines[idx].strip() or is_section(lines[idx]):
+                    sec_end = idx
+                    break
+
+            kv_idx = None
+            for idx in range(sec_start + 1, sec_end):
+                key, val = split_kv(lines[idx])
+                if key and key.lower() == name.lower():
+                    kv_idx = idx
+                    if val != value:
+                        lines[idx] = f"{name}={value}\n"
+                        changed = True
+                    break
+
+            if kv_idx is None:
+                insert_at = sec_end
+                if insert_at < len(lines) and not lines[insert_at].strip():
+                    insert_at += 1
+                lines.insert(insert_at, f"{name}={value}\n")
+                changed = True
+
+    if changed:
+        conf.write_text("".join(lines))
+    return changed
+
+
+def main(argv):
+    opts = parse_args(argv)
+    path, name, value = opts.get("file"), opts.get("name"), opts.get("value")
+    if not all([path, name, value]):
+        print("Missing required arguments: -file= -name= -value= (optional: -section=)", file=sys.stderr)
+        return 1
+    changed = ensure_setting(path, opts.get("section"), name, value)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
+PY
+}
+
+if [[ -d /mnt/c/Users/ ]]; then 
+    echo -n "Checking appendWindowsPath=false in /etc/wsl.conf ... "
+    if sudo grep -Eq '^[[:space:]]*appendWindowsPath[[:space:]]*=[[:space:]]*false[[:space:]]*$' /etc/wsl.conf 2>/dev/null; then
+        echo "[SKIPPED]"
+    else
+        if edit_config_file "/etc/wsl.conf" "[interop]" "appendWindowsPath" "false"; then
+            echo "[OK]"
+        else
+            echo "[FAILED]"
+        fi
+    fi
+fi 
+
 echo "All done!"
