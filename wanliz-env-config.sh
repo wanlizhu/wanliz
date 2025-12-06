@@ -1,18 +1,16 @@
 #!/usr/bin/env bash
 
-if [[ $USER == wanliz ]]; then 
-    if [[ -z $(which sudo) && $EUID -eq 0 ]]; then 
-        apt install -y sudo 
-    fi 
-    if [[ ! -z "$USER" && $EUID != 0 ]]; then 
-        echo -n "Enabling no-password sudo ... "
-        if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
-            echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
-            echo "[OK]"
-        else
-            echo "[SKIPPED]"
-        fi
-    fi 
+if [[ -z $(which sudo) && $EUID -eq 0 ]]; then 
+    apt install -y sudo 
+fi 
+if [[ ! -z "$USER" && $EUID != 0 ]]; then 
+    echo -n "Enabling no-password sudo ... "
+    if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
+        echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
+        echo "[OK]"
+    else
+        echo "[SKIPPED]"
+    fi
 fi 
 
 
@@ -107,7 +105,7 @@ for cmd in "${!dependencies[@]}"; do
         pkg="${dependencies[$cmd]}"
         if ! confirm_to_install; then 
             continue 
-        done 
+        fi 
         echo -n "Installing $pkg ... "
         sudo apt install -y "$pkg" >/dev/null 2>/tmp/err && echo "[OK]" || {
             echo "[FAILED]"
@@ -122,7 +120,7 @@ do
     if ! dpkg -s $pkg &>/dev/null; then
         if ! confirm_to_install; then  
             continue 
-        done 
+        fi  
         echo -n "Installing $pkg ... "
         sudo apt install -y $pkg &>/dev/null && echo "[OK]" || echo "[FAILED]"
     fi 
@@ -139,7 +137,7 @@ if [[ ! -z $(which p4v) ]]; then
         if ! dpkg -s $pkg &>/dev/null; then
             if ! confirm_to_install; then 
                 continue 
-            done 
+            fi 
             echo -n "Installing $pkg ... "
             sudo apt install -y $pkg &>/dev/null && echo "[OK]" || echo "[FAILED]"
         fi 
