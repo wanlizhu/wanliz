@@ -115,8 +115,11 @@ fi
 
 echo -n "Installing wanliz-* scripts to /usr/local/bin ... "
 find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
-    real_target=$(readlink -f "$link") || continue 
-    if [[ $real_target == *"/wanliz/"* ]]; then 
+    if real_target=$(readlink -f "$link"); then  
+        if [[ $real_target == *"/wanliz/"* ]]; then 
+            sudo rm -f "$link" &>/dev/null 
+        fi 
+    else
         sudo rm -f "$link" &>/dev/null 
     fi 
 done 
