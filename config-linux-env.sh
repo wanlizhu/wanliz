@@ -54,7 +54,7 @@ for cmd in "${!dependencies[@]}"; do
 done
 python_version=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
 for pkg in python${python_version}-dev \
-    python3-pip python3-protobuf
+    python3-pip python3-protobuf protobuf-compiler 
 do 
     if ! dpkg -s $pkg &>/dev/null; then
         echo -n "Installing $pkg ... "
