@@ -9,15 +9,21 @@ export P4IGNORE="$HOME/.p4ignore"
 if [[ ! -f ~/.p4ignore ]]; then 
     cat >~/.p4ignore <<EOF
 _out
-_doc
 .git
 .vscode
+.cursor
 .cursorignore
 .clangd
 .p4config
 .p4ignore
-compile-commands.json
-*.code-workspace
+compile_commands.json
+compile_commands.json.regen.sh
+.cache
+.clangd
+libnvidia-glcore.so.code-workspace
+libnvidia-glcore.so.nvmake.sh
+index.scip
+callgraph.json
 EOF
 fi 
 

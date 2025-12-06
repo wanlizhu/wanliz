@@ -41,7 +41,7 @@ declare -A dependencies=(
     [ninja]=ninja-build
     [pkg-config]=pkg-config
 )
-echo "Ensuring required APT packages are installed ..."
+echo "Checking required packages ..."
 for cmd in "${!dependencies[@]}"; do
     if ! command -v "$cmd" &>/dev/null; then
         pkg="${dependencies[$cmd]}"
@@ -53,8 +53,27 @@ for cmd in "${!dependencies[@]}"; do
     fi
 done
 python_version=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
-if ! dpkg -s python${python_version}-dev &>/dev/null; then
-    sudo apt install -y python${python_version}-dev &>/dev/null 
+for pkg in python${python_version}-dev \
+    python3-pip python3-protobuf
+do 
+    if ! dpkg -s $pkg &>/dev/null; then
+        echo -n "Installing $pkg ... "
+        sudo apt install -y $pkg &>/dev/null && echo "[OK]" || echo "[FAILED]"
+    fi 
+done 
+
+if [[ ! -z $(which p4v) ]]; then 
+    for pkg in libkf5syntaxhighlighting5 \
+        libqt6webenginewidgets6 \
+        qt6-webengine-dev \
+        libqt6svg6 \
+        libqt6multimedia6
+    do 
+        if ! dpkg -s $pkg &>/dev/null; then
+            echo -n "Installing $pkg ... "
+            sudo apt install -y $pkg &>/dev/null && echo "[OK]" || echo "[FAILED]"
+        fi 
+    done 
 fi 
 
 echo -n "Installing wanliz-utils to /usr/local/bin ... "
@@ -89,19 +108,10 @@ declare -A required_folders=(
     ["/mnt/builds"]="linuxqa.nvidia.com:/storage3/builds"
     ["/mnt/dvsbuilds"]="linuxqa.nvidia.com:/storage5/dvsbuilds"
 )
-declare -A optional_folders=(
-    ["/mnt/wanliz_sw_linux"]="nvhqdesk:/wanliz_sw_linux"
-)
 missing_required_folders=()
 for local_folder in "${!required_folders[@]}"; do
     if ! mountpoint -q "$local_folder"; then 
         missing_required_folders+=("$local_folder")
-    fi 
-done 
-missing_optional_folders=()
-for local_folder in "${!optional_folders[@]}"; do
-    if ! mountpoint -q "$local_folder"; then 
-        missing_optional_folders+=("$local_folder")
     fi 
 done 
 
@@ -125,13 +135,15 @@ if (( ${#missing_required_folders[@]} > 0 )); then
 else
     echo "[SKIPPED]"
 fi
-if (( ${#missing_optional_folders[@]} > 0 )); then
-    for local_folder in "${missing_optional_folders[@]}"; do 
-        remote_folder="${optional_folders[$local_folder]}"
-        sudo mkdir -p "$local_folder"
-        sudo timeout 3 mount -t nfs "$remote_folder" "$local_folder" 
-    done 
-fi
+
+if [[ -d /mnt/linuxqa/wanliz ]]; then 
+    if [[ -z $(which p4) && -f /mnt/linuxqa/wanliz/p4.$(uname -m) ]]; then 
+        sudo cp -f /mnt/linuxqa/wanliz/p4.$(uname -m)/ /usr/local/bin/p4v/
+    fi 
+    if [[ ! -d $HOME/p4v && -d /mnt/linuxqa/wanliz/p4v.$(uname -m) ]]; then 
+        cp -rf /mnt/linuxqa/wanliz/p4v.$(uname -m)/. $HOME/p4v/
+    fi 
+fi 
 
 git_email=$(git config --global user.email 2>/dev/null || true)
 if [[ -z $git_email ]]; then
@@ -165,38 +177,6 @@ if ! dpkg -s openssh-server >/dev/null 2>&1; then
         fi
     fi
 fi
-
-if [[ ! -f ~/.ssh/id_ed25519 ]]; then 
-    mkdir -p ~/.ssh
-    cat >~/.ssh/id_ed25519 <<'EOF'
------BEGIN OPENSSH PRIVATE KEY-----
-b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
-QyNTUxOQAAACB8e4c/PmyYwYqGt0Zb5mom/KTEndF05kcF8Gsa094RSwAAAJhfAHP9XwBz
-/QAAAAtzc2gtZWQyNTUxOQAAACB8e4c/PmyYwYqGt0Zb5mom/KTEndF05kcF8Gsa094RSw
-AAAECa55qWiuh60rKkJLljELR5X1FhzceY/beegVBrDPv6yXx7hz8+bJjBioa3Rlvmaib8
-pMSd0XTmRwXwaxrT3hFLAAAAE3dhbmxpekBFbnpvLU1hY0Jvb2sBAg==
------END OPENSSH PRIVATE KEY-----
-EOF
-    chmod 600 ~/.ssh/id_ed25519
-    echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL wanliz@Enzo-MacBook' > ~/.ssh/id_ed25519.pub
-    chmod 644 ~/.ssh/id_ed25519.pub
-    echo "Generated ~/.ssh/id_ed25519"
-fi 
-
-if [[ ! -f ~/.gtl_api_key ]]; then 
-    echo 'eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlODVjZDU4LTM2YWUtNGZkMS1iNzZkLTZkZmZhNDg2ZjIzYSIsInNlY3JldCI6IkpuMjN0RkJuNTVMc3JFOWZIZW9tWk56a1Qvc0hpZVoxTW9LYnVTSkxXZk09In0.NzUoZbUUPQbcwFooMEhG4O0nWjYJPjBiBi78nGkhUAQ' > ~/.gtl_api_key
-    chmod 500 ~/.gtl_api_key
-    echo "Generated ~/.gtl_api_key"
-fi 
-
-if [[ ! -f ~/.screenrc ]]; then 
-    cat >~/.screenrc <<EOF
-startup_message off
-hardstatus alwaysfirstline
-hardstatus string '%{= bW} [SCREEN %H] %=%-Lw %n:%t %+Lw %=%Y-%m-%d %c '
-EOF
-    echo "Generated ~/.screenrc"
-fi 
 
 echo -n "Updating /etc/hosts ... "
 added=0
