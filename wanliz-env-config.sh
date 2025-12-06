@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 
-if [[ -z $(which sudo) && $EUID -eq 0 ]]; then 
-    apt install -y sudo 
-fi 
-if [[ ! -z "$USER" && $EUID != 0 ]]; then 
-    echo -n "Enabling no-password sudo ... "
-    if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
-        echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
-        echo "[OK]"
-    else
-        echo "[SKIPPED]"
-    fi
+if [[ $USER == wanliz ]]; then 
+    if [[ -z $(which sudo) && $EUID -eq 0 ]]; then 
+        apt install -y sudo 
+    fi 
+    if [[ ! -z "$USER" && $EUID != 0 ]]; then 
+        echo -n "Enabling no-password sudo ... "
+        if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
+            echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
+            echo "[OK]"
+        else
+            echo "[SKIPPED]"
+        fi
+    fi 
 fi 
 
 
@@ -103,7 +105,7 @@ echo "Checking required packages ..."
 for cmd in "${!dependencies[@]}"; do
     if ! command -v "$cmd" &>/dev/null; then
         pkg="${dependencies[$cmd]}"
-        if ! confirm_to_install; do 
+        if ! confirm_to_install; then 
             continue 
         done 
         echo -n "Installing $pkg ... "
@@ -118,7 +120,7 @@ for pkg in python${python_version}-dev \
     python3-pip python3-protobuf protobuf-compiler 
 do 
     if ! dpkg -s $pkg &>/dev/null; then
-        if ! confirm_to_install; do 
+        if ! confirm_to_install; then  
             continue 
         done 
         echo -n "Installing $pkg ... "
@@ -135,7 +137,7 @@ if [[ ! -z $(which p4v) ]]; then
         libqt6multimedia6
     do 
         if ! dpkg -s $pkg &>/dev/null; then
-            if ! confirm_to_install; do 
+            if ! confirm_to_install; then 
                 continue 
             done 
             echo -n "Installing $pkg ... "
