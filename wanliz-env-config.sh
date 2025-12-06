@@ -90,6 +90,7 @@ function confirm_to_install() {
         read -p "Install missing packages on this system? [Y/n]: " choice
         if [[ -z $choice || $choice == y ]]; then 
             confirmed_to_install=1
+            return 0
         else
             confirmed_to_install=0
             return 1
