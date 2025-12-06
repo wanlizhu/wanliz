@@ -12,7 +12,7 @@ fi
 
 
 echo -n "Updating /etc/hosts ... "
-new_hosts_file="$(dirname $0)/hosts"
+new_hosts_file="$HOME/wanliz/hosts"
 tmp_hosts_file=$(mktemp)
 if [[ ! -f /etc/hosts ]]; then 
     : >$tmp_hosts_file
