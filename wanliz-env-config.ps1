@@ -19,6 +19,7 @@ trap {
     exit 1
 }
 
+# Disable Windows firewall and enable insecure guest auth
 Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters' -Name 'AllowInsecureGuestAuth' -Type DWord -Value 1
 $ErrorActionPreference = 'Stop'
 Set-ExecutionPolicy Bypass -Scope CurrentUser -Force
@@ -31,18 +32,22 @@ Get-NetFirewallProfile | Select-Object Name, Enabled
 if (Get-ScheduledTask -TaskName "WanlizStartupTasks" -ErrorAction SilentlyContinue) {
     Unregister-ScheduledTask -TaskName WanlizStartupTasks -Confirm:$false
 } 
-$script = "D:\wanliz\wanliz-startup-tasks.ps1"
-$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -File $script"
-$trigger = New-ScheduledTaskTrigger -AtLogOn 
-$principal = New-ScheduledTaskPrincipal -UserId 'NT AUTHORITY\SYSTEM' -LogonType ServiceAccount -RunLevel Highest
-$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RunOnlyIfNetworkAvailable
-Register-ScheduledTask -TaskName 'WanlizStartupTasks' `
-    -Action $action `
-    -Trigger $trigger `
-    -Principal $principal `
-    -Settings $settings `
-    -Force
-Write-Host "[OK]"
+$script = "$PSScriptRoot\wanliz-startup-tasks.ps1"
+if (Test-Path $script) {
+    $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -File $script"
+    $trigger = New-ScheduledTaskTrigger -AtLogOn 
+    $principal = New-ScheduledTaskPrincipal -UserId 'NT AUTHORITY\SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+    $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RunOnlyIfNetworkAvailable
+    Register-ScheduledTask -TaskName 'WanlizStartupTasks' `
+        -Action $action `
+        -Trigger $trigger `
+        -Principal $principal `
+        -Settings $settings `
+        -Force
+    Write-Host "[OK]"
+} else {
+    Write-Host "[FAILED]"
+}
 
 
 $hostsFile = "$env:SystemRoot\System32\drivers\etc\hosts"

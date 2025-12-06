@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-if [[ -z $DISPLAY ]];
+if [[ -z $DISPLAY ]]; then 
     export DISPLAY=:0
 fi 
 
-Xorg_pid=$(pgrep -ax Xorg 2>/dev/null | awk -v d="$display" '$0 ~ (" " d "($| )") { print $1; exit }')
+Xorg_pid=$(pgrep -ax Xorg 2>/dev/null | awk -v d="$DISPLAY" '$0 ~ (" " d "($| )") { print $1; exit }')
 if [[ -z $Xorg_pid ]]; then 
     echo "No Xorg process found for DISPLAY=$DISPLAY"
-    eixt 1
+    exit 1
 fi 
 
 function copy_xauth() {
@@ -38,7 +38,7 @@ if [[ -r /proc/$Xorg_pid/cmdline ]]; then
     args=()
     while IFS= read -r -d '' a; do 
         args+=("$a")
-    done < /proc/$xpid/cmdline
+    done < /proc/$Xorg_pid/cmdline
     for ((i=0; i<${#args[@]}-1; i++)); do
         [[ ${args[i]} == "-auth" ]] && xauth_file=${args[i+1]} && break
     done 
@@ -49,12 +49,12 @@ if [[ -n $xauth_file && -f $xauth_file ]]; then
     fi 
 fi 
 
-echo "Checking $Xorg_home/.Xauthority"
+echo "Checking original .Xauthority"
 Xorg_uid=$(stat -c '%u' "/proc/$Xorg_pid" 2>/dev/null || echo "")
 if [[ -n $Xorg_uid ]]; then 
     Xorg_home=$(getent passwd "$Xorg_uid" | cut -d: -f6)
-    if [[ -f "$Xorg_home/.Xauthority" ]]; then
-        if copy_auth "$Xorg_home/.Xauthority"; then
+    if [[ -n $Xorg_home && -f "$Xorg_home/.Xauthority" ]]; then
+        if copy_xauth "$Xorg_home/.Xauthority"; then
             success_and_exit 
         fi
     fi
@@ -67,9 +67,14 @@ if xhost 2>/dev/null | grep -qi 'access control disabled'; then
     exit 0
 fi
 
-Xorg_user=$(getent passwd "$xuid" | cut -d: -f1)
+Xorg_user=$(getent passwd "$Xorg_uid" | cut -d: -f1)
+if [[ -z $Xorg_user ]]; then
+    echo "Unable to determine Xorg user for pid $Xorg_pid"
+    exit 1
+fi
+
 echo "Trying to run xhost as $Xorg_user"
-sudo -u $Xorg_user DISPLAY=$DISPLAY xhost + && {
+sudo -u "$Xorg_user" DISPLAY=$DISPLAY xhost + && {
     echo "Access control disabled for $DISPLAY"
 } || {
     echo "Failed to run xhost as $Xorg_user"

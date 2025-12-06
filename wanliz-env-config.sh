@@ -113,14 +113,14 @@ if [[ ! -z $(which p4v) ]]; then
 fi 
 
 
-echo -n "Installing wanliz-utils to /usr/local/bin ... "
+echo -n "Installing wanliz-* scripts to /usr/local/bin ... "
 find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
     real_target=$(readlink -f "$link") || continue 
     if [[ $real_target == *"/wanliz/"* ]]; then 
         sudo rm -f "$link" &>/dev/null 
     fi 
 done 
-for file in "$(realpath $(dirname $0))/*"; do 
+for file in "$(realpath $(dirname $0))"/*; do 
     [[ -f "$file" && -x "$file" ]] || continue 
     cmdname=$(basename "$file")
     cmdname="${cmdname%.sh}"
@@ -196,10 +196,10 @@ fi
 
 if [[ -d /mnt/linuxqa/wanliz ]]; then 
     if [[ -z $(which p4) && -f /mnt/linuxqa/wanliz/p4.$(uname -m) ]]; then 
-        sudo cp -f /mnt/linuxqa/wanliz/p4.$(uname -m)/ /usr/local/bin/p4v/
+        sudo cp -f /mnt/linuxqa/wanliz/p4.$(uname -m) /usr/local/bin/p4 
     fi 
     if [[ ! -d $HOME/p4v && -d /mnt/linuxqa/wanliz/p4v.$(uname -m) ]]; then 
-        cp -rf /mnt/linuxqa/wanliz/p4v.$(uname -m)/. $HOME/p4v/
+        cp -rf /mnt/linuxqa/wanliz/p4v.$(uname -m)/  $HOME/p4v/ 
     fi 
 fi 
 

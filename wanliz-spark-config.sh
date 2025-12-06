@@ -18,7 +18,7 @@ if [[ $(uname -m) == "aarch64" ]]; then
         tests_tarball="$(dirname $(cat ~/.driver))/tests-Linux-$(uname -m).tar"
     fi 
 
-    if [[ -f $test_tarball ]]; then 
+    if [[ -f $tests_tarball ]]; then 
         sudo rm -rf /tmp/tests-Linux-$(uname -m)
         tar -xf $tests_tarball -C /tmp
         cp -f /tmp/tests-Linux-$(uname -m)/sandbag-tool/sandbag-tool ~

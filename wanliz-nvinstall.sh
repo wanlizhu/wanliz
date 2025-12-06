@@ -29,7 +29,7 @@ elif [[ $1 == "redo" ]]; then
         echo "Invalid path in ~/.driver"
         exit 1
     fi 
-    $(realpath $(dirname $0)) $(cat ~/.driver $2)
+    wanliz-nvinstall $(cat ~/.driver $@)
 elif [[ ! -z $1 ]]; then  
     if sudo test ! -d /root/nvt; then 
         sudo /mnt/linuxqa/nvt.sh sync
@@ -50,6 +50,5 @@ elif [[ ! -z $1 ]]; then
         fi 
     fi 
 else 
-    find /wanliz_sw_linux/dev /wanliz_sw_linux/rel -type d -name '_out' -exec find '{}' -type f -name 'NVIDIA-Linux*.run' \;
-2>/dev/null
+    find /wanliz_sw_linux/dev /wanliz_sw_linux/rel -type d -name '_out' -exec find '{}' -type f -name 'NVIDIA-Linux*.run' \; 2>/dev/null
 fi 
