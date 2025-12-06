@@ -92,6 +92,7 @@ function confirm_to_install() {
             confirmed_to_install=1
         else
             confirmed_to_install=0
+            return 1
         fi 
     elif [[ $confirmed_to_install == 0 ]]; then 
         return 1
