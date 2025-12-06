@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
-if [[ -z $P4CLIENT ]]; then 
-    eval "$(p4env.sh -print)"
-fi 
+export P4PORT="p4proxy-sc.nvidia.com:2006"
+export P4USER="wanliz"
+export P4CLIENT="wanliz_sw_linux"
+export P4ROOT="/wanliz_sw_linux"
 
 branch=r590
 target=.
