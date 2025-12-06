@@ -193,7 +193,11 @@ fi
 if mountpoint -q /mnt/linuxqa; then 
     echo "[SKIPPED]"
 else
-    timeout 5s sudo mount -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa && echo "[OK]" || echo "[FAILED] (exit=$?)"
+    timeout 5s sudo mount -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa && echo "[OK]" || {
+        echo "[FAILED] - rerun for debug info"
+        timeout 1s sudo mount -vvv -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa 
+        dmesg | tail -10
+    }
 fi 
 
 
