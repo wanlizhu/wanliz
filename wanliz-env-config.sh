@@ -3,15 +3,17 @@
 if [[ -z $(which sudo) && $EUID -eq 0 ]]; then 
     apt install -y sudo 
 fi 
-
-if [[ ! -z "$USER" ]]; then 
+if [[ ! -z "$USER" && $EUID != 0 ]]; then 
+    echo -n "Enabling no-password sudo ... "
     if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
         echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
+        echo "[OK]"
+    else
+        echo "[SKIPPED]"
     fi
 fi 
 
 
-echo -n "Updating /etc/hosts ... "
 new_hosts_file="$HOME/wanliz/hosts"
 tmp_hosts_file=$(mktemp)
 if [[ ! -f /etc/hosts ]]; then 
@@ -39,10 +41,13 @@ else
     }
     ' "$new_hosts_file" /etc/hosts > "$tmp_hosts_file"
 fi 
-cat $new_hosts_file >> $tmp_hosts_file
-sudo cp $tmp_hosts_file /etc/hosts
-sudo rm -f $tmp_hosts_file
-echo "[OK]"
+if [[ -f $new_hosts_file ]]; then 
+    echo -n "Checking /etc/hosts ... "
+    cat $new_hosts_file >> $tmp_hosts_file
+    sudo cp $tmp_hosts_file /etc/hosts
+    sudo rm -f $tmp_hosts_file
+    echo "[OK]"
+fi 
 
 
 declare -A dependencies=(
@@ -76,10 +81,31 @@ declare -A dependencies=(
     [ninja]=ninja-build
     [pkg-config]=pkg-config
 )
+confirmed_to_install=
+if [[ $USER == wanliz ]]; then
+    confirmed_to_install=1
+fi 
+function confirm_to_install() {
+    if [[ -z $confirmed_to_install ]]; then 
+        read -p "Install missing packages on this system? [Y/n]: " choice
+        if [[ -z $choice || $choice == y ]]; then 
+            confirmed_to_install=1
+        else
+            confirmed_to_install=0
+        fi 
+    elif [[ $confirmed_to_install == 0 ]]; then 
+        return 1
+    fi 
+    return 0
+}
+
 echo "Checking required packages ..."
 for cmd in "${!dependencies[@]}"; do
     if ! command -v "$cmd" &>/dev/null; then
         pkg="${dependencies[$cmd]}"
+        if ! confirm_to_install; do 
+            continue 
+        done 
         echo -n "Installing $pkg ... "
         sudo apt install -y "$pkg" >/dev/null 2>/tmp/err && echo "[OK]" || {
             echo "[FAILED]"
@@ -92,6 +118,9 @@ for pkg in python${python_version}-dev \
     python3-pip python3-protobuf protobuf-compiler 
 do 
     if ! dpkg -s $pkg &>/dev/null; then
+        if ! confirm_to_install; do 
+            continue 
+        done 
         echo -n "Installing $pkg ... "
         sudo apt install -y $pkg &>/dev/null && echo "[OK]" || echo "[FAILED]"
     fi 
@@ -106,6 +135,9 @@ if [[ ! -z $(which p4v) ]]; then
         libqt6multimedia6
     do 
         if ! dpkg -s $pkg &>/dev/null; then
+            if ! confirm_to_install; do 
+                continue 
+            done 
             echo -n "Installing $pkg ... "
             sudo apt install -y $pkg &>/dev/null && echo "[OK]" || echo "[FAILED]"
         fi 
@@ -130,20 +162,6 @@ for file in "$(realpath $(dirname $0))"/*; do
     sudo ln -sf "$file" "/usr/local/bin/$cmdname" &>/dev/null 
 done 
 echo "[OK]"
-
-
-declare -A required_folders=(
-    ["/mnt/linuxqa"]="linuxqa.nvidia.com:/storage/people"
-    ["/mnt/data"]="linuxqa.nvidia.com:/storage/data"
-    ["/mnt/builds"]="linuxqa.nvidia.com:/storage3/builds"
-    ["/mnt/dvsbuilds"]="linuxqa.nvidia.com:/storage5/dvsbuilds"
-)
-missing_required_folders=()
-for local_folder in "${!required_folders[@]}"; do
-    if ! mountpoint -q "$local_folder"; then 
-        missing_required_folders+=("$local_folder")
-    fi 
-done 
 
 
 if ! dpkg -s openssh-server >/dev/null 2>&1; then
@@ -211,21 +229,23 @@ if [[ -d /mnt/linuxqa/wanliz ]]; then
 fi 
 
 
-git_email=$(git config --global user.email 2>/dev/null || true)
-if [[ -z $git_email ]]; then
-    git config --global user.email "zhu.wanli@icloud.com"
-fi 
-git_name=$(git config --global user.name 2>/dev/null || true)
-if [[ -z $git_name ]]; then
-    git config --global user.name "Wanli Zhu"
-fi 
-git_editor=$(git config --global core.editor 2>/dev/null || true)
-if [[ -z $git_editor ]]; then
-    if [[ -z $(which vim) ]]; then 
-        sudo apt install -y vim 2>/dev/null
+if [[ $USER == wanliz ]]; then 
+    git_email=$(git config --global user.email 2>/dev/null || true)
+    if [[ -z $git_email ]]; then
+        git config --global user.email "zhu.wanli@icloud.com"
     fi 
-    git config --global core.editor "vim"
-fi
+    git_name=$(git config --global user.name 2>/dev/null || true)
+    if [[ -z $git_name ]]; then
+        git config --global user.name "Wanli Zhu"
+    fi 
+    git_editor=$(git config --global core.editor 2>/dev/null || true)
+    if [[ -z $git_editor ]]; then
+        if [[ -z $(which vim) ]]; then 
+            sudo apt install -y vim 2>/dev/null
+        fi 
+        git config --global core.editor "vim"
+    fi
+fi 
 
 function edit_config_file() {
     sudo python3 - "-file=$1" "-section=$2" "-name=$3" "-value=$4" <<'PY'
@@ -350,7 +370,7 @@ if __name__ == "__main__":
 PY
 }
 
-if [[ -d /mnt/c/Users/ ]]; then 
+if [[ $USER == wanliz && -d /mnt/c/Users/ ]]; then 
     echo -n "Checking appendWindowsPath=false in /etc/wsl.conf ... "
     if sudo grep -Eq '^[[:space:]]*appendWindowsPath[[:space:]]*=[[:space:]]*false[[:space:]]*$' /etc/wsl.conf 2>/dev/null; then
         echo "[SKIPPED]"
@@ -363,7 +383,7 @@ if [[ -d /mnt/c/Users/ ]]; then
     fi
 fi 
 
-if [[ ! -f ~/.vimrc ]]; then 
+if [[ $USER == wanliz && ! -f ~/.vimrc ]]; then 
     cat <<'EOF' > ~/.vimrc
 set expandtab
 set tabstop=4
@@ -372,7 +392,7 @@ set softtabstop=4
 EOF
 fi 
 
-if [[ ! -f ~/.screenrc ]]; then
+if [[ $USER == wanliz && ! -f ~/.screenrc ]]; then
     cat <<'EOF' > ~/.screenrc
 caption always "%{= bw}%{+b} %t (%n) | %H | %Y-%m-%d %c | load %l"
 hardstatus on
