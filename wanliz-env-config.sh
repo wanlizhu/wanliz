@@ -219,3 +219,5 @@ if [[ -z $git_editor ]]; then
     fi 
     git config --global core.editor "vim"
 fi
+
+echo "All done!"
