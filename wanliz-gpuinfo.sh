@@ -34,6 +34,9 @@ echo
 modinfo nvidia | egrep 'filename|version|firmware'
 
 echo 
+cat /proc/driver/nvidia/version
+
+echo 
 file /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.*
 
 echo 

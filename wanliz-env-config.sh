@@ -10,6 +10,41 @@ if [[ ! -z "$USER" ]]; then
     fi
 fi 
 
+
+echo -n "Updating /etc/hosts ... "
+new_hosts_file="$(dirname $0)/hosts"
+tmp_hosts_file=$(mktemp)
+if [[ ! -f /etc/hosts ]]; then 
+    : >$tmp_hosts_file
+else 
+    awk '
+    NR==FNR {
+        src_line = $0
+        cleaned_src_line = src_line
+        sub(/#.*/, "", cleaned_src_line)
+        sub(/^[[:space:]]+/, "", cleaned_src_line)
+        if (cleaned_src_line != "") {
+            split(cleaned_src_line, src_fields, /[[:space:]]+/)
+            new_ip_list[src_fields[1]] = 1
+        }
+        next
+    }
+    {
+        host_line = $0
+        cleaned_host_line = host_line
+        sub(/^[[:space:]]+/, "", cleaned_host_line)
+        if (cleaned_host_line ~ /^#/ || cleaned_host_line == "") { print host_line; next }
+        split(cleaned_host_line, host_fields, /[[:space:]]+/)
+        if (!(host_fields[1] in new_ip_list)) print host_line
+    }
+    ' "$new_hosts_file" /etc/hosts > "$tmp_hosts_file"
+fi 
+cat $new_hosts_file >> $tmp_hosts_file
+sudo cp $tmp_hosts_file /etc/hosts
+sudo rm -f $tmp_hosts_file
+echo "[OK]"
+
+
 declare -A dependencies=(
     [jq]=jq
     [rsync]=rsync
@@ -62,6 +97,7 @@ do
     fi 
 done 
 
+
 if [[ ! -z $(which p4v) ]]; then 
     for pkg in libkf5syntaxhighlighting5 \
         libqt6webenginewidgets6 \
@@ -76,31 +112,22 @@ if [[ ! -z $(which p4v) ]]; then
     done 
 fi 
 
+
 echo -n "Installing wanliz-utils to /usr/local/bin ... "
 find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
     real_target=$(readlink -f "$link") || continue 
-    if [[ $real_target == *"/wanliz-utils/"* ]]; then 
+    if [[ $real_target == *"/wanliz/"* ]]; then 
         sudo rm -f "$link" &>/dev/null 
     fi 
 done 
-failed_msg=""
-for file in "$(realpath $(dirname $0))/apps/wanliz-utils"/*; do 
+for file in "$(realpath $(dirname $0))/*"; do 
     [[ -f "$file" && -x "$file" ]] || continue 
-    name=$(basename "$file")
-    sudo ln -sf "$file" "/usr/local/bin/$name" &>/dev/null || {
-        failed_msg+=$'\n'"Failed to create symbolic link /usr/local/bin/$name"
-    }
+    cmdname=$(basename "$file")
+    cmdname="${cmdname%.sh}"
+    sudo ln -sf "$file" "/usr/local/bin/$cmdname" &>/dev/null 
 done 
-if [[ -z $failed_msg ]]; then 
-    echo "[OK]"
-else
-    echo "Error: $failed_msg"
-fi 
+echo "[OK]"
 
-echo -n "Installing gpu-perf-inspector ... "
-sudo rm -f /usr/local/bin/gpu-perf-inspector
-$(realpath $(dirname $0))/apps/gpu-perf-inspector/scripts/install.sh \
-    >/dev/null 2>/tmp/logs && echo "[OK]" || echo "Error: $(cat /tmp/logs)"
 
 declare -A required_folders=(
     ["/mnt/linuxqa"]="linuxqa.nvidia.com:/storage/people"
@@ -115,51 +142,6 @@ for local_folder in "${!required_folders[@]}"; do
     fi 
 done 
 
-echo -n "Mounting linuxqa folders ... "
-if (( ${#missing_required_folders[@]} > 0 )); then
-    failed_to_mount=
-    for local_folder in "${missing_required_folders[@]}"; do 
-        if [[ -z $failed_to_mount ]]; then 
-            remote_folder="${required_folders[$local_folder]}"
-            sudo mkdir -p "$local_folder"
-            sudo timeout 10 mount -t nfs "$remote_folder" "$local_folder" || { 
-                failed_to_mount=1
-            }
-        fi 
-    done 
-    if [[ -z $failed_to_mount ]]; then 
-        echo "[OK]"
-    else
-        echo "[FAILED]"
-    fi 
-else
-    echo "[SKIPPED]"
-fi
-
-if [[ -d /mnt/linuxqa/wanliz ]]; then 
-    if [[ -z $(which p4) && -f /mnt/linuxqa/wanliz/p4.$(uname -m) ]]; then 
-        sudo cp -f /mnt/linuxqa/wanliz/p4.$(uname -m)/ /usr/local/bin/p4v/
-    fi 
-    if [[ ! -d $HOME/p4v && -d /mnt/linuxqa/wanliz/p4v.$(uname -m) ]]; then 
-        cp -rf /mnt/linuxqa/wanliz/p4v.$(uname -m)/. $HOME/p4v/
-    fi 
-fi 
-
-git_email=$(git config --global user.email 2>/dev/null || true)
-if [[ -z $git_email ]]; then
-    git config --global user.email "zhu.wanli@icloud.com"
-fi 
-git_name=$(git config --global user.name 2>/dev/null || true)
-if [[ -z $git_name ]]; then
-    git config --global user.name "Wanli Zhu"
-fi 
-git_editor=$(git config --global core.editor 2>/dev/null || true)
-if [[ -z $git_editor ]]; then
-    if [[ -z $(which vim) ]]; then 
-        sudo apt install -y vim 2>/dev/null
-    fi 
-    git config --global core.editor "vim"
-fi
 
 if ! dpkg -s openssh-server >/dev/null 2>&1; then
     read -p "Install and set up OpenSSH server on this system? [Y/n]: " choice
@@ -178,22 +160,6 @@ if ! dpkg -s openssh-server >/dev/null 2>&1; then
     fi
 fi
 
-echo -n "Updating /etc/hosts ... "
-added=0
-while IFS= read line; do 
-    case "$line" in 
-        ""|\#*) continue ;;
-    esac
-    if ! grep "$line" /etc/hosts &>/dev/null; then 
-        echo "$line" | sudo tee -a /etc/hosts >/dev/null 
-        added=1
-    fi  
-done < "$(dirname $0)/hosts"
-if (( $added == 0 )); then 
-    echo "[SKIPPED]"
-else
-    echo "[OK]"
-fi 
 
 echo -n "Updating sshd to keep client alive ... "
 if ! sudo sshd -T | awk '
@@ -216,3 +182,40 @@ else
     echo "[SKIPPED]"
 fi 
 
+
+echo -n "Mounting /mnt/linuxqa ... "
+if [[ ! -d /mnt/linuxqa ]]; then 
+    sudo mkdir -p /mnt/linuxqa 
+fi 
+if mountpoint -q /mnt/linuxqa; then 
+    echo "[SKIPPED]"
+else
+    sudo mount -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa && echo "[OK]" || echo "[FAILED] (exit=$?)"
+fi 
+
+
+if [[ -d /mnt/linuxqa/wanliz ]]; then 
+    if [[ -z $(which p4) && -f /mnt/linuxqa/wanliz/p4.$(uname -m) ]]; then 
+        sudo cp -f /mnt/linuxqa/wanliz/p4.$(uname -m)/ /usr/local/bin/p4v/
+    fi 
+    if [[ ! -d $HOME/p4v && -d /mnt/linuxqa/wanliz/p4v.$(uname -m) ]]; then 
+        cp -rf /mnt/linuxqa/wanliz/p4v.$(uname -m)/. $HOME/p4v/
+    fi 
+fi 
+
+
+git_email=$(git config --global user.email 2>/dev/null || true)
+if [[ -z $git_email ]]; then
+    git config --global user.email "zhu.wanli@icloud.com"
+fi 
+git_name=$(git config --global user.name 2>/dev/null || true)
+if [[ -z $git_name ]]; then
+    git config --global user.name "Wanli Zhu"
+fi 
+git_editor=$(git config --global core.editor 2>/dev/null || true)
+if [[ -z $git_editor ]]; then
+    if [[ -z $(which vim) ]]; then 
+        sudo apt install -y vim 2>/dev/null
+    fi 
+    git config --global core.editor "vim"
+fi
