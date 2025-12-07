@@ -116,8 +116,9 @@ for cmd in "${!dependencies[@]}"; do
     fi
 done
 python_version=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
-for pkg in python${python_version}-dev \
-    python3-pip python3-protobuf protobuf-compiler 
+for pkg in python${python_version}-dev python${python_version}-venv \
+    python3-pip python3-protobuf protobuf-compiler \
+    libxcb-dri2-0
 do 
     if ! dpkg -s $pkg &>/dev/null; then
         if ! confirm_to_install; then  

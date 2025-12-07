@@ -36,7 +36,7 @@ case $1 in
                     print s
                     exit
                 }')
-            echo "function run-and-profile-inside-nsys() { : \${NAME:=nsys_\$(hostname)_\$(date +%Y%m%d)} ; sudo $HOME/nsight_systems/bin/nsys profile --trace=vulkan,opengl,cuda,nvtx,osrt --vulkan-gpu-workload=individual --sample=process-tree --sampling-period=$sampling_period --samples-per-backtrace=1 --backtrace=dwarf --cpuctxsw=process-tree --syscall=process-tree --gpu-metrics-devices=all --gpu-metrics-frequency=$metrics_freq --stats=true --export=sqlite,text --resolve-symbols=true --force-overwrite=true --stop-on-exit=true --wait=all --show-output=true --output=\$NAME $@ ; }; run-and-profile-inside-nsys <...>" 
+            echo "function run-and-profile-inside-nsys() { : \${NAME:=nsys_\$(hostname)_\$(date +%Y%m%d)} ; sudo $HOME/nsight_systems/bin/nsys profile --trace=vulkan,opengl,cuda,nvtx,osrt --vulkan-gpu-workload=individual --sample=process-tree --sampling-period=$sampling_period --samples-per-backtrace=1 --backtrace=dwarf --cpuctxsw=process-tree --syscall=process-tree --gpu-metrics-devices=all --gpu-metrics-frequency=$metrics_freq --stats=true --export=sqlite,text --resolve-symbols=true --force-overwrite=true --stop-on-exit=true --wait=all --show-output=true --output=\$NAME \$@ ; }; run-and-profile-inside-nsys <...>" 
         else
             echo "$HOME/nsight_systems/bin/nsys doesn't exist"
             echo "Install Nsight systems: https://urm.nvidia.com/artifactory/swdt-nsys-generic/ctk/"
