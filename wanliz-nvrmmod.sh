@@ -19,6 +19,11 @@ if [[ ! -z $(cat /tmp/nvidia_cmds | grep 'nvidia-persistenced') ]]; then
         echo "sudo $(cat /tmp/nvidia_cmds | grep 'nvidia-persistenced' | awk -F';' '{print $2}')" >>/tmp/nvrmmod.restore
     fi 
 fi 
+if [[ ! -z $(nvidia-smi -q | grep -i "Persistence Mode" | grep "Enabled") ]]; then 
+    sudo nvidia-smi -pm 0
+    echo "Disabled persistence mode through nvidia-smi"
+    echo "sudo nvidia-smi -pm 1" >>/tmp/nvrmmod.restore
+fi 
 
 remove_pkg_drivers=
 if [[ $remove_pkg_drivers == 1 ]]; then 
