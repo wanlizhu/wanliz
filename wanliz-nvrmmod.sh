@@ -21,7 +21,6 @@ if [[ ! -z $(cat /tmp/nvidia_cmds | grep 'nvidia-persistenced') ]]; then
 fi 
 if [[ ! -z $(nvidia-smi -q | grep -i "Persistence Mode" | grep "Enabled") ]]; then 
     sudo nvidia-smi -pm 0
-    echo "Disabled persistence mode through nvidia-smi"
     echo "sudo nvidia-smi -pm 1" >>/tmp/nvrmmod.restore
 fi 
 
