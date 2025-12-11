@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ -d /wanliz_sw_linux ]]; then 
-    export P4PORT="p4proxy-sc.nvidia.com:2006"
-    export P4USER="wanliz"
-    export P4CLIENT="wanliz_sw_linux"
-    export P4ROOT="/wanliz_sw_linux"
-    export NV_SOURCE="/wanliz_sw_linux/dev/gpu_drv/bugfix_main"
+    exit 1
 elif [[ -d /wanliz_sw_windows_wsl2 ]]; then 
     export P4PORT="p4proxy-sc.nvidia.com:2006"
     export P4USER="wanliz"

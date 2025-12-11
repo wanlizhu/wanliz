@@ -5,7 +5,7 @@ if [[ $1 == -h || $1 == --help ]]; then
     echo ""
     echo "CONFIG:  develop (default), debug, release"
     echo "  ARCH:  amd64 (default), aarch64"
-    echo "TARGET:  opengl (default), drivers"
+    echo "TARGET:  opengl, drivers, (run in cwd if not specified)"
     echo ""
     echo "Options:"
     echo "  -j1          build with 1 job (default: $(nproc))"
