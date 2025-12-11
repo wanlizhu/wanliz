@@ -15,7 +15,7 @@ if [[ $1 == -h || $1 == --help ]]; then
     exit 0
 fi
 
-TARGET=opengl
+TARGET=
 CONFIG=develop
 ARCH=$(uname -m | sed 's/x86_64/amd64/g')
 JOBS=$(nproc)
@@ -126,7 +126,15 @@ if [[ $CC == 1 ]]; then
     fi
 fi 
 
-cd $NV_SOURCE || exit 1
+if [[ -z $TARGET ]]; then 
+    if [[ ! -f makefile.nvmk ]]; then 
+        echo "makefile.nvmk doesn't exist"
+        exit 1
+    fi 
+else 
+    cd $NV_SOURCE || exit 1
+fi 
+
 $P4ROOT/tools/linux/unix-build/unix-build \
     --unshare-namespaces \
     --tools $P4ROOT/tools \
