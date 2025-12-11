@@ -5,6 +5,9 @@ if [[ -z $DISPLAY ]]; then
     echo "Fallback to DISPLAY=$DISPLAY"
 fi 
 
+ip=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
+echo "My IP: $ip"
+
 echo 
 echo "X server info:"
 if timeout 2s bash -lc 'command -v xdpyinfo >/dev/null && xdpyinfo >/dev/null 2>&1 || xset q >/dev/null 2>&1'; then 

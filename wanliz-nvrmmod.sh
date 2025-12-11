@@ -46,3 +46,23 @@ awk '{for (i=1; i<=NF; i++) print $i}' /tmp/nvidia_pids | sort -u | while IFS= r
     [[ $pid -eq 1 || $pid -eq $$ ]] && continue
     sudo kill -9 $pid  && echo "Killing $pid ... [OK]" || echo "Killing $pid ... [FAILED]"
 done 
+
+function rmmod_recursive() {
+    local output 
+    if output=$(sudo rmmod "$1" 2>&1); then 
+        echo "Removed module $1"
+    else 
+        if [[ $output =~ in\ use\ by:\ (.+)$ ]]; then 
+            local depends="${BASH_REMATCH[1]}"
+            for dep in $depends; do 
+                rmmod_recursive "$dep" || return 1
+            done 
+            sudo rmmod "$1" || return 1
+        else
+            echo "$output"
+            return 1
+        fi 
+    fi 
+    return 0
+}
+rmmod_recursive nvidia

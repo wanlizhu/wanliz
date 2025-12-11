@@ -1,41 +1,123 @@
 #!/usr/bin/env bash
 
-export P4PORT="p4proxy-sc.nvidia.com:2006"
-export P4USER="wanliz"
-export P4CLIENT="wanliz_sw_linux"
-export P4ROOT="/wanliz_sw_linux"
-
-branch=r590
-target=.
-config=develop 
-arch=$(uname -m | sed 's/x86_64/amd64/g')
-jobs=$(nproc)
-print=
-regen=
-install=
-
+TARGET=opengl
+CONFIG=develop
+ARCH=$(uname -m | sed 's/x86_64/amd64/g')
+JOBS=$(nproc)
+CC=
+EXTRA_ARGS=
 while [[ ! -z $1 ]]; do 
     case $1 in 
-        bugfix_main|r580|r590) branch=$1 ;;
-        sweep|drivers|opengl|inspect-gpu-page-tables|microbench) target=$1 ;;
-        debug|release|develop) config=$1 ;;
-        amd64|x64|x86_64) arch=amd64 ;;
-        aarch64|arm64) arch=aarch64 ;;
-        -j1) jobs=1 ;;
-        -print) print=1 ;;
-        -regen) regen=1 ;;
-        -install) install=1 ;;
-        *) echo "Unknown option: $1" ;;
+        debug|release|develop) CONFIG=$1 ;;
+        amd64|x64|x86_64) ARCH=amd64 ;;
+        aarch64|arm64) ARCH=aarch64 ;;
+        opengl) TARGET=opengl ;;
+        drivers) TARGET="drivers dist" ;;
+        -j1) JOBS=1 ;;
+        -cc) CCJSON=1 ;;
+        *) EXTRA_ARGS+=" $1" ;;
     esac
     shift 
 done 
 
-[[ $config == "release" ]] && trace_code=0 || trace_code=1
+if [[ -d /wanliz_sw_linux ]]; then 
+    export P4PORT="p4proxy-sc.nvidia.com:2006"
+    export P4USER="wanliz"
+    export P4CLIENT="wanliz_sw_linux"
+    export P4ROOT="/wanliz_sw_linux"
+    export NV_SOURCE="/wanliz_sw_linux/dev/gpu_drv/bugfix_main"
+elif [[ -d /wanliz_sw_windows_wsl2 ]]; then 
+    export P4PORT="p4proxy-sc.nvidia.com:2006"
+    export P4USER="wanliz"
+    export P4CLIENT="wanliz_sw_windows_wsl2"
+    export P4ROOT="/wanliz_sw_windows_wsl2"
+    export NV_SOURCE="/wanliz_sw_windows_wsl2/workingbranch"
+fi 
 
-unixbuild_args="--unshare-namespaces \
+if [[ $CC == 1 ]]; then 
+    cd $NV_SOURCE/drivers/OpenGL || exit 1
+    $P4ROOT/tools/linux/unix-build/unix-build \
+        --unshare-namespaces \
+        --tools $P4ROOT/tools \
+        --devrel $P4ROOT/devrel/SDK/inc/GL \
+        nvmake \
+        NV_COLOR_OUTPUT=0 \
+        NV_TRACE_CODE=1 \
+        NV_USE_FRAME_POINTER=1 \
+        linux $ARCH $CONFIG -Bn 2>&1 | \
+        grep "set -e.*gcc.*-c" | \
+        sed 's/^.*set -e ; *//' | \
+        sed 's/ ; \/bin\/sed.*//' | \
+        sed 's/^/clang /' > /tmp/nvmake.ccjson
+    num_commands=$(wc -l < /tmp/nvmake.ccjson)
+    echo "Found $num_commands compile commands"
+    if [[ $num_commands -gt 0 ]]; then
+        echo "[" > compile_commands.json
+        firstline=true
+        while IFS= read -r line; do 
+            [[ -z $line ]] && continue 
+            srcfile=$(echo "$line" | grep -oE '\-c +[^ ]+\.(c|cpp|cc|cxx)' | sed 's/-c *//' | head -1)
+            if [[ -z "$srcfile" ]]; then
+                srcfile=$(echo "$line" | grep -oE '[^ ]+\.(c|cpp|cc|cxx)' | head -1)
+            fi
+            [[ -z "$srcfile" ]] && continue
+            [[ "$srcfile" != /* ]] && srcfile="$NV_SOURCE/drivers/OpenGL/$srcfile"
+            [[ "$firstline" == false ]] && echo "," >> compile_commands.json
+            firstline=false
+            command=$(echo "$line" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
+            command_cleaned=
+            for cmdpart in $command; do 
+                cmdpart_ignore=
+                for arg in  "-gas-loc-support" \
+                            "-Wformat-overflow" \
+                            "-Wformat-truncation" \
+                            "-Wno-error=" \
+                            "-Wno-class-memaccess" \
+                            "-Wno-stringop-truncation" \
+                            "-nostdinc" \
+                            "-march=" \
+                            "-mtune=" \
+                            "-mfpmath=" \
+                            "--sysroot="; do 
+                    case $cmdpart in 
+                        "$arg"|"$arg"*) cmdpart_ignore=1 ;;
+                    esac
+                done 
+                if [[ $cmdpart == "-isystem"* ]]; then 
+                    cmdpart="-I${cmdpart#-isystem}"
+                fi 
+                if [[ $cmdpart == "-I"* ]]; then 
+                    path=${cmdpart#-I}
+                    if [[ -d $NV_SOURCE/drivers/OpenGL/$path ]]; then 
+                        cmdpart="-I$(realpath $NV_SOURCE/drivers/OpenGL/$path)"
+                    fi 
+                fi 
+                if [[ $cmdpart == *"/gcc-"* || $cmdpart == *"binutils-"* ]]; then 
+                    continue 
+                fi 
+                if [[ $cmdpart_ignore == 1 ]]; then 
+                    continue 
+                fi 
+                command_cleaned+=" $cmdpart"
+            done 
+            echo "{" >> compile_commands.json
+            echo "    \"directory\": \"$NV_SOURCE/drivers/OpenGL\"," >> compile_commands.json
+            echo "    \"command\": \"$command_cleaned\"," >> compile_commands.json
+            echo "    \"file\": \"$srcfile\"" >> compile_commands.json
+            echo "}" >> compile_commands.json
+        done < /tmp/nvmake.ccjson 
+        echo "" >> compile_commands.json
+        echo "]" >> compile_commands.json
+    fi
+fi 
+
+cd $NV_SOURCE || exit 1
+$P4ROOT/tools/linux/unix-build/unix-build \
+    --unshare-namespaces \
     --tools $P4ROOT/tools \
-    --devrel $P4ROOT/devrel/SDK/inc/GL "
-nvmake_args="NV_COLOR_OUTPUT=1 \
+    --devrel $P4ROOT/devrel/SDK/inc/GL \
+    nvmake \
+    NV_COLOR_OUTPUT=1 \
     NV_GUARDWORD= \
     NV_COMPRESS_THREADS=$(nproc) \
     NV_FAST_PACKAGE_COMPRESSION=zstd \
@@ -44,81 +126,5 @@ nvmake_args="NV_COLOR_OUTPUT=1 \
     NV_LTCG= \
     NV_UNIX_CHECK_DEBUG_INFO=0 \
     NV_MANGLE_SYMBOLS= \
-    NV_TRACE_CODE=$trace_code \
-    linux $config $arch"
-
-if [[ $branch == "bugfix_main" ]]; then 
-    branchdir="$P4ROOT/dev/gpu_drv/bugfix_main"
-    workdir=$branchdir
-elif [[ $branch == "r580" ]]; then
-    branchdir="$P4ROOT/rel/gpu_drv/r580/r580_00"
-    workdir=$branchdir
-elif [[ $branch == "r590" ]]; then
-    branchdir="$P4ROOT/rel/gpu_drv/r590/r590_00"
-    workdir=$branchdir
-else
-    echo "Invalid branch \"$branch\""
-    exit 1
-fi 
-
-if [[ $target == "drivers" ]]; then 
-    nvmake_args+=" drivers dist"
-elif [[ $target == "opengl" ]]; then 
-    workdir="$branchdir/drivers/OpenGL"
-elif [[ $target == "inspect-gpu-page-tables" ]]; then 
-    unixbuild_args+=" --source $branchdir --envvar NV_SOURCE=$branchdir --extra $P4ROOT/pvt/aritger"
-    workdir="$P4ROOT/pvt/aritger/apps/inspect-gpu-page-tables"
-elif [[ $target == "microbench" ]]; then 
-    workdir="$P4ROOT/apps/gpu/drivers/vulkan/microbench"
-elif [[ $target == "sweep" ]]; then 
-    cd $branchdir &&
-    $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake sweep 
-    exit 0
-else
-    if [[ -f makefile.nvmk ]]; then 
-        workdir="$(pwd)"
-    else
-        echo "Invalid target: \"$target\""
-        exit 1
-    fi 
-fi 
-
-if [[ $print -eq 1 ]]; then 
-    echo "$P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args -j$jobs"
-    echo 
-fi 
-
-echo "$branch => $target => linux $arch $config"
-read -p "Press [Enter] to continue: "
-
-
-if [[ $regen -eq 1 ]]; then 
-    cd $branchdir/drivers/OpenGL || exit 1
-    $P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args @regenerate -j$jobs
-fi 
-
-cd $workdir || exit 1
-$P4ROOT/tools/linux/unix-build/unix-build $unixbuild_args nvmake $nvmake_args -j$jobs 2>/tmp/std2
-if [[ ${PIPESTATUS[0]} -ne 0 ]]; then 
-    cat /tmp/std2 | grep -i 'error:\|: \*\*\*'
-    exit 1
-fi 
-
-if [[ $install -eq 1 ]]; then 
-    if [[ $(basename $(pwd)) == "OpenGL" ]]; then 
-        if [[ "${arch/amd64/x86_64}" == "$(uname -m)" ]]; then 
-            sys_dso=$(ls /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so* | head -1)
-            backup_dso="/tmp/$(basename $sys_dso)"
-            if [[ ! -f $backup_dso ]]; then 
-                sudo cp --force $sys_dso $backup_dso
-            fi 
-            sudo cp --force --remove-destination --verbose \
-                "$(pwd)/_out/Linux_${arch}_${config}/libnvidia-glcore.so" \
-                "/usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.${sys_dso##*.so.}"
-        else
-            echo "Intall $arch build on a $(uname -m) system ... [SKIPPED]"
-        fi 
-    else
-        echo "-install option for $(basename $(pwd)) ... [SKIPPED]"
-    fi 
-fi 
+    NV_TRACE_CODE=$([[ $CONFIG == release ]] && echo 0 || echo 1) \
+    linux $TARGET $ARCH $CONFIG -j$JOBS $EXTRA_ARGS
