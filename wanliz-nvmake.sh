@@ -1,5 +1,20 @@
 #!/usr/bin/env bash
 
+if [[ $1 == -h || $1 == --help ]]; then 
+    echo "Usage: $0 [CONFIG] [ARCH] [TARGET] [options] [-- extra nvmake args]"
+    echo ""
+    echo "CONFIG:  develop (default), debug, release"
+    echo "  ARCH:  amd64 (default), aarch64"
+    echo "TARGET:  opengl (default), drivers"
+    echo ""
+    echo "Options:"
+    echo "  -j1          build with 1 job (default: $(nproc))"
+    echo "  -cc          generate compile_commands.json"
+    echo ""
+    echo "Any other arguments are passed through as EXTRA_ARGS to nvmake."
+    exit 0
+fi
+
 TARGET=opengl
 CONFIG=develop
 ARCH=$(uname -m | sed 's/x86_64/amd64/g')
