@@ -26,7 +26,7 @@ while [[ ! -z $1 ]]; do
         debug|release|develop) CONFIG=$1 ;;
         amd64|x64|x86_64) ARCH=amd64 ;;
         aarch64|arm64) ARCH=aarch64 ;;
-        opengl) TARGET=opengl ;;
+        opengl|sweep) TARGET=$1 ;;
         drivers) TARGET="drivers dist" ;;
         -j1) JOBS=1 ;;
         -cc) CCJSON=1 ;;
