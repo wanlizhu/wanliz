@@ -86,9 +86,6 @@ if [[ ! -z $(which p4v) ]]; then
     done 
 fi 
 
-echo -n "Checking autofs status ... "
-
-
 echo -n "Installing wanliz-* scripts to /usr/local/bin ... "
 find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
     if real_target=$(readlink -f "$link"); then  
