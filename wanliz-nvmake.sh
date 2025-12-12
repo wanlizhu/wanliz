@@ -50,6 +50,7 @@ elif [[ -d /wanliz_sw_windows_wsl2 ]]; then
 fi 
 
 if [[ $CC == 1 ]]; then 
+    echo "Generating compile_commands.json"
     cd $NV_SOURCE/drivers/OpenGL || exit 1
     $P4ROOT/tools/linux/unix-build/unix-build \
         --unshare-namespaces \
@@ -67,6 +68,7 @@ if [[ $CC == 1 ]]; then
     num_commands=$(wc -l < /tmp/nvmake.ccjson)
     echo "Found $num_commands compile commands"
     if [[ $num_commands -gt 0 ]]; then
+        echo "Fixing command arguments for clang"
         echo "[" > compile_commands.json
         firstline=true
         while IFS= read -r line; do 
