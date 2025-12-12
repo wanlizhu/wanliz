@@ -96,7 +96,7 @@ find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link;
         sudo rm -f "$link" &>/dev/null 
     fi 
 done 
-for file in "$(realpath $(dirname $0))"/*; do 
+for file in $HOME/wanliz/*; do 
     [[ -f "$file" && -x "$file" ]] || continue 
     cmdname=$(basename "$file")
     cmdname="${cmdname%.sh}"
