@@ -123,6 +123,7 @@ if [[ $CC == 1 ]]; then
         done < /tmp/nvmake.ccjson 
         echo "" >> compile_commands.json
         echo "]" >> compile_commands.json
+        echo "Generated compile_commands.json"
     fi
 fi 
 
