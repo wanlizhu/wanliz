@@ -50,75 +50,14 @@ if [[ -f $new_hosts_file ]]; then
 fi 
 
 
-declare -A dependencies=(
-    [jq]=jq
-    [rsync]=rsync
-    [vim]=vim
-    [curl]=curl
-    [screen]=screen
-    [sshpass]=sshpass
-    [lsof]=lsof
-    [xhost]=x11-xserver-utils
-    [xrandr]=x11-xserver-utils
-    [xset]=x11-utils
-    [xdpyinfo]=x11-utils
-    [openbox]=openbox
-    [obconf]=obconf
-    [x11vnc]=x11vnc
-    [glxinfo]=mesa-utils
-    [X]=xserver-xorg-core
-    [mount.nfs]=nfs-common
-    [showmount]=nfs-common
-    [mount.cifs]=cifs-utils
-    [exportfs]=nfs-kernel-server
-    [smbd]=samba
-    [testparm]=samba-common-bin
-    [pdbedit]=samba-common-bin
-    [smbpasswd]=samba-common-bin
-    [socat]=socat
-    [cmake]=cmake
-    [g++]=build-essential
-    [ninja]=ninja-build
-    [pkg-config]=pkg-config
-)
-confirmed_to_install=
-if [[ $USER == wanliz ]]; then
-    confirmed_to_install=1
-fi 
-function confirm_to_install() {
-    if [[ -z $confirmed_to_install ]]; then 
-        read -p "Install missing packages on this system? [Y/n]: " choice
-        if [[ -z $choice || $choice == y ]]; then 
-            confirmed_to_install=1
-            return 0
-        else
-            confirmed_to_install=0
-            return 1
-        fi 
-    elif [[ $confirmed_to_install == 0 ]]; then 
-        return 1
-    fi 
-    return 0
-}
-
-echo "Checking required packages ..."
-for cmd in "${!dependencies[@]}"; do
-    if ! command -v "$cmd" &>/dev/null; then
-        pkg="${dependencies[$cmd]}"
-        if ! confirm_to_install; then 
-            continue 
-        fi 
-        echo -n "Installing $pkg ... "
-        sudo apt install -y "$pkg" >/dev/null 2>/tmp/err && echo "[OK]" || {
-            echo "[FAILED]"
-            cat /tmp/err 
-        }
-    fi
-done
 python_version=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
 for pkg in python${python_version}-dev python${python_version}-venv \
     python3-pip python3-protobuf protobuf-compiler \
-    libxcb-dri2-0
+    libxcb-dri2-0 nis autofs jq rsync vim curl screen sshpass \
+    lsof x11-xserver-utils x11-utils openbox obconf x11vnc \
+    mesa-utils vulkan-tools xserver-xorg-core \
+    samba samba-common-bin socat cmake build-essential \
+    ninja-build pkg-config
 do 
     if ! dpkg -s $pkg &>/dev/null; then
         if ! confirm_to_install; then  
@@ -146,6 +85,8 @@ if [[ ! -z $(which p4v) ]]; then
         fi 
     done 
 fi 
+
+echo -n "Checking autofs status ... "
 
 
 echo -n "Installing wanliz-* scripts to /usr/local/bin ... "

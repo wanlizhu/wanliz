@@ -135,7 +135,7 @@ else
     cd $NV_SOURCE || exit 1
 fi 
 
-$P4ROOT/tools/linux/unix-build/unix-build \
+time $P4ROOT/tools/linux/unix-build/unix-build \
     --unshare-namespaces \
     --tools $P4ROOT/tools \
     --devrel $P4ROOT/devrel/SDK/inc/GL \
