@@ -29,7 +29,7 @@ while [[ ! -z $1 ]]; do
         opengl|sweep) TARGET=$1 ;;
         drivers) TARGET="drivers dist" ;;
         -j1) JOBS=1 ;;
-        -cc) CCJSON=1 ;;
+        -cc) CC=1 ;;
         *) EXTRA_ARGS+=" $1" ;;
     esac
     shift 
