@@ -148,31 +148,6 @@ else
 fi 
 
 
-echo -n "Mounting /mnt/linuxqa ... "
-if [[ ! -d /mnt/linuxqa ]]; then 
-    sudo mkdir -p /mnt/linuxqa 
-fi 
-if mountpoint -q /mnt/linuxqa; then 
-    echo "[SKIPPED]"
-else
-    timeout 5s sudo mount -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa && echo "[OK]" || {
-        echo "[FAILED] - rerun for debug info"
-        timeout 1s sudo mount -vvv -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa 
-        dmesg | tail -10
-    }
-fi 
-
-
-if [[ -d /mnt/linuxqa/wanliz ]]; then 
-    if [[ -z $(which p4) && -f /mnt/linuxqa/wanliz/p4.$(uname -m) ]]; then 
-        sudo cp -f /mnt/linuxqa/wanliz/p4.$(uname -m) /usr/local/bin/p4 
-    fi 
-    if [[ ! -d $HOME/p4v && -d /mnt/linuxqa/wanliz/p4v.$(uname -m) ]]; then 
-        cp -rf /mnt/linuxqa/wanliz/p4v.$(uname -m)/  $HOME/p4v/ 
-    fi 
-fi 
-
-
 if [[ $USER == wanliz ]]; then 
     git_email=$(git config --global user.email 2>/dev/null || true)
     if [[ -z $git_email ]]; then
@@ -342,6 +317,31 @@ caption always "%{= bw}%{+b} %t (%n) | %H | %Y-%m-%d %c | load %l"
 hardstatus on
 hardstatus alwayslastline "%{= kW}%-w%{= kG}%n*%t%{-}%+w %=%{= ky}%H %{= kw}%Y-%m-%d %c %{= kc}load %l"
 EOF
+fi 
+
+
+echo -n "Mounting /mnt/linuxqa ... "
+if [[ ! -d /mnt/linuxqa ]]; then 
+    sudo mkdir -p /mnt/linuxqa 
+fi 
+if mountpoint -q /mnt/linuxqa; then 
+    echo "[SKIPPED]"
+else
+    timeout 5s sudo mount -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa && echo "[OK]" || {
+        echo "[FAILED] - rerun for debug info"
+        timeout 1s sudo mount -vvv -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa 
+        dmesg | tail -10
+    }
+fi 
+
+
+if [[ -d /mnt/linuxqa/wanliz ]]; then 
+    if [[ -z $(which p4) && -f /mnt/linuxqa/wanliz/p4.$(uname -m) ]]; then 
+        sudo cp -f /mnt/linuxqa/wanliz/p4.$(uname -m) /usr/local/bin/p4 
+    fi 
+    if [[ ! -d $HOME/p4v && -d /mnt/linuxqa/wanliz/p4v.$(uname -m) ]]; then 
+        cp -rf /mnt/linuxqa/wanliz/p4v.$(uname -m)/  $HOME/p4v/ 
+    fi 
 fi 
 
 echo "All done!"
