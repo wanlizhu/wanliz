@@ -73,13 +73,12 @@ time $P4ROOT/tools/linux/unix-build/unix-build \
     NV_UNIX_CHECK_DEBUG_INFO=0 \
     NV_MANGLE_SYMBOLS= \
     NV_TRACE_CODE=$([[ $CONFIG == release ]] && echo 0 || echo 1) \
-    linux $TARGET $ARCH $CONFIG -j$JOBS $EXTRA_ARGS || exit 1
+    linux $TARGET $ARCH $CONFIG -j$JOBS $EXTRA_ARGS
 
 if [[ $CC == 1 ]]; then 
     echo "Generating _out/compile_commands.json"
     rm -f /tmp/nvmake.out /tmp/nvmake.err 
     rm -f _out/compile_commands.json compile_commands.json
-    
     cd $NV_SOURCE/drivers/OpenGL || exit 1
     $P4ROOT/tools/linux/unix-build/unix-build \
         --unshare-namespaces \
@@ -91,7 +90,7 @@ if [[ $CC == 1 ]]; then
         NV_USE_FRAME_POINTER=1 \
         NV_GUARDWORD= \
         NV_MANGLE_SYMBOLS= \
-        linux $ARCH $CONFIG -Bn -j$(nproc) >/tmp/nvmake.out 2>/tmp/nvmake.err && {
+        linux $ARCH $CONFIG -Bn >/tmp/nvmake.out 2>/tmp/nvmake.err && {
         cat /tmp/nvmake.out |  
         grep "set -e.*gcc.*-c" | 
         sed 's/^.*set -e ; *//' |  
@@ -168,9 +167,15 @@ if [[ $CC == 1 ]]; then
                 skip_next=1
                 continue
             fi 
-            # Convert -isystem to -I with absolute path
+            # Convert -isystem to -I, but keep GCC C++ headers as -isystem for clangd compatibility
             if [[ $cmdpart == "-isystem"* ]]; then 
-                cmdpart="-I${cmdpart#-isystem}"
+                path="${cmdpart#-isystem}"
+                # Keep GCC's C++ standard library headers as -isystem so clangd can find them
+                if [[ "$path" == *"/include/c++"* || "$path" == *"/glibc-"* || "$path" == *"/linux-libc-headers"* ]]; then
+                    cmdpart="-isystem$path"
+                else
+                    cmdpart="-I$path"
+                fi
             fi 
             # Ensure all -I paths are absolute
             if [[ $cmdpart == "-I"* ]]; then 
