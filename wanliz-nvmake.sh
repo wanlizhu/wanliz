@@ -123,32 +123,67 @@ if [[ $CC == 1 ]]; then
         firstline=false
         command=$(echo "$line" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
         command_cleaned=
+        skip_next=
         for cmdpart in $command; do 
+            if [[ $skip_next == 1 ]]; then 
+                skip_next=
+                continue
+            fi
             cmdpart_ignore=
+            # GCC-specific flags that clang doesn't understand or are not needed for clangd
             for arg in  "-gas-loc-support" \
                         "-Wformat-overflow" \
                         "-Wformat-truncation" \
                         "-Wno-error=" \
                         "-Wno-class-memaccess" \
                         "-Wno-stringop-truncation" \
+                        "-Winvalid-pch" \
+                        "-Wno-format-zero-length" \
                         "-nostdinc" \
                         "-march=" \
                         "-mtune=" \
                         "-mfpmath=" \
-                        "--sysroot="; do 
+                        "-mstackrealign" \
+                        "-flto=" \
+                        "-fasynchronous-unwind-tables" \
+                        "--sysroot=" \
+                        "-B" \
+                        "-MF" \
+                        "-MMD" \
+                        "-MP" \
+                        "-MT" \
+                        "-o"; do 
                 case $cmdpart in 
                     "$arg"|"$arg"*) cmdpart_ignore=1 ;;
                 esac
             done 
+            # Skip -include and its argument (next token)
+            if [[ $cmdpart == "-include" ]]; then 
+                skip_next=1
+                continue
+            fi
+            # Skip -MF/-MT/-o and their arguments
+            if [[ $cmdpart == "-MF" || $cmdpart == "-MT" || $cmdpart == "-o" ]]; then 
+                skip_next=1
+                continue
+            fi 
+            # Convert -isystem to -I with absolute path
             if [[ $cmdpart == "-isystem"* ]]; then 
                 cmdpart="-I${cmdpart#-isystem}"
             fi 
+            # Ensure all -I paths are absolute
             if [[ $cmdpart == "-I"* ]]; then 
                 path=${cmdpart#-I}
-                if [[ -d $NV_SOURCE/drivers/OpenGL/$path ]]; then 
-                    cmdpart="-I$(realpath $NV_SOURCE/drivers/OpenGL/$path)"
+                if [[ "$path" != /* ]]; then
+                    # Relative path - convert to absolute
+                    if [[ -d "$NV_SOURCE/drivers/OpenGL/$path" ]]; then 
+                        cmdpart="-I$(cd "$NV_SOURCE/drivers/OpenGL" && realpath "$path")"
+                    else
+                        cmdpart="-I$NV_SOURCE/drivers/OpenGL/$path"
+                    fi
                 fi 
             fi 
+            # Skip GCC/binutils paths in arguments
             if [[ $cmdpart == *"/gcc-"* || $cmdpart == *"binutils-"* ]]; then 
                 continue 
             fi 
