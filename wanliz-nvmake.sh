@@ -64,8 +64,10 @@ if [[ $CC == 1 ]]; then
         grep "set -e.*gcc.*-c" | \
         sed 's/^.*set -e ; *//' | \
         sed 's/ ; \/bin\/sed.*//' | \
-        sed 's/^/clang /' > /tmp/nvmake.ccjson
-    num_commands=$(wc -l < /tmp/nvmake.ccjson)
+        sed 's/^/clang /' > _out/compile_commands.json
+    echo "Generated _out/compile_commands.json"
+
+    num_commands=$(wc -l  < _out/compile_commands.json)
     echo "Found $num_commands compile commands"
     if [[ $num_commands -gt 0 ]]; then
         echo "Fixing command arguments for clang"
@@ -122,11 +124,12 @@ if [[ $CC == 1 ]]; then
             echo "    \"command\": \"$command_cleaned\"," >> compile_commands.json
             echo "    \"file\": \"$srcfile\"" >> compile_commands.json
             echo "}" >> compile_commands.json
-        done < /tmp/nvmake.ccjson 
-        echo "" >> compile_commands.json
+        done < _out/compile_commands.json
+        echo ""  >> compile_commands.json
         echo "]" >> compile_commands.json
         echo "Generated compile_commands.json"
     fi
+    exit 0
 fi 
 
 if [[ -z $TARGET ]]; then 
