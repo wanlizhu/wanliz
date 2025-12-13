@@ -49,89 +49,6 @@ elif [[ -d /wanliz_sw_windows_wsl2 ]]; then
     export NV_SOURCE="/wanliz_sw_windows_wsl2/workingbranch"
 fi 
 
-if [[ $CC == 1 ]]; then 
-    echo "Generating compile_commands.json"
-    cd $NV_SOURCE/drivers/OpenGL || exit 1
-    $P4ROOT/tools/linux/unix-build/unix-build \
-        --unshare-namespaces \
-        --tools $P4ROOT/tools \
-        --devrel $P4ROOT/devrel/SDK/inc/GL \
-        nvmake \
-        NV_COLOR_OUTPUT=0 \
-        NV_TRACE_CODE=1 \
-        NV_USE_FRAME_POINTER=1 \
-        linux $ARCH $CONFIG -Bn 2>&1 | \
-        grep "set -e.*gcc.*-c" | \
-        sed 's/^.*set -e ; *//' | \
-        sed 's/ ; \/bin\/sed.*//' | \
-        sed 's/^/clang /' > _out/compile_commands.json
-    echo "Generated _out/compile_commands.json"
-
-    num_commands=$(wc -l  < _out/compile_commands.json)
-    echo "Found $num_commands compile commands"
-    if [[ $num_commands -gt 0 ]]; then
-        echo "Fixing command arguments for clang"
-        echo "[" > compile_commands.json
-        firstline=true
-        while IFS= read -r line; do 
-            [[ -z $line ]] && continue 
-            srcfile=$(echo "$line" | grep -oE '\-c +[^ ]+\.(c|cpp|cc|cxx)' | sed 's/-c *//' | head -1)
-            if [[ -z "$srcfile" ]]; then
-                srcfile=$(echo "$line" | grep -oE '[^ ]+\.(c|cpp|cc|cxx)' | head -1)
-            fi
-            [[ -z "$srcfile" ]] && continue
-            [[ "$srcfile" != /* ]] && srcfile="$NV_SOURCE/drivers/OpenGL/$srcfile"
-            [[ "$firstline" == false ]] && echo "," >> compile_commands.json
-            firstline=false
-            command=$(echo "$line" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
-            command_cleaned=
-            for cmdpart in $command; do 
-                cmdpart_ignore=
-                for arg in  "-gas-loc-support" \
-                            "-Wformat-overflow" \
-                            "-Wformat-truncation" \
-                            "-Wno-error=" \
-                            "-Wno-class-memaccess" \
-                            "-Wno-stringop-truncation" \
-                            "-nostdinc" \
-                            "-march=" \
-                            "-mtune=" \
-                            "-mfpmath=" \
-                            "--sysroot="; do 
-                    case $cmdpart in 
-                        "$arg"|"$arg"*) cmdpart_ignore=1 ;;
-                    esac
-                done 
-                if [[ $cmdpart == "-isystem"* ]]; then 
-                    cmdpart="-I${cmdpart#-isystem}"
-                fi 
-                if [[ $cmdpart == "-I"* ]]; then 
-                    path=${cmdpart#-I}
-                    if [[ -d $NV_SOURCE/drivers/OpenGL/$path ]]; then 
-                        cmdpart="-I$(realpath $NV_SOURCE/drivers/OpenGL/$path)"
-                    fi 
-                fi 
-                if [[ $cmdpart == *"/gcc-"* || $cmdpart == *"binutils-"* ]]; then 
-                    continue 
-                fi 
-                if [[ $cmdpart_ignore == 1 ]]; then 
-                    continue 
-                fi 
-                command_cleaned+=" $cmdpart"
-            done 
-            echo "{" >> compile_commands.json
-            echo "    \"directory\": \"$NV_SOURCE/drivers/OpenGL\"," >> compile_commands.json
-            echo "    \"command\": \"$command_cleaned\"," >> compile_commands.json
-            echo "    \"file\": \"$srcfile\"" >> compile_commands.json
-            echo "}" >> compile_commands.json
-        done < _out/compile_commands.json
-        echo ""  >> compile_commands.json
-        echo "]" >> compile_commands.json
-        echo "Generated compile_commands.json"
-    fi
-    exit 0
-fi 
-
 if [[ -z $TARGET ]]; then 
     if [[ ! -f makefile.nvmk ]]; then 
         echo "makefile.nvmk doesn't exist"
@@ -157,3 +74,96 @@ time $P4ROOT/tools/linux/unix-build/unix-build \
     NV_MANGLE_SYMBOLS= \
     NV_TRACE_CODE=$([[ $CONFIG == release ]] && echo 0 || echo 1) \
     linux $TARGET $ARCH $CONFIG -j$JOBS $EXTRA_ARGS
+
+if [[ $CC == 1 ]]; then 
+    echo "Generating _out/compile_commands.json"
+    rm -f /tmp/nvmake.out /tmp/nvmake.err 
+    rm -f _out/compile_commands.json compile_commands.json
+    cd $NV_SOURCE/drivers/OpenGL || exit 1
+    $P4ROOT/tools/linux/unix-build/unix-build \
+        --unshare-namespaces \
+        --tools $P4ROOT/tools \
+        --devrel $P4ROOT/devrel/SDK/inc/GL \
+        nvmake \
+        NV_COLOR_OUTPUT=0 \
+        NV_TRACE_CODE=1 \
+        NV_USE_FRAME_POINTER=1 \
+        NV_GUARDWORD= \
+        NV_MANGLE_SYMBOLS= \
+        linux $ARCH $CONFIG -Bn >/tmp/nvmake.out 2>/tmp/nvmake.err && {
+        cat /tmp/nvmake.out |  
+        grep "set -e.*gcc.*-c" | 
+        sed 's/^.*set -e ; *//' |  
+        sed 's/ ; \/bin\/sed.*//' |  
+        sed 's/^/clang /' > _out/compile_commands.json && 
+        echo "Generated  _out/compile_commands.json"
+    } || {
+        cat /tmp/nvmake.err 
+        exit 1
+    }
+
+    num_commands=$(wc -l  < _out/compile_commands.json)
+    echo "Found $num_commands compile commands"
+    if [[ $num_commands == 0 ]]; then
+        exit 1
+    fi 
+
+    echo "Fixing command arguments for clang"
+    echo "[" > compile_commands.json
+    firstline=true
+    while IFS= read -r line; do 
+        [[ -z $line ]] && continue 
+        srcfile=$(echo "$line" | grep -oE '\-c +[^ ]+\.(c|cpp|cc|cxx)' | sed 's/-c *//' | head -1)
+        if [[ -z "$srcfile" ]]; then
+            srcfile=$(echo "$line" | grep -oE '[^ ]+\.(c|cpp|cc|cxx)' | head -1)
+        fi
+        [[ -z "$srcfile" ]] && continue
+        [[ "$srcfile" != /* ]] && srcfile="$NV_SOURCE/drivers/OpenGL/$srcfile"
+        [[ "$firstline" == false ]] && echo "," >> compile_commands.json
+        firstline=false
+        command=$(echo "$line" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
+        command_cleaned=
+        for cmdpart in $command; do 
+            cmdpart_ignore=
+            for arg in  "-gas-loc-support" \
+                        "-Wformat-overflow" \
+                        "-Wformat-truncation" \
+                        "-Wno-error=" \
+                        "-Wno-class-memaccess" \
+                        "-Wno-stringop-truncation" \
+                        "-nostdinc" \
+                        "-march=" \
+                        "-mtune=" \
+                        "-mfpmath=" \
+                        "--sysroot="; do 
+                case $cmdpart in 
+                    "$arg"|"$arg"*) cmdpart_ignore=1 ;;
+                esac
+            done 
+            if [[ $cmdpart == "-isystem"* ]]; then 
+                cmdpart="-I${cmdpart#-isystem}"
+            fi 
+            if [[ $cmdpart == "-I"* ]]; then 
+                path=${cmdpart#-I}
+                if [[ -d $NV_SOURCE/drivers/OpenGL/$path ]]; then 
+                    cmdpart="-I$(realpath $NV_SOURCE/drivers/OpenGL/$path)"
+                fi 
+            fi 
+            if [[ $cmdpart == *"/gcc-"* || $cmdpart == *"binutils-"* ]]; then 
+                continue 
+            fi 
+            if [[ $cmdpart_ignore == 1 ]]; then 
+                continue 
+            fi 
+            command_cleaned+=" $cmdpart"
+        done 
+        echo "{" >> compile_commands.json
+        echo "    \"directory\": \"$NV_SOURCE/drivers/OpenGL\"," >> compile_commands.json
+        echo "    \"command\": \"$command_cleaned\"," >> compile_commands.json
+        echo "    \"file\": \"$srcfile\"" >> compile_commands.json
+        echo "}" >> compile_commands.json
+    done < _out/compile_commands.json
+    echo ""  >> compile_commands.json
+    echo "]" >> compile_commands.json
+    echo "Generated  compile_commands.json"
+fi 
