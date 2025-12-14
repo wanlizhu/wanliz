@@ -108,7 +108,7 @@ if [[ $CC == 1 ]]; then
         exit 1
     fi 
 
-    echo "Normalizing command arguments for clang"
+    echo "Fixing command arguments for clang"
     echo "[" > compile_commands.json
     firstline=true
     while IFS= read -r line; do 
