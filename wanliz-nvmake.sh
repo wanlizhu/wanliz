@@ -110,7 +110,7 @@ if [[ $CC == 1 ]]; then
         exit 1
     fi 
 
-    echo "Normalizing command arguments for clang"
+    echo "Normalizing arguments for clangd"
     echo "[" > compile_commands.json
     firstline=true
     while IFS= read -r line; do 
@@ -150,13 +150,7 @@ if [[ $CC == 1 ]]; then
                         "-mstackrealign" \
                         "-flto=" \
                         "-fasynchronous-unwind-tables" \
-                        "--sysroot=" \
-                        "-B" \
-                        "-MF" \
-                        "-MMD" \
-                        "-MP" \
-                        "-MT" \
-                        "-o"; do 
+                        "--sysroot="; do 
                 case $cmdpart in 
                     "$arg"|"$arg"*) cmdpart_ignore=1 ;;
                 esac
@@ -171,10 +165,18 @@ if [[ $CC == 1 ]]; then
                 skip_next=1
                 continue
             fi 
-            # Skip all -isystem paths - they point to GCC's system headers
-            # Clangd will automatically find its own builtin and C++ standard library headers
+            # Convert -isystem to -I to avoid GCC-specific system paths
+            # but keep the paths themselves as project headers may need them
             if [[ $cmdpart == "-isystem"* ]]; then 
-                continue
+                path="${cmdpart#-isystem}"
+                # Convert to -I and make absolute if needed
+                if [[ "$path" != /* ]]; then
+                    # Relative -isystem path (shouldn't happen but handle it)
+                    cmdpart="-I$NV_SOURCE/drivers/OpenGL/$path"
+                else
+                    # Absolute -isystem path - convert to -I
+                    cmdpart="-I$path"
+                fi
             fi 
             # Ensure all -I paths are absolute
             if [[ $cmdpart == "-I"* ]]; then 
@@ -188,8 +190,12 @@ if [[ $CC == 1 ]]; then
                     fi
                 fi 
             fi 
-            # Skip GCC/binutils paths in arguments
-            if [[ $cmdpart == *"/gcc-"* || $cmdpart == *"binutils-"* ]]; then 
+            # Skip -B paths (GCC binary search paths) - clangd doesn't need them
+            if [[ $cmdpart == "-B"* ]]; then 
+                continue 
+            fi
+            # Skip binutils paths
+            if [[ $cmdpart == *"binutils-"* ]]; then 
                 continue 
             fi 
             if [[ $cmdpart_ignore == 1 ]]; then 
