@@ -76,6 +76,7 @@ time $P4ROOT/tools/linux/unix-build/unix-build \
     linux $TARGET $ARCH $CONFIG -j$JOBS $EXTRA_ARGS || exit 1
 
 if [[ $CC == 1 ]]; then 
+    echo 
     echo "Generating _out/compile_commands.json"
     rm -f /tmp/nvmake.out /tmp/nvmake.err 
     rm -f _out/compile_commands.json compile_commands.json
