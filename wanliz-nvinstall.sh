@@ -51,6 +51,7 @@ elif [[ $1 == *@* ]]; then
     [[ -z $CONFIG  ]] && { echo  "CONFIG is not specified"; exit 1; }
     [[ -z $VERSION ]] && { echo "VERSION is not specified"; exit 1; }
     if [[ $TARGET == drivers ]]; then 
+    echo ooo
         rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/Linux_${ARCH}_${CONFIG}/NVIDIA-Linux-${ARCH}-${VERSION}-internal.run $HOME/NVIDIA-Linux-${ARCH}-${CONFIG}-${VERSION}-internal.run || exit 1
         rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/tests-Linux-aarch64.tar $HOME/tests-Linux-aarch64.tar
         wanliz-nvinstall $HOME/NVIDIA-Linux-${ARCH}-${CONFIG}-${VERSION}-internal.run
@@ -61,8 +62,6 @@ elif [[ $1 == *@* ]]; then
             exit 1
         fi 
         sudo cp -vf --remove-destination $HOME/libnvidia-glcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION
-    else    
-        echo "$TARGET"
     fi 
 elif [[ $1 == nvt ]]; then  
     shift 
