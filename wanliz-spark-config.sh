@@ -12,10 +12,16 @@ if [[ $(uname -m) == "aarch64" ]]; then
         echo "[install new driver if OTA script failed to do so]"
     fi 
 
-    if [[ ! -f ~/.driver || ! -f $(cat ~/.driver) ]]; then 
+    driver_path=$([[ -f ~/.driver ]] && cat ~/.driver || echo "")
+    tests_tarball=
+    if [[ -e ${driver_path/-internal.run/-tests.tar} ]]; then 
+        tests_tarball=${driver_path/-internal.run/-tests.tar}
+    elif [[ -e $(dirname $driver_path)/tests-Linux-$(uname -m).tar ]]; then 
+        tests_tarball=$(dirname $driver_path)/tests-Linux-$(uname -m).tar
+    fi 
+
+    if [[ -z $tests_tarball ]]; then 
         read -rp "Location of tests-Linux-$(uname -m).tar: " tests_tarball
-    else
-        tests_tarball="$(dirname $(cat ~/.driver))/tests-Linux-$(uname -m).tar"
     fi 
 
     if [[ -f $tests_tarball ]]; then 
