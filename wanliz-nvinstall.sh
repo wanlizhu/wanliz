@@ -30,7 +30,7 @@ elif [[ $1 == "redo" ]]; then
         exit 1
     fi 
     wanliz-nvinstall $(cat ~/.driver $@)
-elif [[ $1 == *"@"* ]]; then 
+elif [[ $1 == *@* ]]; then 
     LOGIN_INFO="$1"
     TARGET=
     CONFIG=
