@@ -53,7 +53,7 @@ elif [[ $1 == *@* ]]; then
     if [[ $TARGET == drivers ]]; then 
     
         rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/Linux_${ARCH}_${CONFIG}/NVIDIA-Linux-${ARCH}-${VERSION}-internal.run $HOME/NVIDIA-Linux-${ARCH}-${CONFIG}-${VERSION}-internal.run || exit 1
-        rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/tests-Linux-aarch64.tar $HOME/NVIDIA-Linux-${ARCH}-${CONFIG}-${VERSION}-tests.tar
+        rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/Linux_${ARCH}_${CONFIG}/tests-Linux-aarch64.tar $HOME/NVIDIA-Linux-${ARCH}-${CONFIG}-${VERSION}-tests.tar
         wanliz-nvinstall $HOME/NVIDIA-Linux-${ARCH}-${CONFIG}-${VERSION}-internal.run
     elif [[ $TARGET == opengl ]]; then 
         rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_amd64_develop/libnvidia-glcore.so $HOME/libnvidia-glcore.so.$VERSION 
