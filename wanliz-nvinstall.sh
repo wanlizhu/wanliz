@@ -37,7 +37,6 @@ elif [[ $1 == *@* ]]; then
     ARCH=$(uname -m | sed 's/x86_64/amd64/g')
     VERSION=
     shift 
-    echo assss
     while [[ ! -z $1 ]]; do 
         case $1 in 
             opengl|drivers) TARGET=$1 ;;
@@ -48,6 +47,7 @@ elif [[ $1 == *@* ]]; then
         esac
         shift 
     done 
+    echo assss
     [[ -z $TARGET  ]] && { echo  "TARGET is not specified"; exit 1; }
     [[ -z $CONFIG  ]] && { echo  "CONFIG is not specified"; exit 1; }
     [[ -z $VERSION ]] && { echo "VERSION is not specified"; exit 1; }
