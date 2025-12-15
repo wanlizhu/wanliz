@@ -60,6 +60,7 @@ class Arguments:
 
 class Clang_CMD:
     def __init__(self, gcc_cmdline, cwd):
+        self.gcc_cmdline = gcc_cmdline
         tokens = shlex.split(gcc_cmdline)
 
         # Locate the begin of subshell
@@ -79,7 +80,7 @@ class Clang_CMD:
                 compiler_index = token_index
                 break
         if compiler_index < 0:
-            print("Error: cannot find compiler token")
+            print(f"Error: cannot find compiler token in: \n{gcc_cmdline}")
             exit(1)
 
         # Find optional cd command
@@ -100,7 +101,7 @@ class Clang_CMD:
                 compiler_end_index = token_index
                 break 
         if compiler_end_index < 0:
-            print("Error: cannot find the end of compiler")
+            print(f"Error: cannot find the end of compiler in: \n{gcc_cmdline}")
             exit(1)
 
         compiler_and_args = tokens[compiler_index:compiler_end_index]
@@ -122,14 +123,15 @@ class Clang_CMD:
             else:
                 print("Error: clang++ is not installed")
                 exit(1)
-        elif self.clang["file"].endswith(".c"):
+        elif self.clang["file"].endswith(".c") or \
+             self.clang["file"].endswith(".S"):
             if shutil.which("clang"):
                 self.clang["command"] = shutil.which("clang")
             else:
                 print("Error: clang is not installed")
                 exit(1)
         else:
-            print(f"Error: unknown source file \"{self.clang['file']}\"")
+            print(f"Error: unknown source file \"{self.clang['file']}\" in: \n{self.gcc_cmdline}")
             exit(1)
 
         defines_strs = self.gcc_args.values_of("-D", can_be_joined=True, remove=True, required=False)
@@ -140,6 +142,11 @@ class Clang_CMD:
         self.convert_compiler_flags()
 
     def convert_include_dirs(self):
+        whitelist = [
+            "include/outmirror/tegra_top/graphics-partner/android/include",
+            "Linux_amd64_debug", "Linux_aarch64_debug",
+            "OpenGL/vulkan/video/device/inc", "OpenGL/vulkan/video/encoder/../device/inc"
+        ]
         include_files = self.gcc_args.values_of("-include", can_be_joined=False, remove=True, required=False)
         isystem_dirs = self.gcc_args.values_of("-isystem", can_be_joined=True, remove=True, required=False)
         include_dirs = self.gcc_args.values_of("-I", can_be_joined=True, remove=True, required=False)
@@ -150,7 +157,7 @@ class Clang_CMD:
             *((("-isystem", value, True) for value in isystem_dirs)),
             *((("-I", value, True) for value in include_dirs))
         ):
-            fullpath = self.resolve_relative_path(self.working_dir, path, required=False)
+            fullpath = str(self.resolve_relative_path(self.working_dir, path, required=False))
             if os.path.exists(fullpath):
                 cmdline_substr += f" {flag} {fullpath}"
             else:
@@ -159,8 +166,9 @@ class Clang_CMD:
                     pch_flags = self.extract_pch_flags(str(fullpath) + ".gch.cmd")
                     cmdline_substr += f" {pch_flags}"
                 else:
-                    print(f"Error: {fullpath} doesn't exist")
-                    exit(1)
+                    if not any([fullpath.endswith(x) for x in whitelist]) and "/" in path:
+                        print(f"Error: {fullpath} doesn't exist in: \n{self.gcc_cmdline}")
+                        exit(1)
         self.clang["command"] += cmdline_substr
 
     def extract_pch_flags(self, pch_path):
@@ -198,7 +206,7 @@ class Clang_CMD:
             fullpath = Path(root) / Path(path)
         if not fullpath.exists():
             if required:
-                print(f"Error: {fullpath} doesn't exist")
+                print(f"Error: {fullpath} doesn't exist in: \n{self.gcc_cmdline}")
                 exit(1)
         return str(fullpath)
 
@@ -257,14 +265,18 @@ class Clang_CCDB:
         if not Path(path).is_absolute():
             path = str(Path(self.working_dir) / path)
         if not os.path.exists(path):
-            print(f"{path} doesn't exist")
+            print(f"CCDB cwd: {path} doesn't exist")
             exit(1)
 
         self.gcc_cmds = []
         with open(path, "r") as file:
             for line in file.readlines():
                 line = line.strip()
-                if len(line) == 0 or line.startswith("#"):
+                if len(line) == 0 or line.startswith("#") or line.startswith("="):
+                    continue 
+                if not any([x in line for x in ["]  CC ", "]  CXX ", "]  HOST_CC ", "]  HOST_CPP ", "]  HOST_CXX "]]):
+                    continue 
+                if any([x in line for x in ["-linux-gnu-cpp"]]):
                     continue 
                 self.gcc_cmds.append(line)
         print(f"Found {len(self.gcc_cmds)} gcc commands")
