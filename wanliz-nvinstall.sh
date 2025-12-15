@@ -31,13 +31,13 @@ elif [[ $1 == "redo" ]]; then
     fi 
     wanliz-nvinstall $(cat ~/.driver $@)
 elif [[ $1 == *@* ]]; then 
-    echo assss
     LOGIN_INFO="$1"
     TARGET=
     CONFIG=
     ARCH=$(uname -m | sed 's/x86_64/amd64/g')
     VERSION=
     shift 
+    echo assss
     while [[ ! -z $1 ]]; do 
         case $1 in 
             opengl|drivers) TARGET=$1 ;;
