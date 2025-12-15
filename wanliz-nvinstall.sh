@@ -31,6 +31,7 @@ elif [[ $1 == "redo" ]]; then
     fi 
     wanliz-nvinstall $(cat ~/.driver $@)
 elif [[ $1 == *@* ]]; then 
+    echo assss
     LOGIN_INFO="$1"
     TARGET=
     CONFIG=
@@ -47,7 +48,6 @@ elif [[ $1 == *@* ]]; then
         esac
         shift 
     done 
-    echo ooo
     [[ -z $TARGET  ]] && { echo  "TARGET is not specified"; exit 1; }
     [[ -z $CONFIG  ]] && { echo  "CONFIG is not specified"; exit 1; }
     [[ -z $VERSION ]] && { echo "VERSION is not specified"; exit 1; }
@@ -84,6 +84,4 @@ elif [[ $1 == nvt ]]; then
             echo "Generated ~/.driver"
         fi 
     fi 
-else 
-    echo "Nothing to install"
 fi 
