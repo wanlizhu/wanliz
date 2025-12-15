@@ -17,6 +17,7 @@ if [[ $1 == -h || $1 == --help ]]; then
 fi
 
 TARGET=
+TARGET_INSTALL=
 CONFIG=develop
 ARCH=$(uname -m | sed 's/x86_64/amd64/g')
 JOBS=$(nproc)
@@ -28,8 +29,9 @@ while [[ ! -z $1 ]]; do
         debug|release|develop) CONFIG=$1 ;;
         amd64|x64|x86_64) ARCH=amd64 ;;
         aarch64|arm64) ARCH=aarch64 ;;
-        opengl|sweep) TARGET=$1 ;;
-        drivers) TARGET="drivers dist" ;;
+        sweep)   TARGET=sweep ;;
+        opengl)  TARGET=opengl; TARGET_INSTALL=opengl ;;
+        drivers) TARGET="drivers dist"; TARGET_INSTALL=drivers ;;
         -j1) JOBS=1 ;;
         -cc) CC=1 ;;
         -n) NOBUILD=1 ;;
@@ -79,6 +81,12 @@ if [[ -z $NOBUILD ]]; then
         NV_TRACE_CODE=$([[ $CONFIG == release ]] && echo 0 || echo 1) \
         linux $TARGET $ARCH $CONFIG -j$JOBS $EXTRA_ARGS || exit 1
     echo 
+    if [[ ! -z $TARGET_INSTALL ]]; then 
+        myip=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
+        nvsrc_version=$(sed -n 's/^[[:space:]]*#define[[:space:]]\+NV_VERSION_STRING[[:space:]]\+"\([^"]\+\)".*/\1/p' /wanliz_sw_windows_wsl2/workingbranch/drivers/common/inc/nvUnixVersion.h | head -n1)
+        echo "wanliz-nvinstall $USER@$myip $TARGET_INSTALL $ARCH $CONFIG $nvsrc_version"
+        echo 
+    fi 
 fi 
 
 if [[ $CC == 1 ]]; then 

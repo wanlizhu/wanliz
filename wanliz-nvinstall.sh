@@ -2,8 +2,8 @@
 
 export P4PORT="p4proxy-sc.nvidia.com:2006"
 export P4USER="wanliz"
-export P4CLIENT="wanliz_sw_linux"
-export P4ROOT="/wanliz_sw_linux"
+export P4CLIENT="wanliz_sw_windows_wsl2"
+export P4ROOT="/$P4CLIENT"
 
 if [[ -f "$1" ]]; then 
     wanliz-nvrmmod
@@ -49,6 +49,38 @@ elif [[ ! -z $1 ]]; then
             echo "Generated ~/.driver"
         fi 
     fi 
+elif [[ $1 == "@" ]]; then 
+    LOGIN_INFO="$1"
+    TARGET=
+    CONFIG=
+    ARCH=$(uname -m | sed 's/x86_64/amd64/g')
+    VERSION=
+    shift 
+    while [[ ! -z $1 ]]; do 
+        case $1 in 
+            opengl|drivers) TARGET=$1 ;;
+            debug|release|develop) CONFIG=$1 ;;
+            amd64|x64|x86_64) [[ $(uname -m) != "x86_64"  ]] && echo "Invalid arch $1"; exit 1 ;;
+            aarch64|arm64)    [[ $(uname -m) != "aarch64" ]] && echo "Invalid arch $1"; exit 1 ;;
+            [0-9]*) VERSION=$1 ;;
+        esac
+        shift 
+    done 
+    [[ -z $TARGET  ]] && { echo  "TARGET is not specified"; exit 1; }
+    [[ -z $CONFIG  ]] && { echo  "CONFIG is not specified"; exit 1; }
+    [[ -z $VERSION ]] && { echo "VERSION is not specified"; exit 1; }
+    if [[ $TARGET == drivers ]]; then 
+        rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/Linux_${ARCH}_${CONFIG}/NVIDIA-Linux-${ARCH}-${VERSION}-internal.run $HOME/NVIDIA-Linux-${ARCH}-${CONFIG}-${VERSION}-internal.run || exit 1
+        rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/tests-Linux-aarch64.tar $HOME/tests-Linux-aarch64.tar
+        wanliz-nvinstall $HOME/NVIDIA-Linux-${ARCH}-${CONFIG}-${VERSION}-internal.run
+    elif [[ $TARGET == opengl ]]; then 
+        rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_amd64_develop/libnvidia-glcore.so $HOME/libnvidia-glcore.so.$VERSION 
+        if [[ ! -e /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION ]]; then 
+            echo "Incompatible version $VERSION"
+            exit 1
+        fi 
+        sudo cp -vf --remove-destination $HOME/libnvidia-glcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION
+    fi 
 else 
-    find /wanliz_sw_linux/dev /wanliz_sw_linux/rel -type d -name '_out' -exec find '{}' -type f -name 'NVIDIA-Linux*.run' \; 2>/dev/null
+    echo "Nothing to install"
 fi 
