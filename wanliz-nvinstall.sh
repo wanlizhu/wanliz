@@ -31,7 +31,6 @@ elif [[ $1 == "redo" ]]; then
     fi 
     wanliz-nvinstall $(cat ~/.driver $@)
 elif [[ $1 == *@* ]]; then 
-echo xxx
     LOGIN_INFO="$1"
     TARGET=
     CONFIG=
@@ -62,6 +61,8 @@ echo xxx
             exit 1
         fi 
         sudo cp -vf --remove-destination $HOME/libnvidia-glcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION
+    else    
+        echo "$TARGET"
     fi 
 elif [[ $1 == nvt ]]; then  
     shift 
