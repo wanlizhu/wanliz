@@ -30,26 +30,7 @@ elif [[ $1 == "redo" ]]; then
         exit 1
     fi 
     wanliz-nvinstall $(cat ~/.driver $@)
-elif [[ ! -z $1 ]]; then  
-    if sudo test ! -d /root/nvt; then 
-        sudo /mnt/linuxqa/nvt.sh sync
-    fi 
-    sudo env NVTEST_INSTALLER_REUSE_INSTALL=False /mnt/linuxqa/nvt.sh drivers "$@" 2>/tmp/std2 | tee /tmp/std1 
-    cat /tmp/std2
-    driver=$(cat /tmp/std2 | grep 'NVTEST_DRIVER=' | awk '{print $2}' | awk -F'=' '{print $2}')
-    if [[ ! -z $driver ]]; then 
-        if [[ $driver == "http"* ]]; then 
-            mkdir -p $HOME/drivers
-            local_driver=$HOME/drivers/$(basename "$driver")
-            wget --no-check-certificate -O $local_driver $driver || exit 1
-            echo "$local_driver" > ~/.driver 
-            echo "Generated ~/.driver"
-        elif [[ -f $driver ]]; then 
-            echo "$driver" > ~/.driver 
-            echo "Generated ~/.driver"
-        fi 
-    fi 
-elif [[ $1 == "@" ]]; then 
+elif [[ $1 == *"@"* ]]; then 
     LOGIN_INFO="$1"
     TARGET=
     CONFIG=
@@ -80,6 +61,26 @@ elif [[ $1 == "@" ]]; then
             exit 1
         fi 
         sudo cp -vf --remove-destination $HOME/libnvidia-glcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION
+    fi 
+elif [[ $1 == nvt ]]; then  
+    shift 
+    if sudo test ! -d /root/nvt; then 
+        sudo /mnt/linuxqa/nvt.sh sync
+    fi 
+    sudo env NVTEST_INSTALLER_REUSE_INSTALL=False /mnt/linuxqa/nvt.sh drivers "$@" 2>/tmp/std2 | tee /tmp/std1 
+    cat /tmp/std2
+    driver=$(cat /tmp/std2 | grep 'NVTEST_DRIVER=' | awk '{print $2}' | awk -F'=' '{print $2}')
+    if [[ ! -z $driver ]]; then 
+        if [[ $driver == "http"* ]]; then 
+            mkdir -p $HOME/drivers
+            local_driver=$HOME/drivers/$(basename "$driver")
+            wget --no-check-certificate -O $local_driver $driver || exit 1
+            echo "$local_driver" > ~/.driver 
+            echo "Generated ~/.driver"
+        elif [[ -f $driver ]]; then 
+            echo "$driver" > ~/.driver 
+            echo "Generated ~/.driver"
+        fi 
     fi 
 else 
     echo "Nothing to install"
