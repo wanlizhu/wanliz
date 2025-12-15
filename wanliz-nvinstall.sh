@@ -31,6 +31,7 @@ elif [[ $1 == "redo" ]]; then
     fi 
     wanliz-nvinstall $(cat ~/.driver $@)
 elif [[ $1 == *@* ]]; then 
+echo xxx
     LOGIN_INFO="$1"
     TARGET=
     CONFIG=
