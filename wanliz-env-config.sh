@@ -100,6 +100,7 @@ for file in $HOME/wanliz/*; do
     [[ -f "$file" && -x "$file" ]] || continue 
     cmdname=$(basename "$file")
     cmdname="${cmdname%.sh}"
+    cmdname="${cmdname%.py}"
     sudo ln -sf "$file" "/usr/local/bin/$cmdname" &>/dev/null 
 done 
 echo "[OK]"
