@@ -49,6 +49,23 @@ if [[ -f $new_hosts_file ]]; then
     echo "[OK]"
 fi 
 
+choice_cache=
+function confirm_to_install() {
+    if [[ $USER == wanliz ]]; then 
+        return 0
+    else
+        if [[ -z $choice_cache ]]; then 
+            read -p "Install required packages? [Y/n]: " ans
+            if [[ -z $ans || $ans == y ]]; then 
+                choice_cache=0
+            else
+                choice_cache=1
+            fi 
+        fi 
+        return $choice_cache 
+    fi 
+}
+
 
 python_version=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
 for pkg in python${python_version}-dev python${python_version}-venv \
