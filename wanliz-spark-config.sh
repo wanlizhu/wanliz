@@ -5,12 +5,16 @@ sudo nvidia-persistenced
 
 if [[ $(uname -m) == "aarch64" ]]; then 
     sudo cp -vf /mnt/linuxqa/wlueking/n1x-bringup/environ_vars /root/nvt/environ_vars || true
+
     if [[ ! -f /opt/nvidia/update.sh ]]; then 
-        echo "Download spark OTA setup script"
-        curl -kL https://nv/spark-eng/eng.sh | sudo bash  || true
-        sudo /opt/nvidia/update.sh  || true
-        echo "[install new driver if OTA script failed to do so]"
-    fi 
+        read -p "Install spark OTA driver? [Y/n]: " ans
+        if [[ -z $ans || $ans == y ]]; then 
+            echo "Download spark OTA setup script"
+            curl -kL https://nv/spark-eng/eng.sh | sudo bash  || true
+            sudo /opt/nvidia/update.sh  || true
+            echo "[install new driver if OTA script failed to do so]"
+        fi 
+    fi
 
     driver_path=$([[ -f ~/.driver ]] && cat ~/.driver || echo "")
     tests_tarball=
