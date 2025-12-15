@@ -41,13 +41,12 @@ elif [[ $1 == *@* ]]; then
         case $1 in 
             opengl|drivers) TARGET=$1 ;;
             debug|release|develop) CONFIG=$1 ;;
-            amd64|x64|x86_64) [[ $(uname -m) != "x86_64"  ]] && echo "Invalid arch $1"; exit 1 ;;
-            aarch64|arm64)    [[ $(uname -m) != "aarch64" ]] && echo "Invalid arch $1"; exit 1 ;;
+            amd64|x64|x86_64) [[ $(uname -m) != "x86_64"  ]] && { echo "Invalid arch $1"; exit 1; } ;;
+            aarch64|arm64)    [[ $(uname -m) != "aarch64" ]] && { echo "Invalid arch $1"; exit 1; } ;;
             [0-9]*) VERSION=$1 ;;
         esac
         shift 
     done 
-    echo assss
     [[ -z $TARGET  ]] && { echo  "TARGET is not specified"; exit 1; }
     [[ -z $CONFIG  ]] && { echo  "CONFIG is not specified"; exit 1; }
     [[ -z $VERSION ]] && { echo "VERSION is not specified"; exit 1; }
