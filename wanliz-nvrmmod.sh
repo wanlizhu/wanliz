@@ -1,79 +1,96 @@
 #!/usr/bin/env bash
 
-function rmmod_recur() {
-    if [[ -z $2 ]]; then 
+rmmod_recur() {
+    local mod="$1"
+    local recursive="${2:-}"
+
+    if [[ -z $recursive ]]; then
+        sudo -v || return 1
         rm -f /tmp/rmmod.restore
-        if [[ $1 == nvidia && ! -z $(which nvidia-smi) ]]; then 
-            if [[ ! -z $(nvidia-smi -q | grep -i "Persistence Mode" | grep "Enabled") ]]; then 
-                sudo nvidia-smi -pm 0
+
+        if [[ $mod == nvidia ]] && command -v nvidia-smi >/dev/null 2>&1; then
+            if nvidia-smi -q 2>/dev/null | grep -qiE 'Persistence Mode\s*:\s*Enabled'; then
+                sudo nvidia-smi -pm 0 && echo "Disabled persistence mode"
                 echo "sudo nvidia-smi -pm 1" >> /tmp/rmmod.restore
-            fi 
-        fi 
-    fi 
-
-    if sudo rmmod $1 2>/dev/null; then 
-        echo "Removed module $1"
-        return 0
-    fi 
-
-    # Remove kernel module dependencies
-    local rmmod_out=$(sudo rmmod $1 2>&1) || true 
-    if [[ $rmmod_out =~ in\ use\ by:\ (.+)$ ]]; then 
-        local mod_deps="${BASH_REMATCH[1]}"
-        local mod_name 
-        for mod_name in $mod_deps; do 
-            rmmod_recur $mod_name 'recursive-called' || return 1
-        done 
-
-        sudo rmmod $1 2>/dev/null 
-        if [[ -z $(lsmod | grep -q "^$1") ]]; then 
-            echo "Removed $1"
-            return 0
-        else 
-            echo "Failed to remove $1"
-        fi 
-    fi 
-    # Remove userspace refcount holders 
-    sudo lsof -t /dev/dri/card* /dev/dri/renderD* /dev/nvidia* 2>/dev/null > /tmp/nvidia_refcount_holders 
-    awk '{for (i=1; i<=NF; i++) print $i}' /tmp/nvidia_refcount_holders | sort -u | while IFS= read -r pid; do 
-        if [[ -e /proc/$pid/cgroup ]]; then 
-            cgroup=$(cat /proc/$pid/cgroup)
-            regex='/([^/]+)\.service$'
-            if [[ $cgroup =~ $regex ]]; then
-                unit="${BASH_REMATCH[1]}"
-                sudo systemctl stop $unit && {
-                    echo "Stopped $unit"
-                    echo "sudo systemctl start $unit" >> /tmp/rmmod.restore
-                }
-                sleep 2
             fi
-        fi 
+        fi
 
-        if [[ -e /proc/$pid ]]; then 
-            [[ $pid =~ ^[0-9]+$ ]] || continue
-            [[ $pid -eq 1 || $pid -eq $$ ]] && continue
-            sudo kill -TERM $pid && sleep 2
-            if [[ -e /proc/$pid ]]; then 
-                sudo kill -9 $pid 
-            fi 
-        fi 
-    done 
+        if systemctl is-active --quiet display-manager; then
+            sudo systemctl stop display-manager && echo "Stopped display-manager"
+            echo "sudo systemctl start display-manager" >> /tmp/rmmod.restore
+        fi
+    fi
 
-    # Retry without dependencies and refcount holders 
-    sudo rmmod $1 2>/dev/null 
-    if [[ -z $(lsmod | grep -q "^$1") ]]; then 
-        echo "Removed $1"
-        returncode=0
-    else 
-        echo "Failed to remove $1"
-        returncode=1
-    fi 
+    if sudo rmmod $mod 2>/dev/null; then
+        echo "Removed $mod"
+        return 0
+    fi
 
-    if [[ -z $2 && -f /tmp/rmmod.restore ]]; then 
-        echo "Generated /tmp/rmmod.restore"
-    fi 
+    local rmmod_out
+    rmmod_out="$(sudo rmmod $mod 2>&1 || true)"
 
-    return $returncode
+    if [[ $rmmod_out =~ in\ use\ by:\ (.+)$ ]]; then
+        local dep
+        for dep in ${BASH_REMATCH[1]}; do
+            rmmod_recur "$dep" recursive || return 1
+        done
+
+        sudo rmmod $mod 2>/dev/null || true
+        if [[ ! -d /sys/module/$mod ]]; then
+            echo "Removed $mod"
+            return 0
+        fi
+    fi
+
+    # Kill userspace holders (device nodes)
+    mapfile -t pids < <(sudo lsof -t /dev/dri/card* /dev/dri/renderD* /dev/nvidia* 2>/dev/null | sort -u)
+
+    local pid cgroup unit scope sid
+    for pid in "${pids[@]}"; do
+        [[ $pid =~ ^[0-9]+$ ]] || continue
+        [[ $pid -eq 1 || $pid -eq $$ ]] && continue
+        [[ -r /proc/$pid/cgroup ]] || continue
+
+        cgroup="$(< /proc/$pid/cgroup)"
+
+        # Stop only system services
+        unit="$(printf '%s\n' "$cgroup" | grep -oE 'system\.slice/[^/]+\.service' | head -n1 | sed 's@.*/@@')"
+        if [[ -n $unit ]]; then
+            sudo systemctl stop "$unit" && {
+                echo "Stopped $unit"
+                echo "sudo systemctl start $unit" >> /tmp/rmmod.restore
+                sleep 2
+            }
+        fi
+
+        # Terminate logind session scopes (Xorg case)
+        scope="$(printf '%s\n' "$cgroup" | grep -oE 'session-[0-9]+\.scope' | head -n1)"
+        if [[ $scope =~ session-([0-9]+)\.scope ]]; then
+            sid="${BASH_REMATCH[1]}"
+            sudo loginctl terminate-session "$sid" && {
+                echo "Terminated login session $sid"
+                sleep 2
+            }
+        fi
+
+        # Kill the pid if still alive
+        if [[ -e /proc/$pid ]]; then
+            sudo kill -TERM $pid 2>/dev/null || true
+            sleep 2
+            [[ -e /proc/$pid ]] && sudo kill -KILL $pid 2>/dev/null || true
+            echo "Killed $pid"
+        fi
+    done
+
+    sudo rmmod $mod 2>/dev/null || true
+    if [[ ! -d /sys/module/$mod ]]; then
+        echo "Removed $mod"
+        [[ -z $recursive && -s /tmp/rmmod.restore ]] && echo "Generated /tmp/rmmod.restore"
+        return 0
+    fi
+
+    echo "Failed to remove $mod"
+    return 1
 }
 
 rmmod_recur nvidia
