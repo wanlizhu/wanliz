@@ -63,7 +63,7 @@ elif [[ $1 == *@* ]]; then
         fi 
         sudo cp -vf --remove-destination $HOME/libnvidia-glcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION
     fi 
-elif [[ $1 == nvt ]]; then  
+else 
     shift 
     if sudo test ! -d /root/nvt; then 
         sudo /mnt/linuxqa/nvt.sh sync

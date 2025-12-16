@@ -66,7 +66,7 @@ fi
 if [[ -z $NOBUILD ]]; then 
     time $P4ROOT/tools/linux/unix-build/unix-build \
         --unshare-namespaces \
-        --tools $P4ROOT/tools \
+        --tools  $P4ROOT/tools \
         --devrel $P4ROOT/devrel/SDK/inc/GL \
         nvmake \
         NV_COLOR_OUTPUT=1 \
