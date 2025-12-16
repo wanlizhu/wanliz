@@ -6,7 +6,7 @@ export P4CLIENT="wanliz_sw_windows_wsl2"
 export P4ROOT="/$P4CLIENT"
 
 if [[ -f "$1" ]]; then 
-    wanliz-nvrmmod
+    wanliz-rmmod-nvidia
     chmod +x "$1" &>/dev/null || true 
     failed=
     if [[ $2 == "-i" ]]; then 
@@ -20,9 +20,9 @@ if [[ -f "$1" ]]; then
         echo "$1" >~/.driver 
         echo "Generated ~/.driver"
     fi 
-    if [[ -f /tmp/nvrmmod.restore ]]; then 
-        eval "$(cat /tmp/nvrmmod.restore)"
-        sudo rm -f /tmp/nvrmmod.restore
+    if [[ -f /tmp/rmmod.restore ]]; then 
+        eval "$(cat /tmp/rmmod.restore)"
+        sudo rm -f /tmp/rmmod.restore
     fi 
 elif [[ $1 == "redo" ]]; then 
     if [[ ! -f $(cat ~/.driver) ]]; then
