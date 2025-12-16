@@ -10,7 +10,7 @@ done < <(find "$HOME" -maxdepth 1 -type f -not -name '.*' -print0)
 
 if ((${#home_files[@]})); then 
     if [[ -f /tmp/remote.ip ]]; then 
-        if ! ping -c 1 -W 3 "$(cat /tmp/remote.ip &>/dev/null; then 
+        if ! ping -c 1 -W 3 "$(cat /tmp/remote.ip &>/dev/null)"; then 
             sudo rm -f /tmp/remote.ip
         fi  
     fi 
