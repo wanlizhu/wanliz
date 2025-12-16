@@ -57,7 +57,10 @@ function rmmod_recursive() {
             for dep in $depends; do 
                 rmmod_recursive "$dep" || return 1
             done 
-            sudo rmmod "$1" || return 1
+            sudo rmmod "$1" || {
+                echo "Failed to remove $1"
+                return 1
+            }
         else
             echo "$output"
             return 1
