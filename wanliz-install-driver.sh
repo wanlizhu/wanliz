@@ -29,7 +29,7 @@ elif [[ $1 == "redo" ]]; then
         echo "Invalid path in ~/.driver"
         exit 1
     fi 
-    wanliz-nvinstall $(cat ~/.driver $@)
+    wanliz-install-driver $(cat ~/.driver $@)
 elif [[ $1 == *@* ]]; then 
     LOGIN_INFO="$1"
     TARGET=
@@ -53,7 +53,7 @@ elif [[ $1 == *@* ]]; then
     if [[ $TARGET == drivers ]]; then 
         rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/Linux_${ARCH}_${CONFIG}/NVIDIA-Linux-$(uname -m)-${VERSION}-internal.run $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run || exit 1
         rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/Linux_${ARCH}_${CONFIG}/tests-Linux-$(uname -m).tar $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-tests.tar
-        wanliz-nvinstall $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run
+        wanliz-install-driver $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run
     elif [[ $TARGET == opengl ]]; then 
         rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glcore.so $HOME/libnvidia-glcore.so.$VERSION 
         if [[ ! -e /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION ]]; then 

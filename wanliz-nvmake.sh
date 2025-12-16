@@ -83,7 +83,7 @@ if [[ -z $NOBUILD ]]; then
     if [[ ! -z $TARGET_INSTALL ]]; then 
         myip=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
         nvsrc_version=$(sed -n 's/^[[:space:]]*#define[[:space:]]\+NV_VERSION_STRING[[:space:]]\+"\([^"]\+\)".*/\1/p' /wanliz_sw_windows_wsl2/workingbranch/drivers/common/inc/nvUnixVersion.h | head -n1)
-        echo "wanliz-nvinstall $USER@$myip $TARGET_INSTALL $ARCH $CONFIG $nvsrc_version"
+        echo "wanliz-install-driver $USER@$myip $TARGET_INSTALL $ARCH $CONFIG $nvsrc_version"
         echo 
     fi 
 fi 
