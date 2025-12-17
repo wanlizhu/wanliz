@@ -56,11 +56,15 @@ elif [[ $1 == *@* ]]; then
         wanliz-install-driver $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run
     elif [[ $TARGET == opengl ]]; then 
         rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glcore.so $HOME/libnvidia-glcore.so.$VERSION 
+        rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-gpucomp.so $HOME/libnvidia-gpucomp.so.$VERSION
+        rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-tls.so $HOME/libnvidia-tls.so.$VERSION
         if [[ ! -e /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION ]]; then 
             echo "Incompatible version $VERSION"
             exit 1
         fi 
         sudo cp -vf --remove-destination $HOME/libnvidia-glcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION
+        sudo cp -vf --remove-destination $HOME/libnvidia-gpucomp.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-gpucomp.so.$VERSION
+        sudo cp -vf --remove-destination $HOME/libnvidia-tls.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-tls.so.$VERSION
     fi 
 else 
     if sudo test ! -d /root/nvt; then 
