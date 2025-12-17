@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 trap 'exit 130' INT
 
+echo "Are you sure this is DGX spark?"
+read -p "Press [Enter] to continue: "
+
 sudo nvidia-smi -pm 1
 sudo nvidia-persistenced
 
