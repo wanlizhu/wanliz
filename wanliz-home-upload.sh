@@ -21,6 +21,6 @@ if ((${#home_files[@]})); then
 
     remote_ip=$(cat /tmp/remote.ip)
     ssh wanliz@$remote_ip "mkdir -p /mnt/d/${USER}@$(hostname)"
-    rsync -lth --no-times --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' "${home_files[@]}" wanliz@$remote_ip:/mnt/d/${USER}@$(hostname)/
+    rsync -lth --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' "${home_files[@]}" wanliz@$remote_ip:/mnt/d/${USER}@$(hostname)/
 fi 
 
