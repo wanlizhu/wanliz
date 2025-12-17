@@ -65,4 +65,8 @@ function rmmod_recursive() {
     fi 
     return 0
 }
+
 rmmod_recursive nvidia
+if [[ -f /tmp/rmmod.restore ]]; then 
+    chmod +x /tmp/rmmod.restore
+fi 
