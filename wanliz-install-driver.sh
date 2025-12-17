@@ -89,7 +89,9 @@ elif [[ $1 == *@* ]]; then
 
             read -p "Press [Enter] to continue: "
             
-            if [[ ! -f $HOME/libnvidia-glcore.so.$VERSION.backup ]]; then 
+            if [[ -f $HOME/libnvidia-glcore.so.$VERSION.backup ]]; then 
+                echo "Reuse existing backups"
+            else
                 sudo cp /usr/lib/$(uname -m)-linux-gnu/libGLX_nvidia.so.$VERSION $HOME/libGLX_nvidia.so.$VERSION.backup
                 sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION $HOME/libnvidia-glcore.so.$VERSION.backup
                 sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-eglcore.so.$VERSION $HOME/libnvidia-eglcore.so.$VERSION.backup
