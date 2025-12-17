@@ -3,7 +3,7 @@
 home_files=()
 while IFS= read -r -d '' file; do 
     case "$file" in 
-        *.run|*.tar|*.tar.gz|*.tgz|*.zip|*.so|*.deb|*.tar.bz2|*.tbz|*.tbz2|*.tar.xz|*.txz|*.tar.zst|*.tzst|*.tar.lz4|*.tlz4) continue ;;
+        *.run|*.tar|*.tar.gz|*.tgz|*.zip|*.so|*.deb|*.tar.bz2|*.tbz|*.tbz2|*.tar.xz|*.txz|*.tar.zst|*.tzst|*.tar.lz4|*.tlz4|libnvidia-*.so*|nvperf_vulkan) continue ;;
     esac 
     home_files+=("$file")
 done < <(find "$HOME" -maxdepth 1 -type f -not -name '.*' -print0)
