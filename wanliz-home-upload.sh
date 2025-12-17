@@ -4,8 +4,7 @@ home_files=()
 while IFS= read -r -d '' file_path; do 
     case "$file_path" in 
         *.run|*.tar|*.tar.gz|*.tgz|*.zip|*.so|*.deb|*.tar.bz2|*.tbz|*.tbz2|*.tar.xz|*.txz|*.tar.zst|*.tzst|*.tar.lz4|*.tlz4) continue ;;
-        *nvperf_vulkan) continue ;;
-        *libnvidia-*) continue ;;
+        *libnvidia-*.so*) continue ;;
     esac 
     home_files+=("$file_path")
 done < <(find "$HOME" -maxdepth 1 -type f -not -name '.*' -print0)
@@ -23,5 +22,5 @@ if ((${#home_files[@]})); then
 
     remote_ip=$(cat /tmp/remote.ip)
     ssh wanliz@$remote_ip "mkdir -p /mnt/d/${USER}@$(hostname)"
-    rsync -rDh --no-perms --no-owner --no-group --no-times --omit-dir-times --ignore-missing-args --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' "${home_files[@]}" wanliz@$remote_ip:/mnt/d/${USER}@$(hostname)/
+    rsync -rDh --no-times --omit-dir-times --ignore-missing-args --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' "${home_files[@]}" wanliz@$remote_ip:/mnt/d/${USER}@$(hostname)/
 fi 
