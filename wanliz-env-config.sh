@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+trap 'exit 130' INT
 
 if [[ -z $(which sudo) && $EUID -eq 0 ]]; then 
     apt install -y sudo 

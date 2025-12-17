@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+trap 'exit 130' INT
 
 if [[ $1 == -h || $1 == --help ]]; then 
     echo "Usage: $0 [CONFIG] [ARCH] [TARGET] [options] [-- extra nvmake args]"

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+trap 'exit 130' INT
 
 sudo nvidia-smi -pm 1
 sudo nvidia-persistenced

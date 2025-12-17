@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+trap 'exit 130' INT
 
 home_files=()
 while IFS= read -r -d '' file; do 

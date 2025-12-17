@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+trap 'exit 130' INT
 
 export P4PORT="p4proxy-sc.nvidia.com:2006"
 export P4USER="wanliz"

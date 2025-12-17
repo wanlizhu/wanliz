@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+trap 'exit 130' INT
 
 if [[ -z $DISPLAY ]]; then 
     export DISPLAY=:0

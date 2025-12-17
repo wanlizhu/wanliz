@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+trap 'exit 130' INT
 
 if [[ $1 == p4env ]]; then 
     echo 'export P4PORT="p4proxy-sc.nvidia.com:2006"
