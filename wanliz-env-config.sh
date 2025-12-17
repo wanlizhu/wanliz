@@ -74,7 +74,7 @@ for pkg in python${python_version}-dev python${python_version}-venv \
     lsof x11-xserver-utils x11-utils openbox obconf x11vnc \
     mesa-utils vulkan-tools xserver-xorg-core \
     samba samba-common-bin socat cmake build-essential \
-    ninja-build pkg-config
+    ninja-build pkg-config libjpeg-dev
 do 
     if ! dpkg -s $pkg &>/dev/null; then
         if ! confirm_to_install; then  
