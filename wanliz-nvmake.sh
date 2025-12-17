@@ -52,7 +52,7 @@ if [[ -z $TARGET ]]; then
         exit 1
     fi 
 else 
-    cd $HOME/workingbranch || exit 1
+    cd $P4ROOT/workingbranch || exit 1
 fi 
 
 if [[ -z $NOBUILD ]]; then 
