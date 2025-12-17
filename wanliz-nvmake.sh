@@ -39,13 +39,7 @@ while [[ ! -z $1 ]]; do
     shift 
 done 
 
-if [[ -d /wanliz_sw_linux ]]; then 
-    export P4PORT="p4proxy-sc.nvidia.com:2006"
-    export P4USER="wanliz"
-    export P4CLIENT="wanliz_sw_linux"
-    export P4ROOT="/wanliz_sw_linux"
-    export NV_SOURCE="/wanliz_sw_linux/dev/gpu_drv/bugfix_main"
-elif [[ -d /wanliz_sw_windows_wsl2 ]]; then 
+if [[ -z $P4ROOT ]]; then 
     export P4PORT="p4proxy-sc.nvidia.com:2006"
     export P4USER="wanliz"
     export P4CLIENT="wanliz_sw_windows_wsl2"
