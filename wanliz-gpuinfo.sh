@@ -7,6 +7,12 @@ fi
 
 ip=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
 echo "My IP: $ip"
+if [[ -d /wanliz_sw_windows_wsl2 ]]; then
+    nvsrc_version=$(cat /wanliz_sw_windows_wsl2/workingbranch/drivers/common/inc/nvUnixVersion.h | grep '#define' | grep NV_VERSION_STRING | awk -F'"' '{print $2}')
+    echo "NVIDIA Source Code Version: $nvsrc_version"
+else
+    echo "NVIDIA Source Code Version: N/A"
+fi 
 
 echo 
 echo "X server info:"
