@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 
 home_files=()
-while IFS= read -r -d '' file; do 
-    case "$file" in 
-        *.run|*.tar|*.tar.gz|*.tgz|*.zip|*.so|*.deb|*.tar.bz2|*.tbz|*.tbz2|*.tar.xz|*.txz|*.tar.zst|*.tzst|*.tar.lz4|*.tlz4|libnvidia-*.so*|nvperf_vulkan) continue ;;
+while IFS= read -r -d '' file_path; do 
+    case "$file_path" in 
+        *.run|*.tar|*.tar.gz|*.tgz|*.zip|*.so|*.deb|*.tar.bz2|*.tbz|*.tbz2|*.tar.xz|*.txz|*.tar.zst|*.tzst|*.tar.lz4|*.tlz4) continue ;;
+        *nvperf_vulkan) continue ;;
+        *libnvidia-*) continue ;;
     esac 
-    home_files+=("$file")
+    home_files+=("$file_path")
 done < <(find "$HOME" -maxdepth 1 -type f -not -name '.*' -print0)
 
 if ((${#home_files[@]})); then 
