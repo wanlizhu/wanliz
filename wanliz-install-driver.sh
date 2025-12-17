@@ -68,17 +68,12 @@ else
     fi 
     sudo env NVTEST_INSTALLER_REUSE_INSTALL=False /mnt/linuxqa/nvt.sh drivers "$@" 2>/tmp/std2 | tee /tmp/std1 
     cat /tmp/std2
-    driver=$(cat /tmp/std2 | grep 'NVTEST_DRIVER=' | awk '{print $2}' | awk -F'=' '{print $2}')
-    if [[ ! -z $driver ]]; then 
-        if [[ $driver == "http"* ]]; then 
-            mkdir -p $HOME/drivers
-            local_driver=$HOME/drivers/$(basename "$driver")
-            wget --no-check-certificate -O $local_driver $driver || exit 1
-            echo "$local_driver" > ~/.driver 
-            echo "Generated ~/.driver"
-        elif [[ -f $driver ]]; then 
-            echo "$driver" > ~/.driver 
-            echo "Generated ~/.driver"
-        fi 
+    driver_src=$(cat /tmp/std2 | grep 'NVTEST_DRIVER=' | awk '{print $2}' | awk -F'=' '{print $2}')
+    driver_dst=$HOME/$(basename "$driver_src")
+    if [[ ! -z $driver_src ]]; then 
+        sudo cp -vf /root/nvt/driver/$(basename "$driver_src") $driver_dst 
+        sudo cp -vf /root/nvt/driver/tests-Linux-$(uname -m).tar $(dirname $driver_dst)
+        echo "$driver_dst" > ~/.driver 
+        echo "Generated ~/.driver"
     fi 
 fi 

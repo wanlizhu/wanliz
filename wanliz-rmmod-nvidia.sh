@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-sudo rm -f /tmp/nvrmmod.restore 
+sudo rm -f /tmp/rmmod.restore 
 sudo lsof -w -n /dev/nvidia* | awk 'NR>1{{print $2}}' | sort -un | while read -r pid; do
     printf "%-7s;%s\n" "$pid" "$(tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null || ps -o args= -p "$pid")"
 done > /tmp/nvidia_cmds
@@ -10,18 +10,18 @@ for name in gdm sddm lightdm openbox nvsm-core $nvidia_services; do
     service_name=$(systemctl list-units --type=service | grep -i $name | awk '{print $1}')
     if [[ ! -z $service_name ]]; then 
         sudo systemctl stop $service_name && echo "Stopped $service_name"
-        echo "sudo systemctl start $service_name && echo \"Started $service_name\"; " >>/tmp/nvrmmod.restore
+        echo "sudo systemctl start $service_name && echo \"Started $service_name\"; " >>/tmp/rmmod.restore
     fi 
 done 
 if [[ ! -z $(cat /tmp/nvidia_cmds | grep 'nvidia-persistenced') ]]; then 
     if [[ ! -z $(which nvidia-persistenced) && -z $(systemctl list-units --type=service | grep -i 'nvidia-persistenced') ]]; then 
         sudo kill -9 $(cat /tmp/nvidia_cmds | grep 'nvidia-persistenced' | awk -F';' '{print $1}') && echo "Killed nvidia-persistenced"
-        echo "sudo $(cat /tmp/nvidia_cmds | grep 'nvidia-persistenced' | awk -F';' '{print $2}')" >>/tmp/nvrmmod.restore
+        echo "sudo $(cat /tmp/nvidia_cmds | grep 'nvidia-persistenced' | awk -F';' '{print $2}')" >>/tmp/rmmod.restore
     fi 
 fi 
 if [[ ! -z $(nvidia-smi -q | grep -i "Persistence Mode" | grep "Enabled") ]]; then 
     sudo nvidia-smi -pm 0
-    echo "sudo nvidia-smi -pm 1" >>/tmp/nvrmmod.restore
+    echo "sudo nvidia-smi -pm 1" >>/tmp/rmmod.restore
 fi 
 
 remove_pkg_drivers=
