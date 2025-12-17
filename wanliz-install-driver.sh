@@ -36,6 +36,7 @@ elif [[ $1 == *@* ]]; then
     CONFIG=
     ARCH=$(uname -m | sed 's/x86_64/amd64/g')
     VERSION=
+    RESTORE=
     shift 
     while [[ ! -z $1 ]]; do 
         case $1 in 
@@ -44,6 +45,7 @@ elif [[ $1 == *@* ]]; then
             amd64|x64|x86_64) [[ $(uname -m) != "x86_64"  ]] && { echo "Invalid arch $1"; exit 1; } ;;
             aarch64|arm64)    [[ $(uname -m) != "aarch64" ]] && { echo "Invalid arch $1"; exit 1; } ;;
             [0-9]*) VERSION=$1 ;;
+            -r|--restore) RESTORE=1 ;;
         esac
         shift 
     done 
@@ -55,16 +57,24 @@ elif [[ $1 == *@* ]]; then
         rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/Linux_${ARCH}_${CONFIG}/tests-Linux-$(uname -m).tar $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-tests.tar
         wanliz-install-driver $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run
     elif [[ $TARGET == opengl ]]; then 
-        rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glcore.so $HOME/libnvidia-glcore.so.$VERSION 
-        rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-gpucomp.stub.so $HOME/libnvidia-gpucomp.stub.so.$VERSION
-        rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-tls-stub.so $HOME/libnvidia-tls-stub.so.$VERSION
-        if [[ ! -e /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION ]]; then 
-            echo "Incompatible version $VERSION"
-            exit 1
+        if [[ $RESTORE == 1 ]]; then 
+            if [[ -f $HOME/libnvidia-glcore.so.$VERSION.backup ]]; then 
+                sudo cp -vf --remove-destination $HOME/libnvidia-glcore.so.$VERSION.backup /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION
+                sudo rm -f $HOME/libnvidia-glcore.so.$VERSION.backup
+            else
+                echo "$HOME/libnvidia-glcore.so.$VERSION.backup doesn't exist"
+            fi 
+        else 
+            rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glcore.so $HOME/libnvidia-glcore.so.$VERSION 
+            if [[ ! -e /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION ]]; then 
+                echo "Incompatible version $VERSION"
+                exit 1
+            fi 
+            if [[ ! -f $HOME/libnvidia-glcore.so.$VERSION.backup ]]; then 
+                sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION $HOME/libnvidia-glcore.so.$VERSION.backup
+            fi 
+            sudo cp -vf --remove-destination $HOME/libnvidia-glcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION
         fi 
-        sudo cp -vf --remove-destination $HOME/libnvidia-glcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION
-        sudo cp -vf --remove-destination $HOME/libnvidia-gpucomp.stub.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-gpucomp.stub.so.$VERSION
-        sudo cp -vf --remove-destination $HOME/libnvidia-tls-stub.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-tls-stub.so.$VERSION
     fi 
 else 
     if sudo test ! -d /root/nvt; then 
