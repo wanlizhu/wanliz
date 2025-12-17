@@ -44,7 +44,6 @@ if [[ -z $P4ROOT ]]; then
     export P4USER="wanliz"
     export P4CLIENT="wanliz_sw_windows_wsl2"
     export P4ROOT="/wanliz_sw_windows_wsl2"
-    export NV_SOURCE="/wanliz_sw_windows_wsl2/workingbranch"
 fi 
 
 if [[ -z $TARGET ]]; then 
@@ -53,7 +52,7 @@ if [[ -z $TARGET ]]; then
         exit 1
     fi 
 else 
-    cd $NV_SOURCE || exit 1
+    cd $HOME/workingbranch || exit 1
 fi 
 
 if [[ -z $NOBUILD ]]; then 
@@ -88,7 +87,7 @@ if [[ $CC == 1 ]]; then
     rm -f /tmp/nvmake.out /tmp/nvmake.err 
     rm -f _out/$Linux_arch_config/compile_commands.json compile_commands.json 
 
-    cd $NV_SOURCE/drivers/OpenGL || exit 1
+    cd $P4ROOT/workingbranch/drivers/OpenGL || exit 1
     $P4ROOT/tools/linux/unix-build/unix-build \
         --unshare-namespaces \
         --tools $P4ROOT/tools \
