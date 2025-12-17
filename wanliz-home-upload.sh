@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
 
 home_files=()
-while IFS= read -r -d '' file_path; do 
-    case "$file_path" in 
-        *.run|*.tar|*.tar.gz|*.tgz|*.zip|*.so|*.deb|*.tar.bz2|*.tbz|*.tbz2|*.tar.xz|*.txz|*.tar.zst|*.tzst|*.tar.lz4|*.tlz4) continue ;;
-        *libnvidia-*.so*) continue ;;
+while IFS= read -r -d '' file; do 
+    case "$file" in 
+        *.run|*.tar|*.tar.gz|*.tgz|*.zip|*.so|*.deb|*.tar.bz2|*.tbz|*.tbz2|*.tar.xz|*.txz|*.tar.zst|*.tzst|*.tar.lz4|*.tlz4|*libnvidia-*.so*|*nvperf_vulkan) continue ;;
     esac 
-    home_files+=("$file_path")
+    home_files+=("$file")
 done < <(find "$HOME" -maxdepth 1 -type f -not -name '.*' -print0)
 
 if ((${#home_files[@]})); then 
     if [[ -f /tmp/remote.ip ]]; then 
-        if ! sudo ping -c 1 -W 3 "$(cat /tmp/remote.ip 2>/dev/null)"; then 
+        if ! ping -c 1 -W 3 "$(cat /tmp/remote.ip 2>/dev/null)"; then 
             sudo rm -f /tmp/remote.ip
         fi  
     fi 
@@ -22,5 +21,5 @@ if ((${#home_files[@]})); then
 
     remote_ip=$(cat /tmp/remote.ip)
     ssh wanliz@$remote_ip "mkdir -p /mnt/d/${USER}@$(hostname)"
-    rsync -rDh --no-times --omit-dir-times --ignore-missing-args --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' "${home_files[@]}" wanliz@$remote_ip:/mnt/d/${USER}@$(hostname)/
+    rsync -lth --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' "${home_files[@]}" wanliz@$remote_ip:/mnt/d/${USER}@$(hostname)/
 fi 
