@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
 
-if [[ -d /wanliz_sw_linux ]]; then 
-    exit 1
-elif [[ -d /wanliz_sw_windows_wsl2 ]]; then 
+if [[ -z $P4ROOT ]]; then 
     export P4PORT="p4proxy-sc.nvidia.com:2006"
     export P4USER="wanliz"
     export P4CLIENT="wanliz_sw_windows_wsl2"
     export P4ROOT="/wanliz_sw_windows_wsl2"
-    export NV_SOURCE="/wanliz_sw_windows_wsl2/workingbranch"
 fi 
+
+echo "Backing up untracked workspace files ..."
+SRC=/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL
+mkdir -p /mnt/d/wanliz_sw_windows_wsl2.backup/workingbranch/drivers/OpenGL
+rsync -rDh --no-perms --no-owner --no-group --no-times --omit-dir-times --ignore-missing-args --info=progress2 \
+    $SRC/_doc \
+    $SRC/.cursor \
+    $SRC/compile_commands.json \
+    $SRC/*.code-workspace \
+    /mnt/d/wanliz_sw_windows_wsl2.backup/workingbranch/drivers/OpenGL/
 
 oldbranch=$(p4 client -o | grep 'drivers/OpenGL' | head -1 | awk -F'/drivers' '{print $1}')
 oldbranch=$(echo "$oldbranch" | sed 's/^[[:space:]]*//')
