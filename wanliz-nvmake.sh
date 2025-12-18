@@ -111,6 +111,11 @@ if [[ -z $NOBUILD ]]; then
         echo "wanliz-install-driver $USER@$myip $TARGET_INSTALL $ARCH $CONFIG $nvsrc_version"
         echo 
     fi 
+
+    if [[ $CONFIG == debug ]]; then
+        echo "Bypass debug assert: __GL_DEBUG_BYPASS_ASSERT=Ignore"
+        echo 
+    fi 
 fi 
 
 if [[ $CC == 1 ]]; then 
