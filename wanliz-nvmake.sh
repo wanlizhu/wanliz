@@ -92,14 +92,14 @@ if [[ -z $NOBUILD ]]; then
             --devrel $P4ROOT/devrel/SDK/inc/GL \
             nvmake \
             NV_COLOR_OUTPUT=1 \
-            NV_GUARDWORD= \
+            NV_GUARDWORD=0 \
             NV_COMPRESS_THREADS=$(nproc) \
             NV_FAST_PACKAGE_COMPRESSION=zstd \
             NV_USE_FRAME_POINTER=1 \
-            NV_UNIX_LTO_ENABLED= \
-            NV_LTCG= \
+            NV_UNIX_LTO_ENABLED=0 \
+            NV_LTCG=0 \
             NV_UNIX_CHECK_DEBUG_INFO=0 \
-            NV_MANGLE_SYMBOLS= \
+            NV_MANGLE_SYMBOLS=0 \
             NV_TRACE_CODE=$([[ $CONFIG == release ]] && echo 0 || echo 1) \
             linux $TARGET $ARCH $CONFIG $JOBS $EXTRA_ARGS || exit 1
         echo 
