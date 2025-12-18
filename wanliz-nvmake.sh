@@ -19,24 +19,24 @@ fi
 
 TARGET=
 TARGET_INSTALL=
-CONFIG=develop
 ARCH=$(uname -m | sed 's/x86_64/amd64/g')
+CONFIG=develop
 SINGLE_THREAD=
 NOBUILD=
 CLEAN_BUILD=
-CC=
+COMPILE_COMMANDS=
 EXTRA_ARGS=
 while [[ ! -z $1 ]]; do 
     case $1 in 
-        debug|release|develop) CONFIG=$1 ;;
+        drivers) TARGET="drivers dist"; TARGET_INSTALL=drivers ;;
+        opengl)  TARGET="opengl"; TARGET_INSTALL=opengl ;;
         amd64|x64|x86_64) ARCH=amd64 ;;
         aarch64|arm64) ARCH=aarch64 ;;
-        opengl)  TARGET="opengl"; TARGET_INSTALL=opengl ;;
-        drivers) TARGET="drivers dist"; TARGET_INSTALL=drivers ;;
+        debug|release|develop) CONFIG=$1 ;;
         -j1) SINGLE_THREAD="-j1" ;;
-        -cc) CC=1 ;;
-        -n) NOBUILD=1 ;;
-        -c|-clean) CLEAN_BUILD=1 ;;
+        -n|-nobuild) NOBUILD="-n" ;;
+        -c|-clean) CLEAN_BUILD="-c" ;;
+        -cc|-compilecommands) COMPILE_COMMANDS="-cc" ;;
         *) EXTRA_ARGS+=" $1" ;;
     esac
     shift 
@@ -63,23 +63,23 @@ fi
 if [[ -z $NOBUILD ]]; then 
     if [[ $TARGET == opengl ]]; then 
         pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/glsi >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD || exit 1
+        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
         popd >/dev/null 
 
         pushd $P4ROOT/workingbranch/drivers/OpenGL/win/unix/tls/Linux-elf >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD || exit 1
+        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
         popd >/dev/null 
 
         pushd $P4ROOT/workingbranch/drivers/OpenGL/win/glx/lib >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD || exit 1
+        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
         popd >/dev/null 
 
         pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/build >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD || exit 1
+        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
         popd >/dev/null 
 
         pushd $P4ROOT/workingbranch/drivers/OpenGL >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD || exit 1
+        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
         popd >/dev/null 
         echo 
     else 
@@ -124,13 +124,11 @@ if [[ -z $NOBUILD ]]; then
     fi 
 fi 
 
-if [[ $CC == 1 ]]; then 
-    Linux_arch_config=Linux_${ARCH}_${CONFIG}
-    echo "Generating _out/$Linux_arch_config/compile_commands.json"
+if [[ ! -z $COMPILE_COMMANDS ]]; then 
+    echo "Generating _out/Linux_${ARCH}_${CONFIG}/compile_commands.json"
     rm -f /tmp/nvmake.out /tmp/nvmake.err 
-    rm -f _out/$Linux_arch_config/compile_commands.json compile_commands.json 
+    rm -f _out/Linux_${ARCH}_${CONFIG}/compile_commands.json compile_commands.json 
 
-    cd $P4ROOT/workingbranch/drivers/OpenGL || exit 1
     $P4ROOT/tools/linux/unix-build/unix-build \
         --unshare-namespaces \
         --tools $P4ROOT/tools \
@@ -141,8 +139,8 @@ if [[ $CC == 1 ]]; then
         NV_USE_FRAME_POINTER=1 \
         NV_GUARDWORD= \
         NV_MANGLE_SYMBOLS= \
-        linux $ARCH $CONFIG -Bn -j$(nproc) > _out/$Linux_arch_config/gcc_compile_commands.cmd && {
-        echo "Generated  _out/$Linux_arch_config/gcc_compile_commands.cmd"
-        wanliz-clangd-database _out/$Linux_arch_config/gcc_compile_commands.cmd
+        linux $ARCH $CONFIG -Bn -j$(nproc) > _out/Linux_${ARCH}_${CONFIG}/gcc_compile_commands.cmd && {
+        echo "Generated  _out/Linux_${ARCH}_${CONFIG}/gcc_compile_commands.cmd"
+        wanliz-clangd-database _out/Linux_${ARCH}_${CONFIG}/gcc_compile_commands.cmd
     } 
 fi 
