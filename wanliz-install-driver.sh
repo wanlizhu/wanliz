@@ -6,6 +6,8 @@ export P4USER="wanliz"
 export P4CLIENT="wanliz_sw_windows_wsl2"
 export P4ROOT="/$P4CLIENT"
 
+rm -f $HOME/.driver
+
 if [[ -f "$1" ]]; then 
     wanliz-rmmod-nvidia
     chmod +x "$1" &>/dev/null || true 
@@ -18,19 +20,19 @@ if [[ -f "$1" ]]; then
     if [[ $failed -eq 1 ]]; then 
         cat '/var/log/nvidia-installer.log'
     else 
-        echo "$1" >~/.driver 
-        echo "Generated ~/.driver"
+        echo "$1" >$HOME/.driver 
+        echo "Generated $HOME/.driver"
     fi 
     if [[ -f /tmp/rmmod.restore ]]; then 
         eval "$(cat /tmp/rmmod.restore)"
         sudo rm -f /tmp/rmmod.restore
     fi 
 elif [[ $1 == "redo" ]]; then 
-    if [[ ! -f $(cat ~/.driver) ]]; then
-        echo "Invalid path in ~/.driver"
+    if [[ ! -f $(cat $HOME/.driver) ]]; then
+        echo "Invalid path in $HOME/.driver"
         exit 1
     fi 
-    wanliz-install-driver $(cat ~/.driver $@)
+    wanliz-install-driver $(cat $HOME/.driver $@)
 elif [[ $1 == *@* ]]; then 
     LOGIN_INFO="$1"
     TARGET=
@@ -115,9 +117,14 @@ else
     driver_src=$(cat /tmp/std2 | grep 'NVTEST_DRIVER=' | awk '{print $2}' | awk -F'=' '{print $2}')
     driver_dst=$HOME/$(basename "$driver_src")
     if [[ ! -z $driver_src ]]; then 
-        sudo cp -vf /root/nvt/driver/$(basename "$driver_src") $driver_dst 
-        sudo cp -vf /root/nvt/driver/tests-Linux-$(uname -m).tar $(dirname $driver_dst)
-        echo "$driver_dst" > ~/.driver 
-        echo "Generated ~/.driver"
+        if [[ "$driver_src" == http* ]]; then 
+            sudo cp -vf /root/nvt/driver/$(basename "$driver_src") $driver_dst || exit 1
+            sudo cp -vf /root/nvt/driver/tests-Linux-$(uname -m).tar $(dirname $driver_dst)
+            echo "$driver_dst" > $HOME/.driver 
+            echo "Generated $HOME/.driver"
+        elif [[ -f $driver_src ]]; then 
+            echo "$driver_src" > $HOME/.driver 
+            echo "Generated $HOME/.driver"
+        fi 
     fi 
 fi 
