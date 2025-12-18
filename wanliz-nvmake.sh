@@ -36,7 +36,7 @@ while [[ ! -z $1 ]]; do
         -j1) SINGLE_THREAD="-j1" ;;
         -cc) CC=1 ;;
         -n) NOBUILD=1 ;;
-        -clean) CLEAN_BUILD=1 ;;
+        -c|-clean) CLEAN_BUILD=1 ;;
         *) EXTRA_ARGS+=" $1" ;;
     esac
     shift 
