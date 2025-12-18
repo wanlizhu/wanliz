@@ -110,7 +110,7 @@ else
     if sudo test ! -d /root/nvt; then 
         sudo /mnt/linuxqa/nvt.sh sync
     fi 
-    sudo env NVTEST_INSTALLER_REUSE_INSTALL=False /mnt/linuxqa/nvt.sh drivers "$@" 2>/tmp/std2 | tee /tmp/std1 
+    sudo env NVTEST_INSTALLER_REUSE_INSTALL=False /mnt/linuxqa/nvt.sh drivers "$@" 2>/tmp/std2 
     cat /tmp/std2
     driver_src=$(cat /tmp/std2 | grep 'NVTEST_DRIVER=' | awk '{print $2}' | awk -F'=' '{print $2}')
     driver_dst=$HOME/$(basename "$driver_src")
