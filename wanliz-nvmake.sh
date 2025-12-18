@@ -71,7 +71,7 @@ if [[ -z $NOBUILD ]]; then
         popd >/dev/null 
 
         pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/glsi >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
+        #wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
         popd >/dev/null 
 
         pushd $P4ROOT/workingbranch/drivers/OpenGL/win/unix/tls/Linux-elf >/dev/null 

@@ -78,7 +78,7 @@ elif [[ $1 == *@* ]]; then
         else 
             rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glcore.so $HOME/libnvidia-glcore.so.$VERSION
             rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/egl/build/_out/Linux_${ARCH}_${CONFIG}/libnvidia-eglcore.so $HOME/libnvidia-eglcore.so.$VERSION 
-            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/egl/glsi/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glsi.so $HOME/libnvidia-glsi.so.$VERSION 
+            #rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/egl/glsi/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glsi.so $HOME/libnvidia-glsi.so.$VERSION 
             rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/unix/tls/Linux-elf/_out/Linux_${ARCH}_${CONFIG}/libnvidia-tls.so $HOME/libnvidia-tls.so.$VERSION 
             rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/glx/lib/_out/Linux_${ARCH}_${CONFIG}/libGLX_nvidia.so $HOME/libGLX_nvidia.so.$VERSION  
             
