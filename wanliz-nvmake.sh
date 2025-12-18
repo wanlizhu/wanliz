@@ -62,6 +62,10 @@ fi
 
 if [[ -z $NOBUILD ]]; then 
     if [[ $TARGET == opengl ]]; then 
+        pushd $P4ROOT/workingbranch/drivers/OpenGL >/dev/null 
+        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
+        popd >/dev/null 
+
         pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/glsi >/dev/null 
         wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
         popd >/dev/null 
@@ -75,10 +79,6 @@ if [[ -z $NOBUILD ]]; then
         popd >/dev/null 
 
         pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/build >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
-        popd >/dev/null 
-
-        pushd $P4ROOT/workingbranch/drivers/OpenGL >/dev/null 
         wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
         popd >/dev/null 
         echo 
@@ -112,9 +112,9 @@ if [[ -z $NOBUILD ]]; then
     fi 
     
     if [[ ! -z $TARGET_INSTALL ]]; then 
-        myip=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
-        nvsrc_version=$(sed -n 's/^[[:space:]]*#define[[:space:]]\+NV_VERSION_STRING[[:space:]]\+"\([^"]\+\)".*/\1/p' /wanliz_sw_windows_wsl2/workingbranch/drivers/common/inc/nvUnixVersion.h | head -n1)
-        echo "wanliz-install-driver $USER@$myip $TARGET_INSTALL $ARCH $CONFIG $nvsrc_version"
+        MY_IP=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
+        NVSRC_VERSION=$(sed -n 's/^[[:space:]]*#define[[:space:]]\+NV_VERSION_STRING[[:space:]]\+"\([^"]\+\)".*/\1/p' /wanliz_sw_windows_wsl2/workingbranch/drivers/common/inc/nvUnixVersion.h | head -n1)
+        echo "wanliz-install-driver $USER@$MY_IP $TARGET_INSTALL $ARCH $CONFIG $NVSRC_VERSION"
         echo 
     fi 
 
