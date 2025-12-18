@@ -61,26 +61,26 @@ elif [[ $1 == *@* ]]; then
         if [[ $RESTORE == 1 ]]; then 
             if [[ -f $HOME/libnvidia-glcore.so.$VERSION.backup ]]; then 
                 sudo cp -vf --remove-destination $HOME/libnvidia-glcore.so.$VERSION.backup /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION
+                sudo cp -vf --remove-destination $HOME/libnvidia-eglcore.so.$VERSION.backup /usr/lib/$(uname -m)-linux-gnu/libnvidia-eglcore.so.$VERSION
                 sudo cp -vf --remove-destination $HOME/libnvidia-glsi.so.$VERSION.backup /usr/lib/$(uname -m)-linux-gnu/libnvidia-glsi.so.$VERSION
                 sudo cp -vf --remove-destination $HOME/libnvidia-tls.so.$VERSION.backup /usr/lib/$(uname -m)-linux-gnu/libnvidia-tls.so.$VERSION
                 sudo cp -vf --remove-destination $HOME/libGLX_nvidia.so.$VERSION.backup /usr/lib/$(uname -m)-linux-gnu/libGLX_nvidia.so.$VERSION
-                sudo cp -vf --remove-destination $HOME/libnvidia-eglcore.so.$VERSION.backup /usr/lib/$(uname -m)-linux-gnu/libnvidia-eglcore.so.$VERSION
                 
                 sudo rm -f $HOME/libnvidia-glcore.so.$VERSION.backup
+                sudo rm -f $HOME/libnvidia-eglcore.so.$VERSION.backup
                 sudo rm -f $HOME/libnvidia-glsi.so.$VERSION.backup
                 sudo rm -f $HOME/libnvidia-tls.so.$VERSION.backup
                 sudo rm -f $HOME/libGLX_nvidia.so.$VERSION.backup
-                sudo rm -f $HOME/libnvidia-eglcore.so.$VERSION.backup
                 echo "Restored original OpenGL drivers"
             else
                 echo "$HOME/libnvidia-glcore.so.$VERSION.backup doesn't exist"
             fi 
         else 
             rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glcore.so $HOME/libnvidia-glcore.so.$VERSION
+            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/egl/build/_out/Linux_${ARCH}_${CONFIG}/libnvidia-eglcore.so $HOME/libnvidia-eglcore.so.$VERSION 
             rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/egl/glsi/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glsi.so $HOME/libnvidia-glsi.so.$VERSION 
             rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/unix/tls/Linux-elf/_out/Linux_${ARCH}_${CONFIG}/libnvidia-tls.so $HOME/libnvidia-tls.so.$VERSION 
             rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/glx/lib/_out/Linux_${ARCH}_${CONFIG}/libGLX_nvidia.so $HOME/libGLX_nvidia.so.$VERSION  
-            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/egl/build/_out/Linux_${ARCH}_${CONFIG}/libnvidia-eglcore.so $HOME/libnvidia-eglcore.so.$VERSION 
             
             if [[ ! -e /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION ]]; then 
                 echo "Incompatible version $VERSION"
@@ -93,17 +93,17 @@ elif [[ $1 == *@* ]]; then
                 echo "Reuse existing backups"
             else
                 sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION $HOME/libnvidia-glcore.so.$VERSION.backup
+                sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-eglcore.so.$VERSION $HOME/libnvidia-eglcore.so.$VERSION.backup
                 sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-glsi.so.$VERSION $HOME/libnvidia-glsi.so.$VERSION.backup
                 sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-tls.so.$VERSION $HOME/libnvidia-tls.so.$VERSION.backup
                 sudo cp /usr/lib/$(uname -m)-linux-gnu/libGLX_nvidia.so.$VERSION $HOME/libGLX_nvidia.so.$VERSION.backup
-                sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-eglcore.so.$VERSION $HOME/libnvidia-eglcore.so.$VERSION.backup
             fi 
 
             sudo cp -vf --remove-destination $HOME/libnvidia-glcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION
+            sudo cp -vf --remove-destination $HOME/libnvidia-eglcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-eglcore.so.$VERSION
             sudo cp -vf --remove-destination $HOME/libnvidia-glsi.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-glsi.so.$VERSION
             sudo cp -vf --remove-destination $HOME/libnvidia-tls.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-tls.so.$VERSION
             sudo cp -vf --remove-destination $HOME/libGLX_nvidia.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libGLX_nvidia.so.$VERSION
-            sudo cp -vf --remove-destination $HOME/libnvidia-eglcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-eglcore.so.$VERSION
         fi 
     fi 
 else 
