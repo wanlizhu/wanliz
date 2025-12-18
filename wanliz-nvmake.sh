@@ -23,6 +23,7 @@ CONFIG=develop
 ARCH=$(uname -m | sed 's/x86_64/amd64/g')
 SINGLE_THREAD=
 NOBUILD=
+CLEAN_BUILD=
 CC=
 EXTRA_ARGS=
 while [[ ! -z $1 ]]; do 
@@ -35,6 +36,7 @@ while [[ ! -z $1 ]]; do
         -j1) SINGLE_THREAD="-j1" ;;
         -cc) CC=1 ;;
         -n) NOBUILD=1 ;;
+        -clean) CLEAN_BUILD=1 ;;
         *) EXTRA_ARGS+=" $1" ;;
     esac
     shift 
@@ -81,6 +83,10 @@ if [[ -z $NOBUILD ]]; then
         popd >/dev/null 
         echo 
     else 
+        if [[ $CLEAN_BUILD == 1 ]]; then 
+            rm -rf _out/Linux_${ARCH}_${CONFIG}
+            echo "Removed _out/Linux_${ARCH}_${CONFIG}"
+        fi 
         if [[ ! -z $SINGLE_THREAD ]]; then 
             JOBS="-j1"
         else
