@@ -30,7 +30,7 @@ while [[ ! -z $1 ]]; do
         debug|release|develop) CONFIG=$1 ;;
         amd64|x64|x86_64) ARCH=amd64 ;;
         aarch64|arm64) ARCH=aarch64 ;;
-        opengl)  TARGET=opengl; TARGET_INSTALL=opengl ;;
+        opengl)  TARGET="opengl egl glx glsi tls"; TARGET_INSTALL=opengl ;;
         drivers) TARGET="drivers dist"; TARGET_INSTALL=drivers ;;
         -j1) JOBS=1 ;;
         -cc) CC=1 ;;
