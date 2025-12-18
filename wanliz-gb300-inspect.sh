@@ -17,7 +17,7 @@ fi
 
 ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 -v &>nvperf_vulkan__texcopy24_verbose.log
 
-WANLIZ_DEBUG=1 ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 -v &>nvperf_vulkan__texcopy24_verbose_wanlizDebug.log
+WANLIZ_PRINTF=1 ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 -v &>nvperf_vulkan__texcopy24_verbose_wanlizDebug.log
 
 __GL_DEBUG_LEVEL=30 __GL_DEBUG_MASK=RM ./nvperf_vulkan -nullDisplay -device $DEV_ID alloc:27 2>nvperf_vulkan__alloc27_RM_calls_stdio.log
 
