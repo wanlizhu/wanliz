@@ -25,19 +25,19 @@ if [[ ! -z $(nvidia-smi -q | grep -i "Persistence Mode" | grep "Enabled") ]]; th
     echo "sudo nvidia-smi -pm 1" >>/tmp/rmmod.restore
 fi 
 
-remove_pkg_drivers=
-if [[ $remove_pkg_drivers == 1 ]]; then 
-    echo "Removing nvidia drivers installed through packages ..."
-    sudo apt-get purge -y $(dpkg -l | awk '/^ii[[:space:]]+libnvidia-/{print $2}')
-    for pkg in nvidia-driver-open nvidia-dkms-open nvidia-open \
-            nvidia-settings nvidia-modprobe nvidia-persistenced \
-            nvidia-firmware nvidia-kernel-common nvidia-kernel-source-open
-    do
-        if dpkg -s $pkg >/dev/null 2>&1; then
-            sudo apt purge -y $pkg
-        fi
-    done
-fi 
+    remove_pkg_drivers=
+    if [[ $remove_pkg_drivers == 1 ]]; then 
+        echo "Removing nvidia drivers installed through packages ..."
+        sudo apt-get purge -y $(dpkg -l | awk '/^ii[[:space:]]+libnvidia-/{print $2}')
+        for pkg in nvidia-driver-open nvidia-dkms-open nvidia-open \
+                nvidia-settings nvidia-modprobe nvidia-persistenced \
+                nvidia-firmware nvidia-kernel-common nvidia-kernel-source-open
+        do
+            if dpkg -s $pkg >/dev/null 2>&1; then
+                sudo apt purge -y $pkg
+            fi
+        done
+    fi 
 
 sudo rm -f /tmp/nvidia_pids
 sudo lsof  -t /dev/nvidia* /dev/dri/{card*,renderD*} 2>/dev/null >>/tmp/nvidia_pids

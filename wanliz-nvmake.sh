@@ -12,6 +12,7 @@ if [[ $1 == -h || $1 == --help ]]; then
     echo "  -j1          build with 1 job (default: $(nproc))"
     echo "  -cc          generate compile_commands.json"
     echo "  -n           no real build"
+    echo "  -c           make a clean build (remove _out/Linux_arch_config) first"
     echo ""
     echo "Any other arguments are passed through as EXTRA_ARGS to nvmake."
     exit 0
@@ -71,7 +72,7 @@ if [[ -z $NOBUILD ]]; then
         popd >/dev/null 
 
         pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/glsi >/dev/null 
-        #wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
+        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
         popd >/dev/null 
 
         pushd $P4ROOT/workingbranch/drivers/OpenGL/win/unix/tls/Linux-elf >/dev/null 
