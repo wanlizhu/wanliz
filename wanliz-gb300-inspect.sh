@@ -24,7 +24,7 @@ __GL_DEBUG_LEVEL=30 __GL_DEBUG_MASK=RM ./nvperf_vulkan -nullDisplay -device $DEV
 __GL_DEBUG_LEVEL=30 __GL_DEBUG_MASK=RM ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 2>nvperf_vulkan__texcopy24_RM_calls_stdio.log
 
 #__GL_DEBUG_MASK=PUSHBUFFER __GL_DEBUG_LEVEL=50   __GL_DEBUG_OPTIONS="LOG_TO_CONSOLE:PRINT_THREAD_ID:PRINT_INDENT:FLUSHFILE_PER_WRITE" ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 2>nvperf_vulkan__texcopy24_pushbuffer_stdio.log 
-__GL_ac12fedf=./nvperf_vulkan__texcopy24_pushbuffer_frame%03d.xml __GL_ac12fede=0x10183 ./nvperf_vulkan -nullDisplay -device 0 texcopy:24
+rm -f nvperf_vulkan__texcopy24_pushbuffer_frame* && __GL_ac12fedf=./nvperf_vulkan__texcopy24_pushbuffer_frame%03d.xml __GL_ac12fede=0x10183 ./nvperf_vulkan -nullDisplay -device 0 texcopy:24
 
 __GL_DEBUG_MASK=PERFSTRAT __GL_DEBUG_LEVEL=100 __GL_DEBUG_OPTIONS="LOG_TO_CONSOLE:PRINT_THREAD_ID:PRINT_INDENT:FLUSHFILE_PER_WRITE" ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 2>nvperf_vulkan__texcopy24_perfstrat_stdio.log 
 

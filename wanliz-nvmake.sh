@@ -61,23 +61,23 @@ fi
 if [[ -z $NOBUILD ]]; then 
     if [[ $TARGET == opengl ]]; then 
         pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/glsi >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD
+        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD || exit 1
         popd >/dev/null 
 
         pushd $P4ROOT/workingbranch/drivers/OpenGL/win/unix/tls/Linux-elf >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD
+        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD || exit 1
         popd >/dev/null 
 
         pushd $P4ROOT/workingbranch/drivers/OpenGL/win/glx/lib >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD
+        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD || exit 1
         popd >/dev/null 
 
         pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/build >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD
+        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD || exit 1
         popd >/dev/null 
 
         pushd $P4ROOT/workingbranch/drivers/OpenGL >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD
+        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD || exit 1
         popd >/dev/null 
         echo 
     else 
