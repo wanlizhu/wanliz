@@ -11,7 +11,7 @@ fi
 echo "Backing up untracked workspace files ..."
 SRC=/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL
 mkdir -p /mnt/d/wanliz_sw_windows_wsl2.backup/workingbranch/drivers/OpenGL
-rsync -rDh --no-perms --no-owner --no-group --no-times --omit-dir-times --ignore-missing-args --info=progress2 \
+rsync -ah --ignore-missing-args --info=progress2 \
     $SRC/_doc \
     $SRC/.cursor \
     $SRC/compile_commands.json \
