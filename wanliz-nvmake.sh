@@ -83,7 +83,7 @@ if [[ -z $NOBUILD ]]; then
         popd >/dev/null 
         echo 
     else 
-        if [[ $CLEAN_BUILD == 1 ]]; then 
+        if [[ ! -z $CLEAN_BUILD ]]; then 
             rm -rf _out/Linux_${ARCH}_${CONFIG}
             echo "Removed _out/Linux_${ARCH}_${CONFIG}"
         fi 
