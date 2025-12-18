@@ -11,6 +11,14 @@ if [[ ! -f nvperf_vulkan ]]; then
     rsync -ah --progress wanliz@$WSL_IP:/wanliz_sw_windows_wsl2/apps/gpu/drivers/vulkan/microbench/_out/Linux_aarch64_develop/nvperf_vulkan . 
 fi 
 
+./nvperf_vulkan -nullDisplay -device 0 texcopy &>nvperf_vulkan__texcopy.log
+
+./nvperf_vulkan -nullDisplay -device 0 texcopy -v &>nvperf_vulkan__texcopy_verbose.log
+
+./nvperf_vulkan -nullDisplay -device 0 texcopy:24 -v &>nvperf_vulkan__texcopy24_verbose.log
+
+WANLIZ_DEBUG=1 ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 -v &>nvperf_vulkan__texcopy24_verbose_wanlizDebug.log
+
 __GL_DEBUG_LEVEL=30 __GL_DEBUG_MASK=RM ./nvperf_vulkan -nullDisplay -device $DEV_ID alloc:27 2>nvperf_vulkan__alloc27_RM_calls_stdio.log
 
 __GL_DEBUG_LEVEL=30 __GL_DEBUG_MASK=RM ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 2>nvperf_vulkan__texcopy24_RM_calls_stdio.log
@@ -24,3 +32,28 @@ __GL_DEBUG_MASK=CYCLESTATS __GL_DEBUG_LEVEL=20 __GL_DEBUG_OPTIONS="LOG_TO_CONSOL
 __GL_DEBUG_MASK=VK_ERROR __GL_DEBUG_LEVEL=20 __GL_DEBUG_OPTIONS="LOG_TO_CONSOLE:PRINT_THREAD_ID:PRINT_INDENT:FLUSHFILE_PER_WRITE" ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 2>nvperf_vulkan__texcopy24_vk_error_stdio.log 
 
 __GL_DEBUG_MASK=VK_SYNC __GL_DEBUG_LEVEL=20 __GL_DEBUG_OPTIONS="LOG_TO_CONSOLE:PRINT_THREAD_ID:PRINT_INDENT:FLUSHFILE_PER_WRITE" ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 2>nvperf_vulkan__texcopy24_vk_sync_stdio.log 
+
+dmesg -T | head -n 200 >boot_params.log 
+ls -l /boot/config-$(uname -r) 2>/dev/null >kernel_config.log 
+ulimit -a >ulimit_a.log 
+cat /proc/cpuinfo >cpuinfo.log
+numactl -H 2>/dev/null >numactl_H.log 
+numastat -m 2>/dev/null >numastat_m.log 
+cat /proc/meminfo >meminfo.log 
+cat /proc/vmstat | head -n 200 >vmstat.log 
+sysctl -a 2>/dev/null >sysctl_a.log 
+modinfo nvidia 2>/dev/null >modinfo_nvidia.log
+modinfo nvidia_uvm 2>/dev/null >modinfo_nvidia_uvm.log
+modinfo nvidia_drm 2>/dev/null >modinfo_nvidia_drm.log 
+modinfo nvidia_modeset 2>/dev/null >modinfo_nvidia_modeset.log 
+bash -c 'for m in nvidia nvidia_uvm nvidia_drm nvidia_modeset nvidia_peermem; do echo "=== modinfo -p $m ==="; modinfo -p "$m" 2>/dev/null || true; done' >modinfo_params.log 
+bash -c 'for m in nvidia nvidia_uvm nvidia_drm nvidia_modeset nvidia_peermem; do d="/sys/module/$m/parameters"; echo "=== $d ==="; if [ -d "$d" ]; then (cd "$d" && ls -1 | while read -r p; do printf "%s=" "$p"; cat "$p" 2>/dev/null || true; echo; done); fi; done' >sysfs_module_params.log 
+bash -c 'ls -R /proc/driver/nvidia 2>/dev/null || true; cat /proc/driver/nvidia/version 2>/dev/null || true; cat /proc/driver/nvidia/params 2>/dev/null || true; for f in /proc/driver/nvidia/gpus/*/information /proc/driver/nvidia/gpus/*/power /proc/driver/nvidia/gpus/*/registry; do [ -e "$f" ] && { echo "=== $f ==="; cat "$f"; echo; }; done' >proc_driver_nvidia.log 
+dmesg -T | egrep -i "nvrm|nvidia|uvm|nvlink|fabric|pcie|iommu|gsp|xid" >dmesg_nvidia.log 
+nvidia-smi -q -x >nvidia-smi_q_x.xml 
+nvidia-smi topo -m >nvidia-smi_topo_m.log 
+nvidia-smi topo -p2p n >nvidia-smi_topo_p2p_n.log 
+bash -c 'ls -la /etc/vulkan 2>/dev/null || true; find /etc/vulkan -maxdepth 3 -type f -print -exec sed -n "1,200p" {} \; 2>/dev/null || true; ls -la /usr/share/vulkan 2>/dev/null || true; find /usr/share/vulkan -maxdepth 3 -type f -name "*.json" -print -exec sed -n "1,200p" {} \; 2>/dev/null || true' >vulkan_icd_layers.log 
+env | sort >env.log 
+vulkaninfo --summary >vulkaninfo_summary.log 
+vulkaninfo >vulkaninfo.log 
