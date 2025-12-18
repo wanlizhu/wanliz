@@ -48,7 +48,9 @@ if [[ -z $P4ROOT ]]; then
 fi 
 
 if [[ -z $TARGET ]]; then 
-    if [[ ! -f makefile.nvmk ]]; then 
+    if [[ -f makefile.nvmk ]]; then 
+        echo "Builing $(pwd)"
+    else 
         echo "makefile.nvmk doesn't exist"
         exit 1
     fi 
