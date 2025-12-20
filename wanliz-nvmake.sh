@@ -22,8 +22,7 @@ TARGET=
 TARGET_INSTALL=
 ARCH=$(uname -m | sed 's/x86_64/amd64/g')
 CONFIG=develop
-SINGLE_THREAD=
-NOBUILD=
+THREADS=$(nproc)
 CLEAN_BUILD=
 COMPILE_COMMANDS=
 EXTRA_ARGS=
@@ -34,8 +33,7 @@ while [[ ! -z $1 ]]; do
         amd64|x64|x86_64) ARCH=amd64 ;;
         aarch64|arm64) ARCH=aarch64 ;;
         debug|release|develop) CONFIG=$1 ;;
-        -j1) SINGLE_THREAD="-j1" ;;
-        -n|-nobuild) NOBUILD="-n" ;;
+        -j[0-9]*) THREADS=${1#-j} ;;
         -c|-clean) CLEAN_BUILD="-c" ;;
         -cc|-compilecommands) COMPILE_COMMANDS="-cc" ;;
         *) EXTRA_ARGS+=" $1" ;;
@@ -61,68 +59,61 @@ else
     cd $P4ROOT/workingbranch || exit 1
 fi 
 
-if [[ -z $NOBUILD ]]; then 
-    if [[ $TARGET == opengl ]]; then 
-        pushd $P4ROOT/workingbranch/drivers/OpenGL >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
-        popd >/dev/null 
+if [[ $TARGET == opengl ]]; then 
+    pushd $P4ROOT/workingbranch/drivers/OpenGL >/dev/null 
+    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    popd >/dev/null 
 
-        pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/build >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
-        popd >/dev/null 
+    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/build >/dev/null 
+    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    popd >/dev/null 
 
-        pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/glsi >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
-        popd >/dev/null 
+    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/glsi >/dev/null 
+    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    popd >/dev/null 
 
-        pushd $P4ROOT/workingbranch/drivers/OpenGL/win/unix/tls/Linux-elf >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
-        popd >/dev/null 
+    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/unix/tls/Linux-elf >/dev/null 
+    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    popd >/dev/null 
 
-        pushd $P4ROOT/workingbranch/drivers/OpenGL/win/glx/lib >/dev/null 
-        wanliz-nvmake $ARCH $CONFIG $SINGLE_THREAD $NOBUILD $CLEAN_BUILD $COMPILE_COMMANDS $EXTRA_ARGS || exit 1
-        popd >/dev/null 
-        echo 
-    else 
-        if [[ ! -z $CLEAN_BUILD ]]; then 
-            rm -rf _out/Linux_${ARCH}_${CONFIG}
-            echo "Removed _out/Linux_${ARCH}_${CONFIG}"
-        fi 
-        if [[ ! -z $SINGLE_THREAD ]]; then 
-            JOBS="-j1"
-        else
-            JOBS="-j$(nproc)"
-        fi 
-        time $P4ROOT/tools/linux/unix-build/unix-build \
-            --unshare-namespaces \
-            --tools  $P4ROOT/tools \
-            --devrel $P4ROOT/devrel/SDK/inc/GL \
-            nvmake \
-            NV_COLOR_OUTPUT=1 \
-            NV_GUARDWORD=0 \
-            NV_COMPRESS_THREADS=$(nproc) \
-            NV_FAST_PACKAGE_COMPRESSION=zstd \
-            NV_USE_FRAME_POINTER=1 \
-            NV_UNIX_LTO_ENABLED=0 \
-            NV_LTCG=0 \
-            NV_UNIX_CHECK_DEBUG_INFO=0 \
-            NV_MANGLE_SYMBOLS=0 \
-            NV_TRACE_CODE=$([[ $CONFIG == release ]] && echo 0 || echo 1) \
-            linux $TARGET $ARCH $CONFIG $JOBS $EXTRA_ARGS || exit 1
-        echo 
+    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/glx/lib >/dev/null 
+    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    popd >/dev/null 
+    echo 
+else 
+    if [[ ! -z $CLEAN_BUILD ]]; then 
+        rm -rf _out/Linux_${ARCH}_${CONFIG}
+        echo "Removed _out/Linux_${ARCH}_${CONFIG}"
     fi 
-    
-    if [[ ! -z $TARGET_INSTALL ]]; then 
-        MY_IP=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
-        NVSRC_VERSION=$(sed -n 's/^[[:space:]]*#define[[:space:]]\+NV_VERSION_STRING[[:space:]]\+"\([^"]\+\)".*/\1/p' /wanliz_sw_windows_wsl2/workingbranch/drivers/common/inc/nvUnixVersion.h | head -n1)
-        echo "wanliz-install-driver $USER@$MY_IP $TARGET_INSTALL $ARCH $CONFIG $NVSRC_VERSION"
-        echo 
-    fi 
+    time $P4ROOT/tools/linux/unix-build/unix-build \
+        --unshare-namespaces \
+        --tools  $P4ROOT/tools \
+        --devrel $P4ROOT/devrel/SDK/inc/GL \
+        nvmake \
+        NV_COLOR_OUTPUT=1 \
+        NV_GUARDWORD=0 \
+        NV_COMPRESS_THREADS=$(nproc) \
+        NV_FAST_PACKAGE_COMPRESSION=zstd \
+        NV_USE_FRAME_POINTER=1 \
+        NV_UNIX_LTO_ENABLED=0 \
+        NV_LTCG=0 \
+        NV_UNIX_CHECK_DEBUG_INFO=0 \
+        NV_MANGLE_SYMBOLS=0 \
+        NV_TRACE_CODE=$([[ $CONFIG == release ]] && echo 0 || echo 1) \
+        linux $TARGET $ARCH $CONFIG -j$THREADS $EXTRA_ARGS || exit 1
+    echo 
+fi 
 
-    if [[ $CONFIG == debug ]]; then
-        echo "Bypass debug assert: __GL_DEBUG_BYPASS_ASSERT=Ignore"
-        echo 
-    fi 
+if [[ ! -z $TARGET_INSTALL ]]; then 
+    MY_IP=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
+    NVSRC_VERSION=$(sed -n 's/^[[:space:]]*#define[[:space:]]\+NV_VERSION_STRING[[:space:]]\+"\([^"]\+\)".*/\1/p' /wanliz_sw_windows_wsl2/workingbranch/drivers/common/inc/nvUnixVersion.h | head -n1)
+    echo "wanliz-install-driver $USER@$MY_IP $TARGET_INSTALL $ARCH $CONFIG $NVSRC_VERSION"
+    echo 
+fi 
+
+if [[ $CONFIG == debug ]]; then
+    echo "Bypass debug assert: __GL_DEBUG_BYPASS_ASSERT=Ignore"
+    echo 
 fi 
 
 if [[ ! -z $COMPILE_COMMANDS ]]; then 

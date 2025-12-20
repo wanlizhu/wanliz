@@ -16,7 +16,7 @@ if ((${#home_files[@]})); then
         fi  
     fi 
     if [[ ! -f /tmp/remote.ip ]]; then 
-        read -p "Remote IP: " remote_ip
+        read -p "Remote server IP: " remote_ip
         echo "$remote_ip" > /tmp/remote.ip
     fi 
 
