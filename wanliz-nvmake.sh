@@ -30,6 +30,7 @@ while [[ ! -z $1 ]]; do
     case $1 in 
         drivers) TARGET="drivers dist"; TARGET_INSTALL=drivers ;;
         opengl)  TARGET="opengl"; TARGET_INSTALL=opengl ;;
+        glcore)  TARGET="glcore" ;;
         amd64|x64|x86_64) ARCH=amd64 ;;
         aarch64|arm64) ARCH=aarch64 ;;
         debug|release|develop) CONFIG=$1 ;;
