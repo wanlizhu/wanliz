@@ -80,6 +80,10 @@ if [[ $TARGET == opengl ]]; then
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
     echo 
+elif [[ $TARGET == glcore ]]; then 
+    pushd $P4ROOT/workingbranch/drivers/OpenGL >/dev/null 
+    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    popd >/dev/null 
 else 
     if [[ ! -z $CLEAN_BUILD ]]; then 
         rm -rf _out/Linux_${ARCH}_${CONFIG}
