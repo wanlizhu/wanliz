@@ -7,9 +7,8 @@ if [[ $1 == -y ]]; then
 fi 
 
 if [[ $EUID != 0 ]]; then 
-    [[ -z $YES_FOR_ALL ]] && read -p "Enable no-password sudo for $USER? [Y/n]: " nopasswd_sudo || nopasswd_sudo=
+    [[ -z $YES_FOR_ALL ]] && read -p "Set up no-password sudo for $USER? [Y/n]: " nopasswd_sudo || nopasswd_sudo=
     if [[ -z $nopasswd_sudo || $nopasswd_sudo =~ ^([yY]([eE][sS])?)?$ ]]; then 
-        echo -n "Enabling no-password sudo ... "
         if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
             echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
             echo "[OK]"
@@ -53,7 +52,6 @@ fi
 
 [[ -z $YES_FOR_ALL ]] && read -p "Install symlinks of profiling scripts to /usr/local/bin? [Y/n]: " install_symlinks || install_symlinks=
 if [[ -z $install_symlinks || $install_symlinks =~ ^([yY]([eE][sS])?)?$ ]]; then 
-    echo -n "Installing wanliz-* scripts to /usr/local/bin ... "
     find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
         if real_target=$(readlink -f "$link"); then  
             if [[ $real_target == *"/wanliz/"* ]]; then 
@@ -70,12 +68,11 @@ if [[ -z $install_symlinks || $install_symlinks =~ ^([yY]([eE][sS])?)?$ ]]; then
         cmdname="${cmdname%.py}"
         sudo ln -sf "$file" "/usr/local/bin/$cmdname" &>/dev/null 
     done 
-    echo "[OK]"
 fi 
 
 if [[ $USER == wanliz ]]; then 
-    [[ -z $YES_FOR_ALL ]] && read -p "Configure global git options? [Y/n]: " config_git || config_git=
-    if [[ -z $config_git || $config_git =~ ^([yY]([eE][sS])?)?$ ]]; then 
+    [[ -z $YES_FOR_ALL ]] && read -p "Set up global git options? [Y/n]: " setup_git || setup_git=
+    if [[ -z $setup_git || $setup_git =~ ^([yY]([eE][sS])?)?$ ]]; then 
         git_email=$(git config --global user.email 2>/dev/null || true)
         if [[ -z $git_email ]]; then
             git config --global user.email "zhu.wanli@icloud.com"
@@ -123,7 +120,7 @@ if [[ ! -d /mnt/linuxqa/wanliz && ! -d /mnt/c/Users/ ]]; then
         if mountpoint -q /mnt/linuxqa; then 
             echo "[SKIPPED]"
         else
-            timeout 5s sudo mount -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa && echo "[OK]" || {
+            sudo mount -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa && echo "[OK]" || {
                 echo "[FAILED] - rerun for debug info"
                 timeout 1s sudo mount -vvv -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa 
                 sudo dmesg | tail -10
