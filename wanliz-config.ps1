@@ -52,7 +52,7 @@ if (Test-Path $script) {
 
 $hostsFile = "$env:SystemRoot\System32\drivers\etc\hosts"
 [Console]::Write("Updating $hostsFile ... ");
-$hostsToAdd = Get-Content "$PSScriptRoot\hosts"
+$hostsToAdd = Get-Content "$PSScriptRoot\hosts.txt"
 $newIps = $hostsToAdd | ForEach-Object {
     $line = $_.Trim()
     if ($line -and -not $line.StartsWith("#")) {

@@ -18,6 +18,13 @@ if [[ $EUID != 0 ]]; then
     fi 
 fi 
 
+if ! grep -q "wanliz utils hosts" /etc/hosts; then 
+    read -p "Add utils hosts to /etc/hosts? [Y/n]: " add_hosts
+    if [[ -z $add_hosts || $add_hosts =~ ^([yY]([eE][sS])?)?$ ]]; then 
+        cat $HOME/wanliz/hosts.txt | sudo tee -a /etc/hosts >/dev/null 
+    fi 
+fi 
+
 [[ -z $YES_FOR_ALL ]] && read -p "Install profiling packages? [Y/n]: " install_pkg || install_pkg=
 if [[ -z $install_pkg || $install_pkg =~ ^([yY]([eE][sS])?)?$ ]]; then 
     python_version=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
