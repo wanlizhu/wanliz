@@ -118,7 +118,7 @@ fi
 if [[ ! -z $TARGET_INSTALL ]]; then 
     MY_IP=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
     NVSRC_VERSION=$(sed -n 's/^[[:space:]]*#define[[:space:]]\+NV_VERSION_STRING[[:space:]]\+"\([^"]\+\)".*/\1/p' /wanliz_sw_windows_wsl2/$BRANCH/drivers/common/inc/nvUnixVersion.h | head -n1)
-    echo "wanliz-install-driver $USER@$MY_IP $TARGET_INSTALL $ARCH $CONFIG $NVSRC_VERSION"
+    echo "wanliz-install-driver $USER@$MY_IP $BRANCH $TARGET_INSTALL $ARCH $CONFIG $NVSRC_VERSION"
     echo 
 fi 
 
