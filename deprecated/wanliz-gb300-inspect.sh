@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 trap 'exit 130' INT
 
-# wanliz-install-driver wanliz@10.221.15.91 opengl aarch64 develop 590.51 
+# wanliz-nvmake-install wanliz@10.221.15.91 opengl aarch64 develop 590.51 
 export __GL_DeviceModalityPreference=1
 WSL_IP=10.221.47.8
 DEV_ID=0

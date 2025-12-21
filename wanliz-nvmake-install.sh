@@ -35,7 +35,7 @@ elif [[ $1 == "redo" ]]; then
         sudo rm -f $HOME/.driver
         exit 1
     fi 
-    wanliz-install-driver $(cat $HOME/.driver $@)
+    wanliz-nvmake-install $(cat $HOME/.driver $@)
 elif [[ $1 == *@* ]]; then 
     LOGIN_INFO="$1"
     BRANCH=
