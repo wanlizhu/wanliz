@@ -15,4 +15,5 @@ if [[ -z $reset_branch || $reset_branch =~ ^([yY]([eE][sS])?)?$ ]]; then
 fi 
 
 echo 
-echo "Todo: p4 sync --parallel=threads=32 //$P4CLIENT/branch/...@12345678"
+echo -e "Todo: p4 revert -k -c default /home/wanliz/sw/... \t Abandon records but keep local changes"
+echo -e "Todo: p4 sync --parallel=threads=32 //$P4CLIENT/branch/...@12345678 \t Sync to specified CL"
