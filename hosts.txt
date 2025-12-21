@@ -1,5 +1,3 @@
-
-# wanliz utils hosts
 172.16.179.143 office
 172.16.178.123 horizon5
 172.16.177.182 horizon6
@@ -8,4 +6,3 @@
 10.176.11.106  nvtest-0110  4u2g-0110
 10.178.94.106  nvtest-gb300   nvtest-galaxy
 10.176.195.179 nvtest-gb300-2 nvtest-galaxy-2
-10.86.160.23   gb300-nvl

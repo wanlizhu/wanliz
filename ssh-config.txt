@@ -1,0 +1,9 @@
+Host gb300-cluster
+    HostName office 
+    User wanliz
+
+Host gb300-with-sudo 
+    HostName gb300-nvl-022-compute03 
+    User dlfwadmin
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly no

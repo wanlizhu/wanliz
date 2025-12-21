@@ -21,7 +21,16 @@ fi
 if ! grep -q "wanliz utils hosts" /etc/hosts; then 
     read -p "Add utils hosts to /etc/hosts? [Y/n]: " add_hosts
     if [[ -z $add_hosts || $add_hosts =~ ^([yY]([eE][sS])?)?$ ]]; then 
+        echo -e "\n# wanliz utils hosts" | sudo tee -a /etc/hosts >/dev/null 
         cat $HOME/wanliz/hosts.txt | sudo tee -a /etc/hosts >/dev/null 
+    fi 
+fi 
+
+if [[ ! -f $HOME/.ssh/config || -z $(cat $HOME/.ssh/config | grep "Host office")  ]]; then 
+    read -p "Add utils hosts to ~/.ssh/config? [Y/n]: " ssh_hosts
+    if [[ -z $ssh_hosts || $ssh_hosts =~ ^([yY]([eE][sS])?)?$ ]]; then 
+        echo >> $HOME/.ssh/config
+        cat $HOME/wanliz/ssh-hosts.txt >> $HOME/.ssh/config
     fi 
 fi 
 
