@@ -2,17 +2,17 @@
 trap 'exit 130' INT
 
 if [[ $1 == -h || $1 == --help ]]; then 
-    echo "Usage: $0 [CONFIG] [ARCH] [TARGET] [options] [-- extra nvmake args]"
+    echo "Usage: $0 [BRANCH] [TARGET] [ARCH] [CONFIG] [options] [-- extra nvmake args]"
     echo ""
-    echo "CONFIG:  develop (default), debug, release"
-    echo "  ARCH:  amd64 (default), aarch64"
+    echo "BRANCH:  workingbranch (default), testingbranch"
     echo "TARGET:  opengl, drivers, (run in cwd if not specified)"
+    echo "  ARCH:  amd64 (default), aarch64"
+    echo "CONFIG:  develop (default), debug, release"
     echo ""
     echo "Options:"
-    echo "  -j1          build with 1 job (default: $(nproc))"
-    echo "  -cc          generate compile_commands.json"
-    echo "  -n           no real build"
+    echo "  -j[0-9]*     build with N jobs (default: $(nproc))"
     echo "  -c           make a clean build (remove _out/Linux_arch_config) first"
+    echo "  -cc          generate compile_commands.json"
     echo ""
     echo "Any other arguments are passed through as EXTRA_ARGS to nvmake."
     exit 0

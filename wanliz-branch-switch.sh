@@ -33,12 +33,12 @@ echo                       "The current branch: $oldbranch (mapped to $BRANCH)"
 read -e -i "$oldbranch" -p "  Switch to branch: " newbranch
 if [[ $oldbranch != $newbranch ]]; then
     p4 client -o | sed "s#$oldbranch#$newbranch#g" | p4 client -i
-    p4 sync -k //$P4CLIENT/$BRANCH/...
+    p4 sync -k  //$P4CLIENT/$BRANCH/...
     p4 clean -e -d //$P4CLIENT/$BRANCH/...
 fi
 oldchange=$(p4 changes -m1 "//$P4CLIENT/$BRANCH/...#have" | awk '{print $2}')
 echo                       "The current change: $oldchange"
 read -e -i "$oldchange" -p "  Switch to change: " newchange
 if [[ $oldchange != $newchange ]]; then
-    p4 sync //$P4CLIENT/$BRANCH/...@$newchange
+    p4 sync --parallel=threads=32 //$P4CLIENT/$BRANCH/...@$newchange
 fi
