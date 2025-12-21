@@ -141,6 +141,6 @@ if [[ ! -z $COMPILE_COMMANDS ]]; then
         NV_MANGLE_SYMBOLS= \
         linux $ARCH $CONFIG -Bn -j$(nproc) > _out/Linux_${ARCH}_${CONFIG}/gcc_compile_commands.cmd && {
         echo "Generated  _out/Linux_${ARCH}_${CONFIG}/gcc_compile_commands.cmd"
-        wanliz-clangd-database _out/Linux_${ARCH}_${CONFIG}/gcc_compile_commands.cmd
+        wanliz-process-clangd-database _out/Linux_${ARCH}_${CONFIG}/gcc_compile_commands.cmd
     } 
 fi 
