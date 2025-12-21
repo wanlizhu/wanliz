@@ -55,6 +55,7 @@ if [[ -z $TARGET ]]; then
         exit 1
     fi 
 else 
+    echo "Located $P4ROOT/branch/$BRANCH"
     cd $P4ROOT/branch/$BRANCH || exit 1
 fi 
 
