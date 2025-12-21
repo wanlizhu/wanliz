@@ -61,27 +61,27 @@ else
 fi 
 
 if [[ $TARGET == opengl ]]; then 
-    pushd $P4ROOT/workingbranch/drivers/OpenGL >/dev/null 
+    pushd $P4ROOT/workingbranch/drivers/OpenGL >/dev/null || exit 1
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
-    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/build >/dev/null 
+    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/build >/dev/null || exit 1
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
-    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/glsi >/dev/null 
+    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/glsi >/dev/null || exit 1
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
-    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/unix/tls/Linux-elf >/dev/null 
+    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/unix/tls/Linux-elf >/dev/null || exit 1
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
-    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/glx/lib >/dev/null 
+    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/glx/lib >/dev/null || exit 1
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
-    pushd $P4ROOT/workingbranch/drivers/OpenGL/khronos/egl/egl >/dev/null 
+    pushd $P4ROOT/workingbranch/drivers/khronos/egl/egl >/dev/null || exit 1
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
     echo 
