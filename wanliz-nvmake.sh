@@ -118,7 +118,7 @@ else
         NV_MANGLE_SYMBOLS=0 \
         NV_TRACE_CODE=$([[ $CONFIG == release ]] && echo 0 || echo 1) \
         linux $TARGET $([[ $TARGET == drivers ]] && echo dist) $ARCH $CONFIG -j$THREADS $EXTRA_ARGS \
-        2>/tmp/nvmake.err | tee /tmp/nvmake.out || {
+        2>/tmp/nvmake.err || {
             echo 
             echo "========== NVMAKE ERROR =========="
             cat /tmp/nvmake.err 
