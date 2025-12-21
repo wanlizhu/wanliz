@@ -80,6 +80,10 @@ if [[ $TARGET == opengl ]]; then
     pushd $P4ROOT/workingbranch/drivers/OpenGL/win/glx/lib >/dev/null 
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
+
+    pushd $P4ROOT/workingbranch/drivers/OpenGL/khronos/egl/egl >/dev/null 
+    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    popd >/dev/null 
     echo 
 elif [[ $TARGET == glcore ]]; then 
     pushd $P4ROOT/workingbranch/drivers/OpenGL >/dev/null 
