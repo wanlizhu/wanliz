@@ -44,19 +44,6 @@ while [[ ! -z $1 ]]; do
     shift 
 done 
 
-if [[ -z $BRANCH ]]; then 
-    count=$(find $P4ROOT/branch -mindepth 1 -maxdepth 1 -type d -print | wc -l)
-    if (( count > 1 )); then
-        find $P4ROOT/branch -mindepth 1 -maxdepth 1 -type d -printf '%f\t'; echo
-        read -p "Which branch to build: " BRANCH
-    elif (( count == 1 )); then 
-        BRANCH=$(find $P4ROOT/branch -mindepth 1 -maxdepth 1 -type d -printf '%f\n')
-    else
-        echo "$P4ROOT/branch/... is empty"
-        exit 1
-    fi 
-fi 
-
 if [[ -z $TARGET ]]; then 
     if [[ -f makefile.nvmk ]]; then 
         echo "Builing $(pwd)"
@@ -65,6 +52,18 @@ if [[ -z $TARGET ]]; then
         exit 1
     fi 
 else 
+    if [[ -z $BRANCH ]]; then 
+        count=$(find $P4ROOT/branch -mindepth 1 -maxdepth 1 -type d -print | wc -l)
+        if (( count > 1 )); then
+            find $P4ROOT/branch -mindepth 1 -maxdepth 1 -type d -printf '%f\t'; echo
+            read -p "Which branch to build: " BRANCH
+        elif (( count == 1 )); then 
+            BRANCH=$(find $P4ROOT/branch -mindepth 1 -maxdepth 1 -type d -printf '%f\n')
+        else
+            echo "$P4ROOT/branch/... is empty"
+            exit 1
+        fi 
+    fi 
     echo "Located $P4ROOT/branch/$BRANCH"
     cd $P4ROOT/branch/$BRANCH || exit 1
 fi 
