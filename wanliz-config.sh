@@ -35,7 +35,7 @@ if [[ ! -f $HOME/.ssh/config || -z $(cat $HOME/.ssh/config | grep "Host office")
     fi 
 fi 
 
-if [[ ! -f $HOME/id_ed25519 ]]; then 
+if [[ ! -f $HOME/.ssh/id_ed25519 ]]; then 
     read -p "Restore wanliz's SSH ID? [Y/n]: " ssh_id
     if [[ -z $ssh_id || $ssh_id =~ ^([yY]([eE][sS])?)?$ ]]; then 
         mkdir -p $HOME/.ssh 
