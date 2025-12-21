@@ -19,7 +19,7 @@ if [[ $EUID != 0 ]]; then
 fi 
 
 if ! grep -q "wanliz utils hosts" /etc/hosts; then 
-    read -p "Add utils hosts to /etc/hosts? [Y/n]: " add_hosts
+    read -p "Add hosts to /etc/hosts? [Y/n]: " add_hosts
     if [[ -z $add_hosts || $add_hosts =~ ^([yY]([eE][sS])?)?$ ]]; then 
         echo -e "\n# wanliz utils hosts" | sudo tee -a /etc/hosts >/dev/null 
         cat $HOME/wanliz/hosts.txt | sudo tee -a /etc/hosts >/dev/null 
@@ -27,11 +27,11 @@ if ! grep -q "wanliz utils hosts" /etc/hosts; then
 fi 
 
 if [[ ! -f $HOME/.ssh/config || -z $(cat $HOME/.ssh/config | grep "Host office")  ]]; then 
-    read -p "Add utils hosts to ~/.ssh/config? [Y/n]: " ssh_hosts
+    read -p "Add configs to ~/.ssh/config? [Y/n]: " ssh_config
     mkdir -p $HOME/.ssh 
-    if [[ -z $ssh_hosts || $ssh_hosts =~ ^([yY]([eE][sS])?)?$ ]]; then 
+    if [[ -z $ssh_config || $ssh_config =~ ^([yY]([eE][sS])?)?$ ]]; then 
         echo >> $HOME/.ssh/config
-        cat $HOME/wanliz/ssh-hosts.txt >> $HOME/.ssh/config
+        cat $HOME/wanliz/ssh-config.txt >> $HOME/.ssh/config
     fi 
 fi 
 
