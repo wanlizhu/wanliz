@@ -1,5 +1,5 @@
 Host gb300-cluster
-    HostName office 
+    HostName cls-pdx-ipp6-bcm-3 
     User wanliz
 
 Host gb300-with-sudo 
