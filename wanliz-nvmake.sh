@@ -121,7 +121,7 @@ else
         2>/tmp/nvmake.err || {
             echo 
             echo "========== NVMAKE ERROR =========="
-            cat /tmp/nvmake.err 
+            cat /tmp/nvmake.err | grep ': \*\*\*'
             exit 1
         }
     echo 

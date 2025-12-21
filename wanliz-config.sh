@@ -129,9 +129,13 @@ if [[ ! -d /mnt/linuxqa/wanliz ]]; then
     # but WSL lacks the kernel RPC plumbing NFS expects, 
     # even when basic TCP connectivity exists.
     if [[ -d /mnt/c/Users/ ]]; then 
-        if [[ -d /mnt/x/wanliz ]]; then 
+        # Mount NFS folder
+        # mount.exe linuxqa.nvidia.com:/storage/people Z:
+        # Mount SMB folder
+        # \\linuxqa\people (login with wanliz@nvidia.com)
+        if [[ -d /mnt/z/wanliz ]]; then 
             sudo rm -rf /mnt/linuxqa
-            sudo ln -sf /mnt/x /mnt/linuxqa
+            sudo ln -sf /mnt/z /mnt/linuxqa
         fi 
     else 
         read -p "Mount /mnt/linuxqa? [Y/n]: " mount_linuxqa 
