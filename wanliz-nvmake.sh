@@ -8,7 +8,7 @@ fi
 if [[ $1 == -h || $1 == --help ]]; then 
     echo "Usage: $0 [BRANCH] [TARGET] [ARCH] [CONFIG] [options] [-- extra nvmake args]"
     echo ""
-    echo "BRANCH:  bugfix_main, r580_00, r590_00 (default), temp"
+    echo "BRANCH:  bugfix_main, r580_00, r590_00, ..."
     echo "TARGET:  opengl, drivers, (run in cwd if not specified)"
     echo "  ARCH:  amd64 (default), aarch64"
     echo "CONFIG:  develop (default), debug, release"
@@ -22,7 +22,7 @@ if [[ $1 == -h || $1 == --help ]]; then
     exit 0
 fi
 
-BRANCH=r590_00
+BRANCH=
 TARGET=
 ARCH=$(uname -m | sed 's/x86_64/amd64/g')
 CONFIG=develop
@@ -43,6 +43,19 @@ while [[ ! -z $1 ]]; do
     esac
     shift 
 done 
+
+if [[ -z $BRANCH ]]; then 
+    count=$(find $HOME/sw/branch -mindepth 1 -maxdepth 1 -type d -print | wc -l)
+    if (( count > 1 )); then
+        find $HOME/sw/branch -mindepth 1 -maxdepth 1 -type d -printf '%f\t'; echo
+        read -p "Which branch to build: " BRANCH
+    elif (( count == 1 )); then 
+        BRANCH=$(find $HOME/sw/branch -mindepth 1 -maxdepth 1 -type d -printf '%f\n')
+    else
+        echo "$P4ROOT/branch/... is empty"
+        exit 1
+    fi 
+fi 
 
 if [[ -z $TARGET ]]; then 
     if [[ -f makefile.nvmk ]]; then 
