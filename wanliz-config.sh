@@ -28,9 +28,19 @@ fi
 
 if [[ ! -f $HOME/.ssh/config || -z $(cat $HOME/.ssh/config | grep "Host office")  ]]; then 
     read -p "Add utils hosts to ~/.ssh/config? [Y/n]: " ssh_hosts
+    mkdir -p $HOME/.ssh 
     if [[ -z $ssh_hosts || $ssh_hosts =~ ^([yY]([eE][sS])?)?$ ]]; then 
         echo >> $HOME/.ssh/config
         cat $HOME/wanliz/ssh-hosts.txt >> $HOME/.ssh/config
+    fi 
+fi 
+
+if [[ ! -f $HOME/id_ed25519 ]]; then 
+    read -p "Restore wanliz's SSH ID? [Y/n]: " ssh_id
+    if [[ -z $ssh_id || $ssh_id =~ ^([yY]([eE][sS])?)?$ ]]; then 
+        mkdir -p $HOME/.ssh 
+        rsync -ah wanliz@office:/home/wanliz/.ssh/id_ed25519     $HOME/.ssh/id_ed25519
+        rsync -ah wanliz@office:/home/wanliz/.ssh/id_ed25519.pub $HOME/.ssh/id_ed25519.pub
     fi 
 fi 
 
