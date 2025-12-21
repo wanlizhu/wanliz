@@ -147,7 +147,8 @@ if [[ ! -d /mnt/linuxqa/wanliz ]]; then
             sudo ln -sf /mnt/x /mnt/linuxqa
         else 
             echo "Todo: run in PowerShell as admin"
-            echo 'net use X: \\linuxqa.nvidia.com\people /user:wanliz@nvidia.com /persistent:yes'
+            echo 'Todo: net use X: \\linuxqa.nvidia.com\people /user:wanliz@nvidia.com /persistent:yes'
+            echo 'Todo: then rerun this command'
         fi 
     else 
         [[ -z $YES_FOR_ALL ]] && read -p "Mount /mnt/linuxqa? [Y/n]: " mount_linuxqa || mount_linuxqa=
