@@ -18,6 +18,7 @@ if [[ $1 == -h || $1 == --help ]]; then
     exit 0
 fi
 
+BRANCH=workingbranch
 TARGET=
 TARGET_INSTALL=
 ARCH=$(uname -m | sed 's/x86_64/amd64/g')
@@ -28,6 +29,7 @@ COMPILE_COMMANDS=
 EXTRA_ARGS=
 while [[ ! -z $1 ]]; do 
     case $1 in 
+        workingbranch|testingbranch) BRANCH=$1 ;;
         drivers) TARGET="drivers dist"; TARGET_INSTALL=drivers ;;
         opengl)  TARGET="opengl"; TARGET_INSTALL=opengl ;;
         glcore)  TARGET="glcore" ;;
@@ -57,36 +59,36 @@ if [[ -z $TARGET ]]; then
         exit 1
     fi 
 else 
-    cd $P4ROOT/workingbranch || exit 1
+    cd $P4ROOT/$BRANCH || exit 1
 fi 
 
 if [[ $TARGET == opengl ]]; then 
-    pushd $P4ROOT/workingbranch/drivers/OpenGL >/dev/null || exit 1
+    pushd $P4ROOT/$BRANCH/drivers/OpenGL >/dev/null || exit 1
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
-    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/build >/dev/null || exit 1
+    pushd $P4ROOT/$BRANCH/drivers/OpenGL/win/egl/build >/dev/null || exit 1
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
-    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/egl/glsi >/dev/null || exit 1
+    pushd $P4ROOT/$BRANCH/drivers/OpenGL/win/egl/glsi >/dev/null || exit 1
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
-    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/unix/tls/Linux-elf >/dev/null || exit 1
+    pushd $P4ROOT/$BRANCH/drivers/OpenGL/win/unix/tls/Linux-elf >/dev/null || exit 1
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
-    pushd $P4ROOT/workingbranch/drivers/OpenGL/win/glx/lib >/dev/null || exit 1
+    pushd $P4ROOT/$BRANCH/drivers/OpenGL/win/glx/lib >/dev/null || exit 1
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
-    pushd $P4ROOT/workingbranch/drivers/khronos/egl/egl >/dev/null || exit 1
+    pushd $P4ROOT/$BRANCH/drivers/khronos/egl/egl >/dev/null || exit 1
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
     echo 
 elif [[ $TARGET == glcore ]]; then 
-    pushd $P4ROOT/workingbranch/drivers/OpenGL >/dev/null 
+    pushd $P4ROOT/$BRANCH/drivers/OpenGL >/dev/null 
     wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 else 
@@ -115,7 +117,7 @@ fi
 
 if [[ ! -z $TARGET_INSTALL ]]; then 
     MY_IP=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
-    NVSRC_VERSION=$(sed -n 's/^[[:space:]]*#define[[:space:]]\+NV_VERSION_STRING[[:space:]]\+"\([^"]\+\)".*/\1/p' /wanliz_sw_windows_wsl2/workingbranch/drivers/common/inc/nvUnixVersion.h | head -n1)
+    NVSRC_VERSION=$(sed -n 's/^[[:space:]]*#define[[:space:]]\+NV_VERSION_STRING[[:space:]]\+"\([^"]\+\)".*/\1/p' /wanliz_sw_windows_wsl2/$BRANCH/drivers/common/inc/nvUnixVersion.h | head -n1)
     echo "wanliz-install-driver $USER@$MY_IP $TARGET_INSTALL $ARCH $CONFIG $NVSRC_VERSION"
     echo 
 fi 

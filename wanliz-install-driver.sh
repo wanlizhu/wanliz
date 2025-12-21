@@ -35,8 +35,9 @@ elif [[ $1 == "redo" ]]; then
     wanliz-install-driver $(cat $HOME/.driver $@)
 elif [[ $1 == *@* ]]; then 
     LOGIN_INFO="$1"
-    TARGET=
-    CONFIG=
+    BRANCH=workingbranch
+    TARGET=opengl
+    CONFIG=develop
     ARCH=$(uname -m | sed 's/x86_64/amd64/g')
     VERSION=
     RESTORE=
@@ -44,6 +45,7 @@ elif [[ $1 == *@* ]]; then
     shift 
     while [[ ! -z $1 ]]; do 
         case $1 in 
+            workingbranch|testingbranch) BRANCH=$1 ;;
             opengl|drivers) TARGET=$1 ;;
             debug|release|develop) CONFIG=$1 ;;
             amd64|x64|x86_64) [[ $(uname -m) != "x86_64"  ]] && { echo "Invalid arch $1"; exit 1; } ;;
@@ -59,8 +61,8 @@ elif [[ $1 == *@* ]]; then
     [[ -z $VERSION ]] && { echo "VERSION is not specified"; exit 1; }
     [[ -z $NOSYSDIR && -z $(sudo -n true 2>/dev/null && echo 1) ]] && { echo "--nosysdir option is required for regular users"; exit 1; }
     if [[ $TARGET == drivers ]]; then 
-        rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/Linux_${ARCH}_${CONFIG}/NVIDIA-Linux-$(uname -m)-${VERSION}-internal.run $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run || exit 1
-        rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/Linux_${ARCH}_${CONFIG}/tests-Linux-$(uname -m).tar $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-tests.tar
+        rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/$BRANCH/_out/Linux_${ARCH}_${CONFIG}/NVIDIA-Linux-$(uname -m)-${VERSION}-internal.run $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run || exit 1
+        rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/$BRANCH/_out/Linux_${ARCH}_${CONFIG}/tests-Linux-$(uname -m).tar $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-tests.tar
         
         if [[ $NOSYSDIR == 1 ]]; then 
             pushd $HOME >/dev/null
@@ -119,12 +121,12 @@ elif [[ $1 == *@* ]]; then
             else
                 RSYNC_DST=$HOME 
             fi 
-            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glcore.so $RSYNC_DST/libnvidia-glcore.so.$VERSION
-            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/egl/build/_out/Linux_${ARCH}_${CONFIG}/libnvidia-eglcore.so $RSYNC_DST/libnvidia-eglcore.so.$VERSION 
-            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/egl/glsi/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glsi.so $RSYNC_DST/libnvidia-glsi.so.$VERSION 
-            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/unix/tls/Linux-elf/_out/Linux_${ARCH}_${CONFIG}/libnvidia-tls.so $RSYNC_DST/libnvidia-tls.so.$VERSION 
-            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/glx/lib/_out/Linux_${ARCH}_${CONFIG}/libGLX_nvidia.so $RSYNC_DST/libGLX_nvidia.so.$VERSION  
-            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/khronos/egl/egl/_out/Linux_${ARCH}_${CONFIG}/libEGL_nvidia.so $RSYNC_DST/libEGL_nvidia.so.$VERSION  
+            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/$BRANCH/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glcore.so $RSYNC_DST/libnvidia-glcore.so.$VERSION
+            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/$BRANCH/drivers/OpenGL/win/egl/build/_out/Linux_${ARCH}_${CONFIG}/libnvidia-eglcore.so $RSYNC_DST/libnvidia-eglcore.so.$VERSION 
+            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/$BRANCH/drivers/OpenGL/win/egl/glsi/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glsi.so $RSYNC_DST/libnvidia-glsi.so.$VERSION 
+            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/$BRANCH/drivers/OpenGL/win/unix/tls/Linux-elf/_out/Linux_${ARCH}_${CONFIG}/libnvidia-tls.so $RSYNC_DST/libnvidia-tls.so.$VERSION 
+            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/$BRANCH/drivers/OpenGL/win/glx/lib/_out/Linux_${ARCH}_${CONFIG}/libGLX_nvidia.so $RSYNC_DST/libGLX_nvidia.so.$VERSION  
+            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/$BRANCH/drivers/khronos/egl/egl/_out/Linux_${ARCH}_${CONFIG}/libEGL_nvidia.so $RSYNC_DST/libEGL_nvidia.so.$VERSION  
             
             if [[ ! -e /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION ]]; then 
                 echo "Incompatible version $VERSION"
