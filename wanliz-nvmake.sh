@@ -120,6 +120,7 @@ else
         linux $TARGET $([[ $TARGET == drivers ]] && echo dist) $ARCH $CONFIG -j$THREADS $EXTRA_ARGS \
         2>/tmp/nvmake.err | tee /tmp/nvmake.out || {
             echo 
+            echo "========== NVMAKE ERROR =========="
             cat /tmp/nvmake.err 
             exit 1
         }
