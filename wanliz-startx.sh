@@ -64,5 +64,19 @@ if [[ $start_openbox == "y" ]]; then
 fi
 
 if [[ $start_x11vnc == "y" ]]; then 
-    wanliz-vnc-start 
+    gdm_conf=""
+    for f in /etc/gdm3/custom.conf /etc/gdm3/daemon.conf; do
+        [[ -f $f ]] && gdm_conf=$f && break
+    done
+
+    if [[ -n $gdm_conf ]]; then
+        if ! grep -Eq '^[[:space:]]*WaylandEnable[[:space:]]*=[[:space:]]*false' "$gdm_conf"; then
+            echo "Wayland is still enabled in $gdm_conf. Set WaylandEnable=false and restart GDM, then re-run."
+            exit 1
+        fi
+    fi
+
+    x11vnc -display :0  -rfbport 5900 -noshm -forever -noxdamage -repeat -shared -bg -o $HOME/x11vnc.log \
+        && echo "Starting VNC server on :5900 in background ... [OK]" \
+        || cat $HOME/x11vnc.log
 fi
