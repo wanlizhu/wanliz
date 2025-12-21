@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+trap 'exit 130' INT
+
+if [[ -z $P4ROOT ]]; then 
+    export P4PORT="p4proxy-sc.nvidia.com:2006"
+    export P4USER="wanliz"
+    export P4CLIENT="wanliz_sw_windows_wsl2"
+    export P4ROOT="/home/wanliz/sw"
+fi 
+
+read -p "Reset //$P4CLIENT/branch/... ? [Y/n]: " reset_branch
+if [[ -z $reset_branch || $reset_branch =~ ^([yY]([eE][sS])?)?$ ]]; then 
+    p4 sync -k  //$P4CLIENT/branch/...
+    p4 clean -e -d //$P4CLIENT/branch/...
+fi 
+
+echo 
+echo "Todo: p4 sync --parallel=threads=32 //$P4CLIENT/branch/...@12345678"
