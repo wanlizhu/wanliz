@@ -27,9 +27,9 @@ rsync -ah --ignore-missing-args --info=progress2 \
     $SRC/*.code-workspace \
     /mnt/d/wanliz_sw_windows_wsl2.backup/$BRANCH/drivers/OpenGL/
 
-oldbranch=$(p4 client -o | grep 'drivers/OpenGL' | head -1 | awk -F'/drivers' '{print $1}')
+oldbranch=$(p4 client -o | grep "$BRANCH/drivers/OpenGL" | head -1 | awk -F'/drivers' '{print $1}')
 oldbranch=$(echo "$oldbranch" | sed 's/^[[:space:]]*//')
-echo                       "The current branch: $oldbranch"
+echo                       "The current branch: $oldbranch (mapped to $BRANCH)"
 read -e -i "$oldbranch" -p "  Switch to branch: " newbranch
 if [[ $oldbranch != $newbranch ]]; then
     p4 client -o | sed "s#$oldbranch#$newbranch#g" | p4 client -i
