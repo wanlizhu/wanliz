@@ -45,12 +45,12 @@ while [[ ! -z $1 ]]; do
 done 
 
 if [[ -z $BRANCH ]]; then 
-    count=$(find $HOME/sw/branch -mindepth 1 -maxdepth 1 -type d -print | wc -l)
+    count=$(find $P4ROOT/branch -mindepth 1 -maxdepth 1 -type d -print | wc -l)
     if (( count > 1 )); then
-        find $HOME/sw/branch -mindepth 1 -maxdepth 1 -type d -printf '%f\t'; echo
+        find $P4ROOT/branch -mindepth 1 -maxdepth 1 -type d -printf '%f\t'; echo
         read -p "Which branch to build: " BRANCH
     elif (( count == 1 )); then 
-        BRANCH=$(find $HOME/sw/branch -mindepth 1 -maxdepth 1 -type d -printf '%f\n')
+        BRANCH=$(find $P4ROOT/branch -mindepth 1 -maxdepth 1 -type d -printf '%f\n')
     else
         echo "$P4ROOT/branch/... is empty"
         exit 1
