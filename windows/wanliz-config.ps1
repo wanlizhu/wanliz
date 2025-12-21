@@ -32,7 +32,7 @@ Get-NetFirewallProfile | Select-Object Name, Enabled
 if (Get-ScheduledTask -TaskName "WanlizStartupTasks" -ErrorAction SilentlyContinue) {
     Unregister-ScheduledTask -TaskName WanlizStartupTasks -Confirm:$false
 } 
-$script = "$PSScriptRoot\wanliz-startup-tasks.ps1"
+$script = "$PSScriptRoot\windows\wanliz-startup-tasks.ps1"
 if (Test-Path $script) {
     $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -File $script"
     $trigger = New-ScheduledTaskTrigger -AtLogOn 
