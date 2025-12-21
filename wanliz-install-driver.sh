@@ -40,6 +40,7 @@ elif [[ $1 == *@* ]]; then
     ARCH=$(uname -m | sed 's/x86_64/amd64/g')
     VERSION=
     RESTORE=
+    NOSYSDIR=
     shift 
     while [[ ! -z $1 ]]; do 
         case $1 in 
@@ -49,18 +50,48 @@ elif [[ $1 == *@* ]]; then
             aarch64|arm64)    [[ $(uname -m) != "aarch64" ]] && { echo "Invalid arch $1"; exit 1; } ;;
             [0-9]*) VERSION=$1 ;;
             -r|--restore) RESTORE=1 ;;
+            -n|--nosysdir) NOSYSDIR=1 ;;
         esac
         shift 
-    done 
+    done  
     [[ -z $TARGET  ]] && { echo  "TARGET is not specified"; exit 1; }
     [[ -z $CONFIG  ]] && { echo  "CONFIG is not specified"; exit 1; }
     [[ -z $VERSION ]] && { echo "VERSION is not specified"; exit 1; }
     if [[ $TARGET == drivers ]]; then 
         rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/Linux_${ARCH}_${CONFIG}/NVIDIA-Linux-$(uname -m)-${VERSION}-internal.run $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run || exit 1
         rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/Linux_${ARCH}_${CONFIG}/tests-Linux-$(uname -m).tar $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-tests.tar
-        wanliz-install-driver $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run
+        
+        if [[ $NOSYSDIR == 1 ]]; then 
+            pushd $HOME >/dev/null
+                sudo mv -f NVIDIA-Linux-$(uname -m)-${VERSION}-internal /tmp/
+                chmod +x $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run
+                $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run -x 
+                mv NVIDIA-Linux-$(uname -m)-${VERSION}-internal NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal
+                pushd NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal >/dev/null || exit 1
+                    for dso_file in *.so.$VERSION; do 
+                        [[ $dso_file == "*.so.$VERSION" ]] && continue 
+                        [[ $dso_file =~ ^(.+\.so)\..+ ]] || continue
+                        basename=${BASH_REMATCH[1]}
+                        ln -sfn $dso_file $basename
+                        for i in 0 1 2 3 4; do
+                            ln -sfn $dso_file $basename.$i
+                        done 
+                    done 
+                popd >/dev/null 
+            popd >/dev/null 
+            echo 
+            echo "LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} ..."
+        else 
+            echo "$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run"
+            read -p "Press [Enter] to continue: "
+            wanliz-install-driver $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run
+        fi 
     elif [[ $TARGET == opengl ]]; then 
         if [[ $RESTORE == 1 ]]; then 
+            if [[ $NOSYSDIR == 1 ]]; then 
+                echo "--restore option has been ignored"
+                exit 0
+            fi  
             if [[ -f $HOME/libnvidia-glcore.so.$VERSION.backup ]]; then 
                 sudo cp -vf --remove-destination $HOME/libnvidia-glcore.so.$VERSION.backup /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION
                 sudo cp -vf --remove-destination $HOME/libnvidia-eglcore.so.$VERSION.backup /usr/lib/$(uname -m)-linux-gnu/libnvidia-eglcore.so.$VERSION
@@ -80,39 +111,50 @@ elif [[ $1 == *@* ]]; then
                 echo "$HOME/libnvidia-glcore.so.$VERSION.backup doesn't exist"
             fi 
         else 
-            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glcore.so $HOME/libnvidia-glcore.so.$VERSION
-            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/egl/build/_out/Linux_${ARCH}_${CONFIG}/libnvidia-eglcore.so $HOME/libnvidia-eglcore.so.$VERSION 
-            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/egl/glsi/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glsi.so $HOME/libnvidia-glsi.so.$VERSION 
-            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/unix/tls/Linux-elf/_out/Linux_${ARCH}_${CONFIG}/libnvidia-tls.so $HOME/libnvidia-tls.so.$VERSION 
-            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/glx/lib/_out/Linux_${ARCH}_${CONFIG}/libGLX_nvidia.so $HOME/libGLX_nvidia.so.$VERSION  
-            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/khronos/egl/egl/_out/Linux_${ARCH}_${CONFIG}/libEGL_nvidia.so $HOME/libEGL_nvidia.so.$VERSION  
+            if [[ $NOSYSDIR == 1 ]]; then
+                RSYNC_DST=$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-opengl
+                rm -rf $RSYNC_DST
+                mkdir -p $RSYNC_DST
+            else
+                RSYNC_DST=$HOME 
+            fi 
+            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glcore.so $RSYNC_DST/libnvidia-glcore.so.$VERSION
+            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/egl/build/_out/Linux_${ARCH}_${CONFIG}/libnvidia-eglcore.so $RSYNC_DST/libnvidia-eglcore.so.$VERSION 
+            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/egl/glsi/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glsi.so $RSYNC_DST/libnvidia-glsi.so.$VERSION 
+            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/unix/tls/Linux-elf/_out/Linux_${ARCH}_${CONFIG}/libnvidia-tls.so $RSYNC_DST/libnvidia-tls.so.$VERSION 
+            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/OpenGL/win/glx/lib/_out/Linux_${ARCH}_${CONFIG}/libGLX_nvidia.so $RSYNC_DST/libGLX_nvidia.so.$VERSION  
+            rsync -ah --progress $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/drivers/khronos/egl/egl/_out/Linux_${ARCH}_${CONFIG}/libEGL_nvidia.so $RSYNC_DST/libEGL_nvidia.so.$VERSION  
             
             if [[ ! -e /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION ]]; then 
                 echo "Incompatible version $VERSION"
                 exit 1
             fi 
 
-            read -p "Press [Enter] to continue: "
-            
-            if [[ -f $HOME/libnvidia-glcore.so.$VERSION.backup ]]; then 
-                echo "Reuse existing backups"
-            else
-                sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION $HOME/libnvidia-glcore.so.$VERSION.backup
-                sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-eglcore.so.$VERSION $HOME/libnvidia-eglcore.so.$VERSION.backup
-                sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-glsi.so.$VERSION $HOME/libnvidia-glsi.so.$VERSION.backup
-                sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-tls.so.$VERSION $HOME/libnvidia-tls.so.$VERSION.backup
-                sudo cp /usr/lib/$(uname -m)-linux-gnu/libGLX_nvidia.so.$VERSION $HOME/libGLX_nvidia.so.$VERSION.backup
-                sudo cp /usr/lib/$(uname -m)-linux-gnu/libEGL_nvidia.so.$VERSION $HOME/libEGL_nvidia.so.$VERSION.backup
-            fi 
+            if [[ $NOSYSDIR == 1 ]]; then
+                echo 
+                echo "LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} ..." 
+            else 
+                read -p "Press [Enter] to continue: "
+                if [[ -f $HOME/libnvidia-glcore.so.$VERSION.backup ]]; then 
+                    echo "Reuse existing backups"
+                else
+                    sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION $HOME/libnvidia-glcore.so.$VERSION.backup
+                    sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-eglcore.so.$VERSION $HOME/libnvidia-eglcore.so.$VERSION.backup
+                    sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-glsi.so.$VERSION $HOME/libnvidia-glsi.so.$VERSION.backup
+                    sudo cp /usr/lib/$(uname -m)-linux-gnu/libnvidia-tls.so.$VERSION $HOME/libnvidia-tls.so.$VERSION.backup
+                    sudo cp /usr/lib/$(uname -m)-linux-gnu/libGLX_nvidia.so.$VERSION $HOME/libGLX_nvidia.so.$VERSION.backup
+                    sudo cp /usr/lib/$(uname -m)-linux-gnu/libEGL_nvidia.so.$VERSION $HOME/libEGL_nvidia.so.$VERSION.backup
+                fi 
 
-            sudo cp -vf --remove-destination $HOME/libnvidia-glcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION
-            sudo cp -vf --remove-destination $HOME/libnvidia-eglcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-eglcore.so.$VERSION
-            sudo cp -vf --remove-destination $HOME/libnvidia-glsi.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-glsi.so.$VERSION
-            sudo cp -vf --remove-destination $HOME/libnvidia-tls.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-tls.so.$VERSION
-            sudo cp -vf --remove-destination $HOME/libGLX_nvidia.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libGLX_nvidia.so.$VERSION
-            sudo cp -vf --remove-destination $HOME/libEGL_nvidia.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libEGL_nvidia.so.$VERSION
-        fi 
-    fi 
+                sudo cp -vf --remove-destination $HOME/libnvidia-glcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION
+                sudo cp -vf --remove-destination $HOME/libnvidia-eglcore.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-eglcore.so.$VERSION
+                sudo cp -vf --remove-destination $HOME/libnvidia-glsi.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-glsi.so.$VERSION
+                sudo cp -vf --remove-destination $HOME/libnvidia-tls.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-tls.so.$VERSION
+                sudo cp -vf --remove-destination $HOME/libGLX_nvidia.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libGLX_nvidia.so.$VERSION
+                sudo cp -vf --remove-destination $HOME/libEGL_nvidia.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libEGL_nvidia.so.$VERSION
+            fi # if [[ $NOSYSDIR == 1 ]]
+        fi # if [[ $RESTORE == 1 ]]
+    fi # if [[ $TARGET == opengl ]]
 else 
     if sudo test ! -d /root/nvt; then 
         sudo /mnt/linuxqa/nvt.sh sync

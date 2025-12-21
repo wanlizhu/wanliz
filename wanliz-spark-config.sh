@@ -12,7 +12,7 @@ if [[ $(uname -m) == "aarch64" ]]; then
 
     if [[ ! -f /opt/nvidia/update.sh ]]; then 
         read -p "Install spark OTA driver? [Y/n]: " ans
-        if [[ -z $ans || $ans == y ]]; then 
+        if [[ -z $ans || $ans =~ ^([yY]([eE][sS])?)?$ ]]; then 
             echo "Download spark OTA setup script"
             curl -kL https://nv/spark-eng/eng.sh | sudo bash  || true
             sudo /opt/nvidia/update.sh  || true
