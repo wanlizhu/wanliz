@@ -26,7 +26,7 @@ if ! grep -q "wanliz utils hosts" /etc/hosts; then
     fi 
 fi 
 
-if [[ ! -f $HOME/.ssh/config || -z $(cat $HOME/.ssh/config | grep "Host office")  ]]; then 
+if [[ ! -f $HOME/.ssh/config  ]]; then 
     read -p "Add configs to ~/.ssh/config? [Y/n]: " ssh_config
     mkdir -p $HOME/.ssh 
     if [[ -z $ssh_config || $ssh_config =~ ^([yY]([eE][sS])?)?$ ]]; then 
