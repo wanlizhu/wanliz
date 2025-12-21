@@ -53,7 +53,7 @@ if [[ -z $install_pkg || $install_pkg =~ ^([yY]([eE][sS])?)?$ ]]; then
         lsof x11-xserver-utils x11-utils openbox obconf x11vnc \
         mesa-utils vulkan-tools xserver-xorg-core \
         samba samba-common-bin socat cmake build-essential \
-        ninja-build pkg-config libjpeg-dev
+        ninja-build pkg-config libjpeg-dev smbclient 
     do 
         if ! dpkg -s $pkg &>/dev/null; then
             echo -n "Installing $pkg ... "
@@ -136,21 +136,35 @@ EOF
     fi 
 fi 
 
-if [[ ! -d /mnt/linuxqa/wanliz && ! -d /mnt/c/Users/ ]]; then 
-    [[ -z $YES_FOR_ALL ]] && read -p "Mount /mnt/linuxqa? [Y/n]: " mount_linuxqa || mount_linuxqa=
-    if [[ -z $mount_linuxqa || $mount_linuxqa =~ ^([yY]([eE][sS])?)?$ ]]; then 
-        echo -n "Mounting /mnt/linuxqa ... "
-        if [[ ! -d /mnt/linuxqa ]]; then 
-            sudo mkdir -p /mnt/linuxqa 
+if [[ ! -d /mnt/linuxqa/wanliz ]]; then 
+    # mounting corporate NFS directly from WSL is not supported reliably. 
+    # It works on a real Linux host on the same network, 
+    # but WSL lacks the kernel RPC plumbing NFS expects, 
+    # even when basic TCP connectivity exists.
+    if [[ -d /mnt/c/Users/ ]]; then 
+        if [[ -d /mnt/x/wanliz ]]; then 
+            sudo rm -rf /mnt/linuxqa
+            sudo ln -sf /mnt/x /mnt/linuxqa
+        else 
+            echo "Todo: run in PowerShell as admin"
+            echo 'net use X: \\linuxqa.nvidia.com\people /user:wanliz@nvidia.com /persistent:yes'
         fi 
-        if mountpoint -q /mnt/linuxqa; then 
-            echo "[SKIPPED]"
-        else
-            sudo mount -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa && echo "[OK]" || {
-                echo "[FAILED] - rerun for debug info"
-                timeout 1s sudo mount -vvv -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa 
-                sudo dmesg | tail -10
-            }
+    else 
+        [[ -z $YES_FOR_ALL ]] && read -p "Mount /mnt/linuxqa? [Y/n]: " mount_linuxqa || mount_linuxqa=
+        if [[ -z $mount_linuxqa || $mount_linuxqa =~ ^([yY]([eE][sS])?)?$ ]]; then 
+            echo -n "Mounting /mnt/linuxqa ... "
+            if [[ ! -d /mnt/linuxqa ]]; then 
+                sudo mkdir -p /mnt/linuxqa 
+            fi 
+            if mountpoint -q /mnt/linuxqa; then 
+                echo "[SKIPPED]"
+            else
+                sudo mount -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa && echo "[OK]" || {
+                    echo "[FAILED] - rerun for debug info"
+                    timeout 1s sudo mount -vvv -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa 
+                    sudo dmesg | tail -10
+                }
+            fi 
         fi 
     fi 
 fi 

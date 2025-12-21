@@ -1,6 +1,15 @@
+Host xterm
+    HostName dc2-container-xterm-028.prd.it.nvidia.com
+    User wanliz
+    Port 4483
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly no
+
 Host gb300-cluster
     HostName cls-pdx-ipp6-bcm-3 
     User wanliz
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly no
 
 Host gb300-with-sudo 
     HostName gb300-nvl-022-compute03 
