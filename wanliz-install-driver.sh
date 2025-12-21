@@ -57,6 +57,7 @@ elif [[ $1 == *@* ]]; then
     [[ -z $TARGET  ]] && { echo  "TARGET is not specified"; exit 1; }
     [[ -z $CONFIG  ]] && { echo  "CONFIG is not specified"; exit 1; }
     [[ -z $VERSION ]] && { echo "VERSION is not specified"; exit 1; }
+    [[ -z $NOSYSDIR && -z $(sudo -n true 2>/dev/null && echo 1) ]] && { echo "--nosysdir option is required for regular users"; exit 1; }
     if [[ $TARGET == drivers ]]; then 
         rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/Linux_${ARCH}_${CONFIG}/NVIDIA-Linux-$(uname -m)-${VERSION}-internal.run $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run || exit 1
         rsync -ah --info=progress2 $LOGIN_INFO:/wanliz_sw_windows_wsl2/workingbranch/_out/Linux_${ARCH}_${CONFIG}/tests-Linux-$(uname -m).tar $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-tests.tar
@@ -132,7 +133,7 @@ elif [[ $1 == *@* ]]; then
 
             if [[ $NOSYSDIR == 1 ]]; then
                 echo 
-                echo "LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} ..." 
+                echo "LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-opengl${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} ..." 
             else 
                 read -p "Press [Enter] to continue: "
                 if [[ -f $HOME/libnvidia-glcore.so.$VERSION.backup ]]; then 
