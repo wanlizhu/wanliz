@@ -116,9 +116,9 @@ EOF
 
     if [[ ! -f ~/.screenrc ]]; then
         cat <<'EOF' > ~/.screenrc
-caption always "%{= bw}%{+b} %t (%n) | %H | %Y-%m-%d %c | load %l"
-hardstatus on
-hardstatus alwayslastline "%{= kW}%-w%{= kG}%n*%t%{-}%+w %=%{= ky}%H %{= kw}%Y-%m-%d %c %{= kc}load %l"
+startup_message off
+hardstatus alwaysfirstline
+hardstatus string '%{= bW} [SCREEN %S]%{= bW} win:%n:%t %=%-Lw%{= kW}%n:%t%{-}%+Lw %=%Y-%m-%d %c:%s '
 EOF
     fi 
 fi 

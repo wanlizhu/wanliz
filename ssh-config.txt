@@ -6,7 +6,7 @@ Host xterm
     IdentitiesOnly no
 
 Host build-machine
-    HostName computelab-build
+    HostName computelab
     User wanliz
     IdentityFile ~/.ssh/id_ed25519
     IdentitiesOnly no
