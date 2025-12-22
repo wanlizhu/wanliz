@@ -124,7 +124,7 @@ else
             echo 
             echo "========== NVMAKE ERROR =========="
             if [[ ! -z $VERBOSE ]]; then
-                cat 
+                cat /tmp/nvmake.err
             else 
                 cat /tmp/nvmake.err | grep ': \*\*\*'
             fi 
