@@ -27,7 +27,6 @@ TARGET=
 ARCH=$(uname -m | sed 's/x86_64/amd64/g')
 CONFIG=develop
 THREADS=$(nproc)
-VERBOSE=
 CLEAN_BUILD=
 COMPILE_COMMANDS=
 EXTRA_ARGS=
@@ -38,7 +37,6 @@ while [[ ! -z $1 ]]; do
         amd64|aarch64) ARCH=$1 ;;
         debug|release|develop) CONFIG=$1 ;;
         -j[0-9]*) THREADS=${1#-j} ;;
-        -v|-verbose) VERBOSE="-v" ;; 
         -c|-clean) CLEAN_BUILD="-c" ;;
         -cc|-compilecommands) COMPILE_COMMANDS="-cc" ;;
         *) EXTRA_ARGS+=" $1" ;;
@@ -72,32 +70,32 @@ fi
 
 if [[ $TARGET == opengl ]]; then 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL >/dev/null || exit 1
-    wanliz-nvmake $ARCH $CONFIG -j$THREADS $VERBOSE $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL/win/egl/build >/dev/null || exit 1
-    wanliz-nvmake $ARCH $CONFIG -j$THREADS $VERBOSE $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL/win/egl/glsi >/dev/null || exit 1
-    wanliz-nvmake $ARCH $CONFIG -j$THREADS $VERBOSE $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL/win/unix/tls/Linux-elf >/dev/null || exit 1
-    wanliz-nvmake $ARCH $CONFIG -j$THREADS $VERBOSE $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL/win/glx/lib >/dev/null || exit 1
-    wanliz-nvmake $ARCH $CONFIG -j$THREADS $VERBOSE $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
     pushd $P4ROOT/branch/$BRANCH/drivers/khronos/egl/egl >/dev/null || exit 1
-    wanliz-nvmake $ARCH $CONFIG -j$THREADS $VERBOSE $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
     echo 
 elif [[ $TARGET == glcore ]]; then 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL >/dev/null 
-    wanliz-nvmake $ARCH $CONFIG -j$THREADS $VERBOSE $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 else 
     if [[ ! -z $CLEAN_BUILD ]]; then 
@@ -121,13 +119,10 @@ else
         NV_TRACE_CODE=$([[ $CONFIG == release ]] && echo 0 || echo 1) \
         linux $TARGET $([[ $TARGET == drivers ]] && echo dist) $ARCH $CONFIG -j$THREADS $EXTRA_ARGS \
         2>/tmp/nvmake.err || {
+            cat /tmp/nvmake.err
             echo 
             echo "========== NVMAKE ERROR =========="
-            if [[ ! -z $VERBOSE ]]; then
-                cat /tmp/nvmake.err
-            else 
-                cat /tmp/nvmake.err | grep ': \*\*\*'
-            fi 
+            cat /tmp/nvmake.err | grep ': \*\*\*'
             exit 1
         }
     echo 
