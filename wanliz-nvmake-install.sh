@@ -45,7 +45,7 @@ elif [[ $1 == *@* ]]; then
     shift 
     while [[ ! -z $1 ]]; do 
         case $1 in 
-            bugfix_main|r580_00|r590_00|temp) BRANCH=$1 ;;
+            bugfix_main|r*) BRANCH=$1 ;;
             drivers|opengl|glcore) TARGET=$1 ;;
             amd64|aarch64) [[ $1 != $ARCH ]] && { echo "Invalid arch $1"; exit 1; }  ;;
             debug|release|develop) CONFIG=$1 ;;
@@ -60,7 +60,8 @@ elif [[ $1 == *@* ]]; then
     [[ -z $CONFIG  ]] && { echo  "CONFIG is not specified"; exit 1; }
     [[ -z $VERSION ]] && { echo "VERSION is not specified"; exit 1; }
     [[ -z $NOSYSDIR && -z $(sudo -n true 2>/dev/null && echo 1) ]] && { echo "--nosysdir option is required for regular users"; exit 1; }
-    
+    [[ ! -f $P4ROOT/branch/$BRANCH ]] && { echo "$P4ROOT/branch/$BRANCH doesn't exist"; exit 1; }
+
     if [[ $TARGET == drivers ]]; then 
         rsync -ah --info=progress2 $LOGIN_INFO:$P4ROOT/branch/$BRANCH/_out/Linux_${ARCH}_${CONFIG}/NVIDIA-Linux-$(uname -m)-${VERSION}-internal.run $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run || exit 1
         rsync -ah --info=progress2 $LOGIN_INFO:$P4ROOT/branch/$BRANCH/_out/Linux_${ARCH}_${CONFIG}/tests-Linux-$(uname -m).tar $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-tests.tar
