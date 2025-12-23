@@ -14,7 +14,7 @@ fi
 ./nvperf_vulkan -nullDisplay -device 0 texcopy &>nvperf_vulkan__gb300__texcopy.log
 ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 -v &>nvperf_vulkan__gb300__texcopy24_verbose.log
 
-WANLIZ_PRINTF=1 ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 -v &>nvperf_vulkan__gb300__texcopy24_verbose_wanlizPrintf.log
+WANLIZ_PRINTF=1 WANLIZ_PRINT=info ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 -v &>nvperf_vulkan__gb300__texcopy24_verbose_wanlizPrintf.log
 WANLIZ_REGKEY=1 ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 -v &>nvperf_vulkan__gb300__texcopy24_verbose_wanlizRegKey.log
 
 __GL_DEBUG_LEVEL=30 __GL_DEBUG_MASK=RM ./nvperf_vulkan -nullDisplay -device 0 alloc:27 2>nvperf_vulkan__gb300__alloc27_RM_calls_stdio.log
@@ -62,7 +62,7 @@ vulkaninfo >vulkaninfo.log
 __GL_DeviceModalityPreference=0 ./nvperf_vulkan -nullDisplay -device 0 texcopy &>nvperf_vulkan__rtxA400__texcopy.log
 __GL_DeviceModalityPreference=0 ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 -v &>nvperf_vulkan__rtxA400__texcopy24_verbose.log
 
-__GL_DeviceModalityPreference=0 WANLIZ_PRINTF=1 ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 -v &>nvperf_vulkan__rtxA400__texcopy24_verbose_wanlizPrintf.log
+__GL_DeviceModalityPreference=0 WANLIZ_PRINTF=1 WANLIZ_PRINT=info ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 -v &>nvperf_vulkan__rtxA400__texcopy24_verbose_wanlizPrintf.log
 __GL_DeviceModalityPreference=0 WANLIZ_REGKEY=1 ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 -v &>nvperf_vulkan__rtxA400__texcopy24_verbose_wanlizRegKey.log
 
 __GL_DeviceModalityPreference=0 __GL_DEBUG_LEVEL=30 __GL_DEBUG_MASK=RM ./nvperf_vulkan -nullDisplay -device 0 alloc:27 2>nvperf_vulkan__rtxA400__alloc27_RM_calls_stdio.log
