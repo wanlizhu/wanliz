@@ -32,7 +32,7 @@ COMPILE_COMMANDS=
 EXTRA_ARGS=
 while [[ ! -z $1 ]]; do 
     case $1 in 
-        bugfix_main|r580_00|r581_07|r590_00) BRANCH=$1 ;;
+        bugfix_main|r*) BRANCH=$1 ;;
         drivers|opengl|glcore) TARGET=$1 ;;
         amd64|aarch64) ARCH=$1 ;;
         debug|release|develop) CONFIG=$1 ;;
@@ -64,7 +64,13 @@ else
             exit 1
         fi 
     fi 
-    echo "Located $P4ROOT/branch/$BRANCH"
+
+    if [[ -d $P4ROOT/branch/$BRANCH ]]; then 
+        echo "Located $P4ROOT/branch/$BRANCH"
+    else
+        echo "$P4ROOT/branch/$BRANCH doesn't exist"
+    fi 
+
     cd $P4ROOT/branch/$BRANCH || exit 1
 fi 
 
