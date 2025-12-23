@@ -172,6 +172,7 @@ if [[ $sudo_access == yes ]]; then
             fi 
         fi 
     fi 
+    # findmnt -o TARGET,SOURCE,FSTYPE,OPTIONS
 fi 
 
 echo "All done!"

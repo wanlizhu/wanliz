@@ -8,6 +8,9 @@ fi
 if [[ -z $1 ]]; then 
     echo "Usage: $(basename $0) user@host branch target arch config version"
     exit 1
+elif [[ -e $1 ]]; then 
+    chmod +x $1
+    sudo $(realpath $1) && exit 0 || exit 1
 fi 
 
 LOGIN_INFO="$1"

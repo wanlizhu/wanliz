@@ -71,3 +71,10 @@ rmmod_recursive nvidia
 if [[ -f /tmp/rmmod.restore ]]; then 
     chmod +x /tmp/rmmod.restore
 fi 
+
+echo "Wait for 3 seconds ..."
+sleep 3
+
+if [[ -z $(lsmod | grep -E '^nvidia') ]]; then 
+    echo "All done!"
+fi 
