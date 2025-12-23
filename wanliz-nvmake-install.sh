@@ -117,7 +117,6 @@ elif [[ $1 == *@* ]]; then
         else 
             if [[ $NOSYSDIR == 1 ]]; then
                 RSYNC_DST=$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-opengl
-                rm -rf $RSYNC_DST
                 mkdir -p $RSYNC_DST
             else
                 RSYNC_DST=$HOME 
