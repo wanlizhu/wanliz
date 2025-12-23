@@ -114,7 +114,7 @@ if [[ -z $install_symlinks || $install_symlinks =~ ^([yY]([eE][sS])?)?$ ]]; then
             rm -f "$link" &>/dev/null 
         fi 
     done 
-    for file in $scripts_dir/*.sh; do 
+    for file in $scripts_dir/*.*; do 
         [[ -f $file && -x $file ]] || continue 
         cmdname=$(basename "$file")
         cmdname=${cmdname%.sh}
