@@ -134,8 +134,14 @@ elif [[ $1 == *@* ]]; then
             fi 
 
             if [[ $NOSYSDIR == 1 ]]; then
+                pushd $RSYNC_DST >/dev/null || exit 1
+                ln -sf libGLX_nvidia.so.$VERSION libGLX_nvidia.so.0
+                ln -sf libEGL_nvidia.so.$VERSION libEGL_nvidia.so.0
+                cp -f /etc/vulkan/icd.d/nvidia_icd.json .
+                sed -i "s|libGLX_nvidia\.so\.0|$RSYNC_DST/libGLX_nvidia.so.0|g" nvidia_icd.json
+                popd >/dev/null 
                 echo 
-                echo "LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-opengl${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} ..." 
+                echo "LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-opengl${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} VK_ICD_FILENAMES=$HOME/NVIDIA-Linux-aarch64-develop-580.82.07-opengl/nvidia_icd.json ..." 
             else 
                 read -p "Press [Enter] to continue: "
                 if [[ -f $HOME/libnvidia-glcore.so.$VERSION.backup ]]; then 
