@@ -33,7 +33,7 @@ __GL_DEBUG_MASK=VK_SYNC __GL_DEBUG_LEVEL=20 __GL_DEBUG_OPTIONS="LOG_TO_CONSOLE:P
 
 NAME=nvperf_vulkan__gb300__alloc27_perf FREQ=10000 perf-record-gb300 ./nvperf_vulkan -nullDisplay -device 0 alloc:27
 
-sudo dmesg -T | head -n 200 >boot_params.log 
+sudo dmesg -T | head -n 200 >dmesg_T_200.log 
 ls -l /boot/config-$(uname -r) 2>/dev/null >kernel_config.log 
 ulimit -a >ulimit_a.log 
 cat /proc/cpuinfo >cpuinfo.log

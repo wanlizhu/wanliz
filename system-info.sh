@@ -54,3 +54,19 @@ echo "List PIDs using nvidia module:"
 sudo lsof -w -n /dev/nvidia* | awk 'NR>1{{print $2}}' | sort -un | while read -r pid; do
     printf "PID=%-7s %s\n" "$pid" "$(tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null || ps -o args= -p "$pid")"
 done
+
+if [[ $1 == -d || $1 == --dump ]]; then 
+    rm -f $HOME/system-info.txt
+    for module in nvidia nvidia_uvm nvidia_drm nvidia_modeset; do 
+        echo "===== BEGIN /proc/driver/$module/params =====" >> $HOME/system-info.txt
+        cat /proc/driver/$module/params >> $HOME/system-info.txt
+        echo "===== END   /proc/driver/$module/params =====" >> $HOME/system-info.txt
+    done 
+    echo 
+    echo echo "===== BEGIN kernel config =====" >> $HOME/system-info.txt
+    for param in $(find /sys/module -path '*/parameters/*' -type f -print | grep nvidia); do 
+        echo "$param: $(sudo cat $param)"
+    done 
+    echo echo "===== END   kernel config =====" >> $HOME/system-info.txt
+    echo 
+fi 
