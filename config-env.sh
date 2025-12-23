@@ -123,7 +123,7 @@ if [[ -z $install_symlinks || $install_symlinks =~ ^([yY]([eE][sS])?)?$ ]]; then
     done 
 fi 
 
-if grep -q '" wanliz' $HOME/.vimrc 2>/dev/null; then 
+if [[ -f $HOME/.vimrc ]]; then 
     read -p "Reconfigure (override) ~/.vimrc? [Yes/no]: " config_vimrc
 else 
     read -p "Configure ~/.vimrc? [Yes/no]: " config_vimrc
@@ -137,7 +137,7 @@ set softtabstop=4
 EOF
 fi 
 
-if grep -q '" wanliz' $HOME/.screenrc 2>/dev/null; then 
+if [[ -f $HOME/.screenrc ]]; then 
     read -p "Reconfigure (override) ~/.screenrc? [Yes/no]: " config_screenrc
 else 
     read -p "Configure ~/.screenrc? [Yes/no]: " config_screenrc
