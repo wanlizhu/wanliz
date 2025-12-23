@@ -5,6 +5,11 @@ if [[ -z $P4ROOT ]]; then
     export P4ROOT="/home/wanliz/sw"
 fi 
 
+if [[ -z $1 ]]; then 
+    echo "Usage: $(basename $0) user@host branch target arch config version"
+    exit 1
+fi 
+
 LOGIN_INFO="$1"
 BRANCH=
 TARGET=opengl
