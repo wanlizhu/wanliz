@@ -91,7 +91,8 @@ if [[ $sudo_access == yes ]]; then
             lsof x11-xserver-utils x11-utils openbox obconf x11vnc \
             mesa-utils vulkan-tools xserver-xorg-core \
             samba samba-common-bin socat cmake build-essential \
-            ninja-build pkg-config libjpeg-dev smbclient 
+            ninja-build pkg-config libjpeg-dev smbclient \
+            libboost-program-options-dev 
         do 
             if ! dpkg -s $pkg &>/dev/null; then
                 echo -n "Installing $pkg ... "
@@ -166,9 +167,7 @@ if [[ $sudo_access == yes ]]; then
             read -p "Mount /mnt/linuxqa? [Yes/no]: " mount_linuxqa 
             if [[ -z $mount_linuxqa || $mount_linuxqa =~ ^([yY]([eE][sS])?)?$ ]]; then 
                 echo -n "Mounting /mnt/linuxqa ... "
-                if [[ ! -d /mnt/linuxqa ]]; then 
-                    sudo mkdir -p /mnt/linuxqa 
-                fi 
+                sudo mkdir -p /mnt/linuxqa &&
                 sudo mount -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa || echo "Failed to mount /mnt/linuxqa"
             fi 
         fi 
