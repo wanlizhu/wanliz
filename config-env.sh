@@ -40,32 +40,31 @@ EOF
 fi 
 
 if [[ -f $HOME/.ssh/config  ]]; then 
-    read -p "Reconfigure ~/.ssh/config? [Yes/no]: " ssh_config
+    read -p "Reconfigure (override) ~/.ssh/config? [Yes/no]: " ssh_config
 else 
     read -p "Configure ~/.ssh/config? [Yes/no]: " ssh_config
 fi 
 if [[ -z $ssh_config || $ssh_config =~ ^([yY]([eE][sS])?)?$ ]]; then 
     mkdir -p $HOME/.ssh 
-    [[  -f $HOME/.ssh/config ]] && sed -i '\|# wanliz|d' $HOME/.ssh/config
-    tee -a $HOME/.ssh/config >/dev/null <<'EOF'
-Host xterm                              # wanliz
-    HostName dc2-container-xterm-028.prd.it.nvidia.com  # wanliz
-    User wanliz                         # wanliz
-    Port 4483                           # wanliz
-    IdentityFile ~/.ssh/id_ed25519      # wanliz
-    IdentitiesOnly no                   # wanliz
+    tee $HOME/.ssh/config >/dev/null <<'EOF'
+Host xterm                             
+    HostName dc2-container-xterm-028.prd.it.nvidia.com   
+    User wanliz                         
+    Port 4483                          
+    IdentityFile ~/.ssh/id_ed25519      
+    IdentitiesOnly no                  
 
-Host gb300-cluster                      # wanliz 
-    HostName cls-pdx-ipp6-bcm-3         # wanliz 
-    User wanliz                         # wanliz 
-    IdentityFile ~/.ssh/id_ed25519      # wanliz 
-    IdentitiesOnly no                   # wanliz 
+Host gb300-cluster                      
+    HostName cls-pdx-ipp6-bcm-3         
+    User wanliz                     
+    IdentityFile ~/.ssh/id_ed25519      
+    IdentitiesOnly no                   
 
-Host gb300-with-sudo                    # wanliz
-    HostName gb300-nvl-022-compute03    # wanliz
-    User dlfwadmin                      # wanliz
-    IdentityFile ~/.ssh/id_ed25519      # wanliz
-    IdentitiesOnly no                   # wanliz
+Host gb300-with-sudo                     
+    HostName gb300-nvl-022-compute03     
+    User dlfwadmin                      
+    IdentityFile ~/.ssh/id_ed25519      
+    IdentitiesOnly no                   
 EOF
 fi 
 
