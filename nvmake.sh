@@ -5,6 +5,10 @@ if [[ -z $P4ROOT ]]; then
     export P4ROOT="/home/wanliz/sw"
 fi 
 
+#echo -e "Todo: p4 revert -k -c default /home/wanliz/sw/... \t Abandon records but keep local changes"
+#echo -e "Todo: p4 sync --parallel=threads=32 $P4ROOT/branch/...@12345678 \t Sync to specified CL"
+#echo -e "Todo: p4 reconcile -f -m -M --parallel=32 -c default $P4ROOT/... \t P4v's reconcile"
+
 if [[ $1 == -h || $1 == --help ]]; then 
     echo "Usage: $0 [BRANCH] [TARGET] [ARCH] [CONFIG] [options] [-- extra nvmake args]"
     echo ""
@@ -76,32 +80,32 @@ fi
 
 if [[ $TARGET == opengl ]]; then 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL >/dev/null || exit 1
-    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL/win/egl/build >/dev/null || exit 1
-    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL/win/egl/glsi >/dev/null || exit 1
-    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL/win/unix/tls/Linux-elf >/dev/null || exit 1
-    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL/win/glx/lib >/dev/null || exit 1
-    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
     pushd $P4ROOT/branch/$BRANCH/drivers/khronos/egl/egl >/dev/null || exit 1
-    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
     echo 
 elif [[ $TARGET == glcore ]]; then 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL >/dev/null 
-    wanliz-nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 else 
     if [[ ! -z $CLEAN_BUILD ]]; then 
@@ -123,7 +127,8 @@ else
         NV_UNIX_CHECK_DEBUG_INFO=0 \
         NV_MANGLE_SYMBOLS=0 \
         NV_TRACE_CODE=$([[ $CONFIG == release ]] && echo 0 || echo 1) \
-        linux $TARGET $([[ $TARGET == drivers ]] && echo dist) $ARCH $CONFIG -j$THREADS $EXTRA_ARGS \
+        linux $TARGET $([[ $TARGET == drivers ]] && echo dist) $([[ $(dirname $(pwd)) == OpenGL ]] && echo '@generate') \
+        $ARCH $CONFIG -j$THREADS $EXTRA_ARGS \
         2>/tmp/nvmake.err || {
             cat /tmp/nvmake.err
             echo 
@@ -137,7 +142,7 @@ fi
 if [[ $TARGET == drivers || $TARGET == opengl ]]; then 
     MY_IP=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
     NVSRC_VERSION=$(sed -n 's/^[[:space:]]*#define[[:space:]]\+NV_VERSION_STRING[[:space:]]\+"\([^"]\+\)".*/\1/p' /home/wanliz/sw/branch/$BRANCH/drivers/common/inc/nvUnixVersion.h | head -n1)
-    echo "wanliz-nvmake-install $USER@$MY_IP $BRANCH $TARGET $ARCH $CONFIG $NVSRC_VERSION"
+    echo "install-nvidia-driver $USER@$MY_IP $BRANCH $TARGET $ARCH $CONFIG $NVSRC_VERSION"
     echo 
 fi 
 
@@ -163,6 +168,6 @@ if [[ ! -z $COMPILE_COMMANDS ]]; then
         NV_MANGLE_SYMBOLS= \
         linux $ARCH $CONFIG -Bn -j$(nproc) > _out/Linux_${ARCH}_${CONFIG}/gcc_compile_commands.cmd && {
         echo "Generated  _out/Linux_${ARCH}_${CONFIG}/gcc_compile_commands.cmd"
-        wanliz-process-clangd-database _out/Linux_${ARCH}_${CONFIG}/gcc_compile_commands.cmd
+        process-clangd-database _out/Linux_${ARCH}_${CONFIG}/gcc_compile_commands.cmd
     } 
 fi 

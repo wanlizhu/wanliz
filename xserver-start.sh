@@ -6,16 +6,9 @@ if [[ -z $DISPLAY ]]; then
     echo "Fallback to DISPLAY=$DISPLAY"
 fi 
 
-read -p "Is this machine a headless system? [Y/n]: " headless
-read -p "Do you want to start openbox? [y/N]: " start_openbox
-read -p "Do you want to start x11vnc? [y/N]: " start_x11vnc 
-
-if [[ $(nvidia-smi --query-gpu=name --format=csv,noheader) == "NVIDIA GB10" ]]; then 
-    read -p "Do you want to run spark-config? [Y/n]: " spark_config
-    if [[ -z $spark_config || $spark_config == "y" ]]; then 
-        wanliz-spark-config 
-    fi 
-fi 
+read -p "Is this a headless system? [Yes/n]: " headless
+read -p "Do you want to start openbox? [yes/No]: " start_openbox
+read -p "Do you want to start x11vnc? [yes/No]: " start_x11vnc 
             
 if [[ ! -z $(pidof Xorg) ]]; then 
     read -p "Press [Enter] to kill running X server: "    
@@ -27,7 +20,7 @@ screen -ls | awk '/Detached/ && /bareX/ {{ print $1 }}' | while IFS= read -r ses
     screen -S "$session" -X stuff $'\r'
 done
 
-if [[ -z $headless || $headless == "y" ]]; then 
+if [[ -z $headless || $headless =~ ^([yY]([eE][sS])?)?$ ]]; then 
     busID=$(nvidia-xconfig --query-gpu-info | sed -n '/PCI BusID/{{s/^[^:]*:[[:space:]]*//;p;q}}')
     sudo nvidia-xconfig -s -o /etc/X11/xorg.conf \
         --force-generate --mode-debug --layout=Layout0 --render-accel --cool-bits=4 \
@@ -59,11 +52,11 @@ if [[ $fbsize != "3840x2160" ]]; then
 fi 
 xrandr --current
             
-if [[ $start_openbox == "y" ]]; then 
+if [[ $start_openbox =~ ^([yY]([eE][sS])?)?$ ]]; then 
     screen -S openbox -dm openbox
 fi
 
-if [[ $start_x11vnc == "y" ]]; then 
+if [[ $start_x11vnc =~ ^([yY]([eE][sS])?)?$ ]]; then 
     gdm_conf=""
     for f in /etc/gdm3/custom.conf /etc/gdm3/daemon.conf; do
         [[ -f $f ]] && gdm_conf=$f && break

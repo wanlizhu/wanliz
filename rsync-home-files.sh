@@ -4,23 +4,24 @@ trap 'exit 130' INT
 home_files=()
 while IFS= read -r -d '' file; do 
     case "$file" in 
-        *.run|*.tar|*.tar.gz|*.tgz|*.zip|*.so|*.deb|*.tar.bz2|*.tbz|*.tbz2|*.tar.xz|*.txz|*.tar.zst|*.tzst|*.tar.lz4|*.tlz4|*libnvidia-*.so*|*nvperf_vulkan) continue ;;
+        *.tar|*.tar.gz|*.tgz|*.zip|*.tar.bz2|*.tar.xz) continue ;;
+        *.run|*.so|*.deb|*libnvidia-*.so*) continue ;;
     esac 
     home_files+=("$file")
 done < <(find "$HOME" -maxdepth 1 -type f -not -name '.*' -print0)
 
 if ((${#home_files[@]})); then 
-    if [[ -f /tmp/remote.ip ]]; then 
-        if ! sudo ping -c 1 -W 3 "$(cat /tmp/remote.ip 2>/dev/null)"; then 
-            sudo rm -f /tmp/remote.ip
+    if [[ -f /tmp/rsync-to-ipv4 ]]; then 
+        if ! sudo ping -c 1 -W 3 "$(cat /tmp/rsync-to-ipv4 2>/dev/null)"; then 
+            sudo rm -f /tmp/rsync-to-ipv4
         fi  
     fi 
-    if [[ ! -f /tmp/remote.ip ]]; then 
+    if [[ ! -f /tmp/rsync-to-ipv4 ]]; then 
         read -p "Remote server IP: " remote_ip
-        echo "$remote_ip" > /tmp/remote.ip
+        echo "$remote_ip" > /tmp/rsync-to-ipv4
     fi 
 
-    remote_ip=$(cat /tmp/remote.ip)
+    remote_ip=$(cat /tmp/rsync-to-ipv4)
     ssh wanliz@$remote_ip "mkdir -p /mnt/d/${USER}@$(hostname)"
     rsync -lth --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' "${home_files[@]}" wanliz@$remote_ip:/mnt/d/${USER}@$(hostname)/
 fi 
