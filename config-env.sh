@@ -104,6 +104,7 @@ fi
 read -p "Install profiling scripts? [Yes/no]: " install_symlinks 
 if [[ -z $install_symlinks || $install_symlinks =~ ^([yY]([eE][sS])?)?$ ]]; then 
     mkdir -p $HOME/.local/bin
+    read -e -i $(dirname $(readlink -f $0)) -p "Create symlinks to scripts in: " scripts_dir
     find $HOME/.local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
         if real_target=$(readlink -f "$link"); then  
             if [[ $real_target == *"/wanliz/"* ]]; then 
@@ -113,7 +114,6 @@ if [[ -z $install_symlinks || $install_symlinks =~ ^([yY]([eE][sS])?)?$ ]]; then
             rm -f "$link" &>/dev/null 
         fi 
     done 
-    read -e -i $(dirname $(readlink -f $0)) -p "Create symlinks to scripts in: " scripts_dir
     for file in $scripts_dir/*.sh; do 
         [[ -f $file && -x $file ]] || continue 
         cmdname=$(basename "$file")
