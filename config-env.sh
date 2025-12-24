@@ -36,7 +36,7 @@ if [[ $sudo_access == yes ]]; then
         read -p "Configure /etc/hosts? [Yes/no]: " add_hosts
     fi 
     if [[ -z ${add_hosts//[[:space:]]/} || $add_hosts =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-        # TODO 
+        sudo sed -i '/# wanliz/d' /etc/hosts
         sudo tee -a /etc/hosts >/dev/null <<'EOF'
 172.16.179.143 office        # wanliz
 172.16.178.123 horizon5      # wanliz
