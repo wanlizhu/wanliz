@@ -38,15 +38,14 @@ if [[ $sudo_access == yes ]]; then
     if [[ -z ${add_hosts//[[:space:]]/} || $add_hosts =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
         # TODO 
         sudo tee -a /etc/hosts >/dev/null <<'EOF'
-# wanliz hosts
-172.16.179.143 office        
-172.16.178.123 horizon5      
-172.16.177.182 horizon6     
-172.16.177.216 horizon7     
-10.31.86.235   nvtest-spark nvtest-172          
-10.176.11.106  nvtest-0110  4u2g-0110            
-10.178.94.106  nvtest-gb300   nvtest-galaxy     
-10.176.195.179 nvtest-gb300-2 nvtest-galaxy-2  
+172.16.179.143 office        # wanliz
+172.16.178.123 horizon5      # wanliz
+172.16.177.182 horizon6      # wanliz
+172.16.177.216 horizon7      # wanliz
+10.31.86.235   nvtest-spark nvtest-172          # wanliz
+10.176.11.106  nvtest-0110  4u2g-0110           # wanliz
+10.178.94.106  nvtest-gb300   nvtest-galaxy     # wanliz
+10.176.195.179 nvtest-gb300-2 nvtest-galaxy-2   # wanliz
 EOF
     fi 
 fi 
