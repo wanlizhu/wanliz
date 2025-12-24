@@ -23,7 +23,7 @@ echo
 cat /proc/driver/nvidia/version
 
 echo 
-nvidia-smi --query-gpu=index,name,compute_cap --format=csv | column -t -s,
+nvidia-smi --query-gpu=index,name,compute_cap,persistence_mode,driver_version,clocks.gr,clocks.mem --format=csv | sed -e 's/clocks\.current\.graphics \[MHz\]/GPC_clock/g' -e 's/clocks\.current\.memory \[MHz\]/MEM_clock/g' | column -t -s,
 
 echo 
 modinfo nvidia | egrep 'filename|version|firmware'
