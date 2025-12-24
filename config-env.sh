@@ -9,15 +9,16 @@ else
     sudo_access=
 fi 
 
-timedatectl
-echo "If machine clock is behind, apt refuses to use some repos."
-read -p "Is the local time correct? [Yes/no]: " time_correct
-if [[ $time_correct =~ ^[[:space:]]*([nN]|[nN][oO])[[:space:]]*$ ]]; then 
-    read -e -i "$(date '+%F %T')" -p "The correct local time: " corrected_time
-    sudo date -s "$corrected_time"
-    sudo apt update &>/dev/null 
+if [[ $sudo_access == yes ]]; then 
+    timedatectl
+    echo "If machine clock is behind, apt refuses to use some repos."
+    read -p "Is the local time correct? [Yes/no]: " time_correct
+    if [[ $time_correct =~ ^[[:space:]]*([nN]|[nN][oO])[[:space:]]*$ ]]; then 
+        read -e -i "$(date '+%F %T')" -p "The correct local time: " corrected_time
+        sudo date -s "$corrected_time"
+        sudo apt update &>/dev/null 
+    fi 
 fi 
-
 
 if [[ $sudo_access == yes && $EUID != 0 ]]; then 
     if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
