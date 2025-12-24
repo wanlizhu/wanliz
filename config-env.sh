@@ -10,7 +10,6 @@ else
 fi 
 
 timedatectl
-echo 
 echo "If machine clock is behind, apt refuses to use some repos."
 read -p "Is the local time correct? [Yes/no]: " time_correct
 if [[ $time_correct =~ ^[[:space:]]*([nN]|[nN][oO])[[:space:]]*$ ]]; then 
