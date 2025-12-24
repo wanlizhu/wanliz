@@ -9,10 +9,21 @@ else
     sudo_access=
 fi 
 
+timedatectl
+echo 
+echo "If machine clock is behind, apt refuses to use some repos."
+read -p "Is the local time correct? [Yes/no]: " time_correct
+if [[ $time_correct =~ ^[[:space:]]*([nN]|[nN][oO])[[:space:]]*$ ]]; then 
+    read -e -i "$(date '+%F %T')" -p "The correct local time: " corrected_time
+    sudo date -s "$corrected_time"
+    sudo apt update &>/dev/null 
+fi 
+
+
 if [[ $sudo_access == yes && $EUID != 0 ]]; then 
     if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
         read -p "Enable no-password sudo for $USER? [Yes/no]: " nopasswd_sudo 
-        if [[ -z $nopasswd_sudo || $nopasswd_sudo =~ ^([yY]([eE][sS])?)?$ ]]; then 
+        if [[ -z ${nopasswd_sudo//[[:space:]]/} || $nopasswd_sudo =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
             echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
         fi 
     fi
@@ -24,17 +35,18 @@ if [[ $sudo_access == yes ]]; then
     else 
         read -p "Configure /etc/hosts? [Yes/no]: " add_hosts
     fi 
-    if [[ -z $add_hosts || $add_hosts =~ ^([yY]([eE][sS])?)?$ ]]; then 
-        sudo sed -i '\|# wanliz|d' /etc/hosts
+    if [[ -z ${add_hosts//[[:space:]]/} || $add_hosts =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+        # TODO 
         sudo tee -a /etc/hosts >/dev/null <<'EOF'
-172.16.179.143 office       # wanliz
-172.16.178.123 horizon5     # wanliz 
-172.16.177.182 horizon6     # wanliz 
-172.16.177.216 horizon7     # wanliz 
-10.31.86.235   nvtest-spark nvtest-172          # wanliz 
-10.176.11.106  nvtest-0110  4u2g-0110           # wanliz 
-10.178.94.106  nvtest-gb300   nvtest-galaxy     # wanliz 
-10.176.195.179 nvtest-gb300-2 nvtest-galaxy-2   # wanliz 
+# wanliz hosts
+172.16.179.143 office        
+172.16.178.123 horizon5      
+172.16.177.182 horizon6     
+172.16.177.216 horizon7     
+10.31.86.235   nvtest-spark nvtest-172          
+10.176.11.106  nvtest-0110  4u2g-0110            
+10.178.94.106  nvtest-gb300   nvtest-galaxy     
+10.176.195.179 nvtest-gb300-2 nvtest-galaxy-2  
 EOF
     fi 
 fi 
@@ -44,7 +56,7 @@ if [[ -f $HOME/.ssh/config  ]]; then
 else 
     read -p "Configure ~/.ssh/config? [Yes/no]: " ssh_config
 fi 
-if [[ -z $ssh_config || $ssh_config =~ ^([yY]([eE][sS])?)?$ ]]; then 
+if [[ -z ${ssh_config//[[:space:]]/} || $ssh_config =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     mkdir -p $HOME/.ssh 
     tee $HOME/.ssh/config >/dev/null <<'EOF'
 Host xterm                             
@@ -70,7 +82,7 @@ fi
 
 if [[ ! -f $HOME/.ssh/id_ed25519 ]]; then 
     read -p "Restore wanliz's SSH ID from xterm? [Yes/no]: " ssh_id
-    if [[ -z $ssh_id || $ssh_id =~ ^([yY]([eE][sS])?)?$ ]]; then 
+    if [[ -z ${ssh_id//[[:space:]]/} || $ssh_id =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
         mkdir -p $HOME/.ssh 
         rsync -ah --progress wanliz@xterm:/home/wanliz/.ssh/id_ed25519     $HOME/.ssh/id_ed25519
         rsync -ah --progress wanliz@xterm:/home/wanliz/.ssh/id_ed25519.pub $HOME/.ssh/id_ed25519.pub
@@ -83,7 +95,7 @@ fi
 
 if [[ $sudo_access == yes ]]; then 
     read -p "Install profiling packages? [Yes/no]: " install_pkg 
-    if [[ -z $install_pkg || $install_pkg =~ ^([yY]([eE][sS])?)?$ ]]; then 
+    if [[ -z ${install_pkg//[[:space:]]/} || $install_pkg =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
         python_version=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
         for pkg in python${python_version}-dev python${python_version}-venv \
             python3-pip python3-protobuf protobuf-compiler \
@@ -103,7 +115,7 @@ if [[ $sudo_access == yes ]]; then
 fi 
 
 read -p "Install profiling scripts? [Yes/no]: " install_symlinks 
-if [[ -z $install_symlinks || $install_symlinks =~ ^([yY]([eE][sS])?)?$ ]]; then 
+if [[ -z ${install_symlinks//[[:space:]]/} || $install_symlinks =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     mkdir -p $HOME/.local/bin
     read -e -i $(dirname $(readlink -f $0)) -p "Create symlinks to scripts in: " scripts_dir
     find $HOME/.local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
@@ -129,7 +141,7 @@ if [[ -f $HOME/.vimrc ]]; then
 else 
     read -p "Configure ~/.vimrc? [Yes/no]: " config_vimrc
 fi 
-if [[ -z $config_vimrc || $config_vimrc =~ ^([yY]([eE][sS])?)?$ ]]; then 
+if [[ -z ${config_vimrc//[[:space:]]/} || $config_vimrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     cat > $HOME/.vimrc <<'EOF'
 set expandtab        
 set tabstop=4        
@@ -143,7 +155,7 @@ if [[ -f $HOME/.screenrc ]]; then
 else 
     read -p "Configure ~/.screenrc? [Yes/no]: " config_screenrc
 fi 
-if [[ -z $config_screenrc || $config_screenrc =~ ^([yY]([eE][sS])?)?$ ]]; then 
+if [[ -z ${config_screenrc//[[:space:]]/} || $config_screenrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     cat > $HOME/.screenrc <<'EOF' 
 startup_message off     
 hardstatus alwaysfirstline 
@@ -165,7 +177,7 @@ if [[ $sudo_access == yes ]]; then
             echo >/dev/null 
         else 
             read -p "Mount /mnt/linuxqa? [Yes/no]: " mount_linuxqa 
-            if [[ -z $mount_linuxqa || $mount_linuxqa =~ ^([yY]([eE][sS])?)?$ ]]; then 
+            if [[ -z ${mount_linuxqa//[[:space:]]/} || $mount_linuxqa =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
                 echo -n "Mounting /mnt/linuxqa ... "
                 sudo mkdir -p /mnt/linuxqa &&
                 sudo mount -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa || echo "Failed to mount /mnt/linuxqa"

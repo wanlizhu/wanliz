@@ -10,7 +10,9 @@ if [[ -z $1 ]]; then
     exit 1
 elif [[ -e $1 ]]; then 
     chmod +x $1
-    sudo $(realpath $1) && exit 0 || exit 1
+    sudo $(realpath $1) || exit 1
+    sudo nvidia-smi -pm 1 
+    exit 0
 fi 
 
 LOGIN_INFO="$1"
