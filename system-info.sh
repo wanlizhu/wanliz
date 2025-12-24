@@ -8,6 +8,29 @@ fi
 
 ip=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
 echo "My IP: $ip"
+
+echo 
+echo "NVIDIA GPU Devices Found:"
+nvidia-smi --query-gpu=index,pci.bus_id,name,compute_cap --format=csv,noheader | while IFS=, read -r idx bus name cc; do
+    bus=$(echo "$bus" | awk '{{$1=$1}};1' | sed 's/^00000000/0000/' | tr 'A-Z' 'a-z')
+    sys="/sys/bus/pci/devices/$bus"
+    node=$(cat "$sys/numa_node" 2>/dev/null || echo -1)         # -1 means no NUMA info
+    cpus=$(cat "$sys/local_cpulist" 2>/dev/null || echo '?')
+    printf "GPU: %s    Name: %s    PCI: %s    NUMA node: %s    CPUs: %s\n" "$idx" "$name" "$bus" "$node" "$cpus"
+done
+
+echo 
+cat /proc/driver/nvidia/version
+
+echo 
+nvidia-smi --query-gpu=index,name,compute_cap --format=csv | column -t -s,
+
+echo 
+modinfo nvidia | egrep 'filename|version|firmware'
+
+echo 
+file /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.*
+
 if [[ -d /wanliz_sw_windows_wsl2 ]]; then
     nvsrc_version=$(cat /wanliz_sw_windows_wsl2/workingbranch/drivers/common/inc/nvUnixVersion.h | grep '#define' | grep NV_VERSION_STRING | awk -F'"' '{print $2}')
     echo "NVIDIA Source Code Version: $nvsrc_version"
@@ -25,29 +48,6 @@ if timeout 2s bash -lc 'command -v xdpyinfo >/dev/null && xdpyinfo >/dev/null 2>
 else 
     echo "X($DISPLAY) is down or unauthorized"
 fi 
-
-echo 
-echo "NVIDIA GPU Devices Found:"
-nvidia-smi --query-gpu=index,pci.bus_id,name,compute_cap --format=csv,noheader | while IFS=, read -r idx bus name cc; do
-    bus=$(echo "$bus" | awk '{{$1=$1}};1' | sed 's/^00000000/0000/' | tr 'A-Z' 'a-z')
-    sys="/sys/bus/pci/devices/$bus"
-    node=$(cat "$sys/numa_node" 2>/dev/null || echo -1)         # -1 means no NUMA info
-    cpus=$(cat "$sys/local_cpulist" 2>/dev/null || echo '?')
-    printf "GPU: %s    Name: %s    PCI: %s    NUMA node: %s    CPUs: %s\n" "$idx" "$name" "$bus" "$node" "$cpus"
-done
-
-echo 
-echo "NVIDIA Kernel Version: $(cat /sys/module/nvidia/version)"
-nvidia-smi -q | grep -i 'GSP Firmware Version' | sed 's/^[[:space:]]*//' | tr -s ' ' 
-
-echo 
-modinfo nvidia | egrep 'filename|version|firmware'
-
-echo 
-cat /proc/driver/nvidia/version
-
-echo 
-file /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.*
 
 echo 
 echo "List PIDs using nvidia module:"
