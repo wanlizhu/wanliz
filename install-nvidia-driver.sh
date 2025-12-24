@@ -9,6 +9,7 @@ if [[ -z $1 ]]; then
     echo "Usage: $(basename $0) user@host branch target arch config version"
     exit 1
 elif [[ -e $1 ]]; then 
+    remove-nvidia-module
     chmod +x $1
     sudo $(realpath $1) || exit 1
     sudo nvidia-smi -pm 1 
