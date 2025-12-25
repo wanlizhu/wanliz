@@ -42,10 +42,10 @@ if [[ $sudo_access == yes ]]; then
 172.16.178.123 horizon5      # wanliz
 172.16.177.182 horizon6      # wanliz
 172.16.177.216 horizon7      # wanliz
-10.31.86.235   nvtest-spark nvtest-172          # wanliz
-10.176.11.106  nvtest-0110  4u2g-0110           # wanliz
-10.178.94.106  nvtest-gb300   nvtest-galaxy     # wanliz
-10.176.195.179 nvtest-gb300-2 nvtest-galaxy-2   # wanliz
+10.31.86.235   nvtest-spark        nvtest-172    # wanliz
+10.176.11.106  nvtest-spark-proxy  nvtest-0110   # wanliz
+10.178.94.106  nvtest-galaxy-gb300      # wanliz
+10.176.195.179 nvtest-galaxy-gb300-2    # wanliz
 EOF
     fi 
 fi 
@@ -65,17 +65,11 @@ Host xterm
     IdentityFile ~/.ssh/id_ed25519      
     IdentitiesOnly no                  
 
-Host gb300-cluster                      
+Host gb300-nvl-cluster                      
     HostName cls-pdx-ipp6-bcm-3         
     User wanliz                     
     IdentityFile ~/.ssh/id_ed25519      
-    IdentitiesOnly no                   
-
-Host gb300-with-sudo                     
-    HostName gb300-nvl-022-compute03     
-    User dlfwadmin                      
-    IdentityFile ~/.ssh/id_ed25519      
-    IdentitiesOnly no                   
+    IdentitiesOnly no                                 
 EOF
 fi 
 

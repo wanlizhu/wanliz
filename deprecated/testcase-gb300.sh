@@ -80,3 +80,51 @@ __GL_DeviceModalityPreference=0 __GL_DEBUG_MASK=VK_ERROR __GL_DEBUG_LEVEL=20 __G
 __GL_DeviceModalityPreference=0 __GL_DEBUG_MASK=VK_SYNC __GL_DEBUG_LEVEL=20 __GL_DEBUG_OPTIONS="LOG_TO_CONSOLE:PRINT_THREAD_ID:PRINT_INDENT:FLUSHFILE_PER_WRITE" ./nvperf_vulkan -nullDisplay -device 0 texcopy:24 2>nvperf_vulkan__rtxA400__texcopy24_vk_sync_stdio.log 
 
 NAME=nvperf_vulkan__rtxA400__alloc27_perf FREQ=10000 perf-record ./nvperf_vulkan -nullDisplay -device 0 alloc:27
+
+
+
+# Build nvbandwidth
+
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/cuda-ubuntu2404.pin
+sudo mv cuda-ubuntu2404.pin /etc/apt/preferences.d/cuda-repository-pin-600
+wget https://developer.download.nvidia.com/compute/cuda/13.1.0/local_installers/cuda-repo-ubuntu2404-13-1-local_13.1.0-590.44.01-1_arm64.deb
+sudo dpkg -i cuda-repo-ubuntu2404-13-1-local_13.1.0-590.44.01-1_arm64.deb
+sudo cp /var/cuda-repo-ubuntu2404-13-1-local/cuda-*-keyring.gpg /usr/share/keyrings/
+sudo apt-get update
+sudo apt-get -y install cuda-toolkit-13-1
+
+sudo apt install -y libboost-program-options-dev 
+
+```
+index   name              compute_cap   persistence_mode   driver_version   GPC_clock   MEM_clock
+0       NVIDIA RTX A400   8.6           Enabled            590.44.01        210 MHz     405 MHz
+1       NVIDIA GB300      10.3          Enabled            590.44.01        120 MHz     3996 MHz
+```
+
+cmake .. -DCMAKE_CUDA_ARCHITECTURES=100 
+cmake .. -DCMAKE_CUDA_ARCHITECTURES=86 
+
+```
+For RTX GPU:
+export __GL_DeviceModalityPreference=2
+export CUDA_VISIBLE_DEVICES=1
+
+For B300 GPU:
+export __GL_DeviceModalityPreference=1
+export CUDA_DEVICE_MODALITY=1
+and you may also need to set this, from what I saw in a recent bug report
+export CUDA_VISIBLE_DEVICES=0
+```
+
+__GL_DeviceModalityPreference=2 CUDA_VISIBLE_DEVICES=1 ./nvbandwidth | tee ~/nvbandwidth-rtxA400-590.44.01-cap86.txt
+
+__GL_DeviceModalityPreference=1 CUDA_DEVICE_MODALITY=1 CUDA_VISIBLE_DEVICES=0 ./nvbandwidth | tee ~/nvbandwidth-gb300-590.44.01-cap100.txt
+
+__GL_DeviceModalityPreference=1 ./nvperf_vulkan -nullDisplay -device 0 texcopy | tee ~/nvperf_vulkan-texcopy-gb300-590.44.01.txt 
+
+__GL_DeviceModalityPreference=1 ./nvperf_vulkan -nullDisplay -device 0 alloc | tee ~/nvperf_vulkan-alloc-gb300-590.44.01.txt 
+
+
+sync -ah --progress wanliz@10.221.47.5:/home/wanliz/sw/apps/gpu/drivers/vulkan/microbench/_out/Linux_aarch6
+4_develop/nvperf_vulkan .
+
