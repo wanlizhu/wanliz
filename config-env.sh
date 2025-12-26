@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 trap 'exit 130' INT
 
-
 read -p "Do you have sudo access? [Yes/no]: " sudo_access
 if [[ -z $sudo_access || $sudo_access =~ ^([yY]([eE][sS])?)?$ ]]; then 
     sudo_access=yes
@@ -130,6 +129,8 @@ if [[ -z ${install_symlinks//[[:space:]]/} || $install_symlinks =~ ^[[:space:]]*
                 sudo rm -f -- "$link" &>/dev/null
             fi
         done < <(find /usr/local/bin -maxdepth 1 -xtype l -print0 2>/dev/null)
+    else
+        echo "No sudo"
     fi 
 
     mkdir -p $HOME/.local/bin
