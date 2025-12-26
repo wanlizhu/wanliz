@@ -139,7 +139,7 @@ if [[ -z ${install_symlinks//[[:space:]]/} || $install_symlinks =~ ^[[:space:]]*
     fi 
 
     mkdir -p $HOME/.local/bin
-    read -e -i $(dirname $(readlink -f $0)) -p "Create symlinks to scripts in: " scripts_dir
+    read -e -i $(dirname $(readlink -f $0)) -p "Scripts folder: " scripts_dir
     find $HOME/.local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
         if real_target=$(readlink -f "$link"); then  
             if [[ $real_target == *"/wanliz/"* ]]; then 
