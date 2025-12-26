@@ -58,6 +58,10 @@ fi
 if [[ -z ${ssh_config//[[:space:]]/} || $ssh_config =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     mkdir -p $HOME/.ssh 
     tee $HOME/.ssh/config >/dev/null <<'EOF'
+Host *
+    StrictHostKeyChecking accept-new
+    UserKnownHostsFile /dev/null
+    
 Host xterm                             
     HostName dc2-container-xterm-028.prd.it.nvidia.com   
     User wanliz                         
