@@ -29,27 +29,6 @@ if [[ $sudo_access == yes && $EUID != 0 ]]; then
     fi
 fi 
 
-if [[ $sudo_access == yes ]]; then 
-    if grep -q "# wanliz" /etc/hosts; then 
-        read -p "Reconfigure /etc/hosts? [Yes/no]: " add_hosts
-    else 
-        read -p "Configure /etc/hosts? [Yes/no]: " add_hosts
-    fi 
-    if [[ -z ${add_hosts//[[:space:]]/} || $add_hosts =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-        sudo sed -i '/# wanliz/d' /etc/hosts
-        sudo tee -a /etc/hosts >/dev/null <<'EOF'
-172.16.179.143 office        # wanliz
-172.16.178.123 horizon5      # wanliz
-172.16.177.182 horizon6      # wanliz
-172.16.177.216 horizon7      # wanliz
-10.31.86.235   nvtest-spark        nvtest-172    # wanliz
-10.176.11.106  nvtest-spark-proxy  nvtest-0110   # wanliz
-10.178.94.106  nvtest-galaxy-gb300      # wanliz
-10.176.195.179 nvtest-galaxy-gb300-2    # wanliz
-EOF
-    fi 
-fi 
-
 if [[ -f $HOME/.ssh/config  ]]; then 
     read -p "Reconfigure (override) ~/.ssh/config? [Yes/no]: " ssh_config
 else 
@@ -61,7 +40,7 @@ if [[ -z ${ssh_config//[[:space:]]/} || $ssh_config =~ ^[[:space:]]*([yY]([eE][s
 Host *
     StrictHostKeyChecking accept-new
     UserKnownHostsFile /dev/null
-    
+
 Host xterm                             
     HostName dc2-container-xterm-028.prd.it.nvidia.com   
     User wanliz                         
