@@ -28,10 +28,14 @@ if [[ $sudo_access == yes && $EUID != 0 ]]; then
     fi
 fi 
 
-if [[ ! -f $HOME/.bashrc_wsl2 ]]; then 
-    read -p "Download ~/.bashrc_wsl2 from remote workspace? [Yes/no]: " download_bashrc
-else
-    read -p "Download ~/.bashrc_wsl2 (override) from remote workspace? [Yes/no]: " download_bashrc
+if [[ -d /mnt/c/Users/ ]]; then 
+    download_bashrc=no
+else 
+    if [[ ! -f $HOME/.bashrc_wsl2 ]]; then 
+        read -p "Download ~/.bashrc_wsl2 from remote workspace? [Yes/no]: " download_bashrc
+    else
+        read -p "Download ~/.bashrc_wsl2 (override) from remote workspace? [Yes/no]: " download_bashrc
+    fi 
 fi 
 if [[ $download_bashrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     if [[ -f $HOME/.bashrc_wsl2_ip ]]; then 
