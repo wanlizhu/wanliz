@@ -10,6 +10,8 @@ fi
 read -p "Is this a headless system? [Yes/n]: " headless
 read -p "On success, run openbox in bg? [yes/No]: " start_openbox
 read -p "On success, run x11vnc  in bg? [yes/No]: " start_x11vnc 
+[[ -z ${start_openbox//[[:space:]]/} ]] && start_openbox=no
+[[ -z ${start_x11vnc//[[:space:]]/} ]] && start_x11vnc=no
             
 if [[ ! -z $(pidof Xorg) ]]; then 
     read -p "Press [Enter] to kill running X server: "    
@@ -21,7 +23,7 @@ screen -ls | awk '/Detached/ && /bareX/ {{ print $1 }}' | while IFS= read -r ses
     screen -S "$session" -X stuff $'\r'
 done
 
-if [[ -z $headless || $headless =~ ^([yY]([eE][sS])?)?$ ]]; then 
+if [[ $headless =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then 
     busID=$(nvidia-xconfig --query-gpu-info | sed -n '/PCI BusID/{{s/^[^:]*:[[:space:]]*//;p;q}}')
     sudo nvidia-xconfig -s -o /etc/X11/xorg.conf \
         --force-generate --mode-debug --layout=Layout0 --render-accel --cool-bits=4 \
@@ -53,11 +55,16 @@ if [[ $fbsize != "3840x2160" ]]; then
 fi 
 xrandr --current
             
-if [[ $start_openbox =~ ^([yY]([eE][sS])?)?$ ]]; then 
+if [[ $start_openbox =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then 
     screen -S openbox -dm openbox
+    if [[ ! -z $(pidof openbox) ]]; then 
+        echo "Starting openbox on $DISPLAY ... [OK]"
+    else
+        echo "Starting openbox on $DISPLAY ... [FAILED]"
+    fi 
 fi
 
-if [[ $start_x11vnc =~ ^([yY]([eE][sS])?)?$ ]]; then 
+if [[ $start_x11vnc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then 
     gdm_conf=""
     for f in /etc/gdm3/custom.conf /etc/gdm3/daemon.conf; do
         [[ -f $f ]] && gdm_conf=$f && break

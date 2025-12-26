@@ -11,17 +11,16 @@ while IFS= read -r -d '' file; do
 done < <(find "$HOME" -maxdepth 1 -type f -not -name '.*' -print0)
 
 if ((${#home_files[@]})); then 
-    if [[ -f /tmp/rsync-to-ipv4 ]]; then 
-        if ! sudo ping -c 1 -W 3 "$(cat /tmp/rsync-to-ipv4 2>/dev/null)"; then 
-            sudo rm -f /tmp/rsync-to-ipv4
+    if [[ -f $HOME/.bashrc_wsl2_ip ]]; then 
+        if ! sudo ping -c 1 -W 3 "$(cat $HOME/.bashrc_wsl2_ip 2>/dev/null)"; then 
+            sudo rm -f $HOME/.bashrc_wsl2_ip
         fi  
     fi 
-
-    if [[ ! -f /tmp/rsync-to-ipv4 ]]; then 
+    if [[ ! -f $HOME/.bashrc_wsl2_ip ]]; then 
         read -p "Remote server IP: " remote_ip
-        echo "$remote_ip" > /tmp/rsync-to-ipv4
+        echo "$remote_ip" > $HOME/.bashrc_wsl2_ip
     fi 
-    remote_ip=$(cat /tmp/rsync-to-ipv4)
+    remote_ip=$(cat $HOME/.bashrc_wsl2_ip)
 
     if ! ssh -o BatchMode=yes -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o ConnectTimeout=5 wanliz@$remote_ip 'true' &>/dev/null; then 
         if [[ ! -f $HOME/.ssh/id_ed25519  ]]; then 
