@@ -136,12 +136,12 @@ rsync -ah --progress wanliz@$WSL_IP:/home/wanliz/sw/apps/gpu/drivers/vulkan/micr
 # PIC-X 1.4.1: https://gtl-ui.nvidia.com/file/019B32AB-5176-713D-8861-44975F74026B#general
 curl -L  https://get.gtl.nvidia.com:443/download/019B32AB-5176-713D-8861-44975F74026B -H "Authorization: Bearer ofCALSfuIVV0iQO8pDDU0Vz3h-uAxriCGASfSucckhg" --output PIC-X_Package_v1.4.1_Linux_L4t_Release.zip
 
-mkdir -p $HOME/.local/share/vulkan/implicit_layer.d
 sudo nvidia-smi -pm 1
-sudo ./SinglePassCapture/pic-x --api=vk --check_clocks=0 --exe="$HOME/nvper
-f_vulkan" --arg="-nullDisplay -device 0 texcopy:24" --present=0 --sleep=1 --time=1
+mkdir -p $HOME/.local/share/vulkan/implicit_layer.d
+sudo env DISPLAY=$DISPLAY ./SinglePassCapture/pic-x --api=vk --check_clocks=0 --exe="/bin/vkcube"
+sudo ./SinglePassCapture/pic-x --api=vk --check_clocks=0 --exe="$HOME/nvperf_vulkan" --arg="-nullDisplay -device 0 texcopy:24" --present=0 --sleep=1 --time=1
 
 # [13:33:52] [info] Command line: /home/nvidia/SinglePassCapture/PerfInspector/Python-venv/bin/python3 /home/nvidia/SinglePassCapture/PerfInspector/processing/processing/pmlsplitter/gen_si_pmlsplit_mods_xml.py -c t254 --view "gfx_extended" --idea_arch t254_single_pass --fs_file /home/nvidia/SinglePassCapture/lnxstress-172_staging/floorsweepingConfig_0.xml
 # /home/nvidia/SinglePassCapture/PerfInspector/misc/pmlsplitter/chips/gb20b
-# Environment variable DISPLAY requires a valid value
+# Use the cache PM-Capture config file: /home/nvidia/SinglePassCapture/PerfInspector/exp/t254_gfx_extended
 

@@ -2,7 +2,7 @@
 trap 'exit 130' INT
 
 read -p "Do you have sudo access? [Yes/no]: " sudo_access
-if [[ -z $sudo_access || $sudo_access =~ ^([yY]([eE][sS])?)?$ ]]; then 
+if [[ $sudo_access =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then 
     sudo_access=yes
 else
     sudo_access=
@@ -22,7 +22,7 @@ fi
 if [[ $sudo_access == yes && $EUID != 0 ]]; then 
     if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
         read -p "Enable no-password sudo for $USER? [Yes/no]: " nopasswd_sudo 
-        if [[ -z ${nopasswd_sudo//[[:space:]]/} || $nopasswd_sudo =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+        if [[ $nopasswd_sudo =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
             echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
         fi 
     fi
@@ -33,7 +33,7 @@ if [[ -f $HOME/.ssh/config  ]]; then
 else 
     read -p "Configure ~/.ssh/config? [Yes/no]: " ssh_config
 fi 
-if [[ -z ${ssh_config//[[:space:]]/} || $ssh_config =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+if [[ $ssh_config =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     mkdir -p $HOME/.ssh 
     tee $HOME/.ssh/config >/dev/null <<'EOF'
 Host *
@@ -80,7 +80,7 @@ fi
 
 if [[ ! -f $HOME/.ssh/id_ed25519 ]]; then 
     read -p "Restore wanliz's SSH ID from xterm? [Yes/no]: " ssh_id
-    if [[ -z ${ssh_id//[[:space:]]/} || $ssh_id =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+    if [[ $ssh_id =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
         mkdir -p $HOME/.ssh 
         rsync -ah --progress wanliz@xterm:/home/wanliz/.ssh/id_ed25519     $HOME/.ssh/id_ed25519
         rsync -ah --progress wanliz@xterm:/home/wanliz/.ssh/id_ed25519.pub $HOME/.ssh/id_ed25519.pub
@@ -93,7 +93,7 @@ fi
 
 if [[ $sudo_access == yes ]]; then 
     read -p "Install profiling packages? [Yes/no]: " install_pkg 
-    if [[ -z ${install_pkg//[[:space:]]/} || $install_pkg =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+    if [[ $install_pkg =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
         python_version=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
         for pkg in python${python_version}-dev python${python_version}-venv \
             python3-pip python3-protobuf protobuf-compiler \
@@ -113,13 +113,13 @@ if [[ $sudo_access == yes ]]; then
 fi 
 
 read -p "Install profiling scripts? [Yes/no]: " install_symlinks 
-if [[ -z ${install_symlinks//[[:space:]]/} || $install_symlinks =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+if [[ $install_symlinks =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     if [[ $sudo_access == yes ]]; then 
         find /usr/local/bin -maxdepth 1 -xtype l -print >/tmp/broken_symlinks 2>/dev/null
         broken_count=$(cat /tmp/broken_symlinks | wc -l)
         if (( broken_count > 0 )); then 
             read -p "Remove broken symlinks in /usr/local/bin? [Yes/no]: " remove_confirmed
-            if [[ -z ${remove_confirmed//[[:space:]]/} || $remove_confirmed =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+            if [[ $remove_confirmed =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
                 while IFS= read -r link; do
                     sudo rm -f -- "$link" &>/dev/null
                 done < /tmp/broken_symlinks
@@ -152,7 +152,7 @@ if [[ -f $HOME/.vimrc ]]; then
 else 
     read -p "Configure ~/.vimrc? [Yes/no]: " config_vimrc
 fi 
-if [[ -z ${config_vimrc//[[:space:]]/} || $config_vimrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+if [[ $config_vimrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     cat > $HOME/.vimrc <<'EOF'
 set expandtab        
 set tabstop=4        
@@ -166,7 +166,7 @@ if [[ -f $HOME/.screenrc ]]; then
 else 
     read -p "Configure ~/.screenrc? [Yes/no]: " config_screenrc
 fi 
-if [[ -z ${config_screenrc//[[:space:]]/} || $config_screenrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+if [[ $config_screenrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     cat > $HOME/.screenrc <<'EOF' 
 startup_message off     
 hardstatus alwaysfirstline 
@@ -188,7 +188,7 @@ if [[ $sudo_access == yes ]]; then
             echo >/dev/null 
         else 
             read -p "Mount /mnt/linuxqa? [Yes/no]: " mount_linuxqa 
-            if [[ -z ${mount_linuxqa//[[:space:]]/} || $mount_linuxqa =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+            if [[ $mount_linuxqa =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
                 echo -n "Mounting /mnt/linuxqa ... "
                 sudo mkdir -p /mnt/linuxqa &&
                 sudo mount -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa || echo "Failed to mount /mnt/linuxqa"
