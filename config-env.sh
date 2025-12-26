@@ -84,11 +84,6 @@ Host nvtest-spark-172
     User nvidia
     IdentityFile ~/.ssh/id_ed25519 
 
-Host nvtest-spark-172
-    HostName 10.31.86.235
-    User nvidia
-    IdentityFile ~/.ssh/id_ed25519    
-
 Host nvtest-galaxy-015
     HostName 10.178.94.106  
     User nvidia
