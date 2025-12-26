@@ -3,6 +3,7 @@ trap 'exit 130' INT
 
 if [[ -z $DISPLAY ]]; then 
     export DISPLAY=:0
+    echo "Environment variable DISPLAY requires a valid value"
     echo "Fallback to DISPLAY=$DISPLAY"
 fi 
 

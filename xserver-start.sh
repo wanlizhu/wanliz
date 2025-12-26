@@ -3,12 +3,13 @@ trap 'exit 130' INT
 
 if [[ -z $DISPLAY ]]; then 
     export DISPLAY=:0
+    echo "Environment variable DISPLAY requires a valid value"
     echo "Fallback to DISPLAY=$DISPLAY"
 fi 
 
 read -p "Is this a headless system? [Yes/n]: " headless
-read -p "Do you want to start openbox? [yes/No]: " start_openbox
-read -p "Do you want to start x11vnc? [yes/No]: " start_x11vnc 
+read -p "On success, run openbox in bg? [yes/No]: " start_openbox
+read -p "On success, run x11vnc  in bg? [yes/No]: " start_x11vnc 
             
 if [[ ! -z $(pidof Xorg) ]]; then 
     read -p "Press [Enter] to kill running X server: "    
