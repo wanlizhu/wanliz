@@ -63,13 +63,41 @@ Host xterm
     User wanliz                         
     Port 4483                          
     IdentityFile ~/.ssh/id_ed25519      
-    IdentitiesOnly no                  
 
-Host gb300-nvl-cluster                      
+Host office                             
+    HostName 172.16.179.143
+    User wanliz                           
+    IdentityFile ~/.ssh/id_ed25519            
+
+Host gb300-compute-cluster                      
     HostName cls-pdx-ipp6-bcm-3         
     User wanliz                     
     IdentityFile ~/.ssh/id_ed25519      
-    IdentitiesOnly no                                 
+
+Host nvtest-spark-proxy
+    HostName 10.176.11.106
+    User nvidia
+    IdentityFile ~/.ssh/id_ed25519 
+
+Host nvtest-spark-172
+    HostName 10.31.86.235
+    User nvidia
+    IdentityFile ~/.ssh/id_ed25519 
+
+Host nvtest-spark-172
+    HostName 10.31.86.235
+    User nvidia
+    IdentityFile ~/.ssh/id_ed25519    
+
+Host nvtest-galaxy-015
+    HostName 10.178.94.106  
+    User nvidia
+    IdentityFile ~/.ssh/id_ed25519
+
+Host nvtest-galaxy-048
+    HostName 10.176.195.179
+    User nvidia
+    IdentityFile ~/.ssh/id_ed25519
 EOF
 fi 
 

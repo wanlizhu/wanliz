@@ -125,6 +125,6 @@ __GL_DeviceModalityPreference=1 ./nvperf_vulkan -nullDisplay -device 0 texcopy |
 __GL_DeviceModalityPreference=1 ./nvperf_vulkan -nullDisplay -device 0 alloc | tee ~/nvperf_vulkan-alloc-gb300-590.44.01.txt 
 
 
-sync -ah --progress wanliz@10.221.47.5:/home/wanliz/sw/apps/gpu/drivers/vulkan/microbench/_out/Linux_aarch6
-4_develop/nvperf_vulkan .
+rsync -ah --progress wanliz@10.221.47.5:/home/wanliz/sw/apps/gpu/drivers/vulkan/microbench/_out/Linux_aarch64_develop/nvperf_vulkan .
+
 

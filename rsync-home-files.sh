@@ -16,16 +16,25 @@ if ((${#home_files[@]})); then
             sudo rm -f /tmp/rsync-to-ipv4
         fi  
     fi 
+
     if [[ ! -f /tmp/rsync-to-ipv4 ]]; then 
         read -p "Remote server IP: " remote_ip
         echo "$remote_ip" > /tmp/rsync-to-ipv4
     fi 
-
-    echo "Files to upload:"
-    echo "${home_files[@]}"
-
     remote_ip=$(cat /tmp/rsync-to-ipv4)
-    sudo ssh wanliz@$remote_ip "mkdir -p /mnt/d/${USER}@$(hostname)"
-    sudo rsync -lth --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' "${home_files[@]}" wanliz@$remote_ip:/mnt/d/${USER}@$(hostname)/
+
+    if ! ssh -o BatchMode=yes -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o ConnectTimeout=5 wanliz@$remote_ip 'true' &>/dev/null; then 
+        if [[ ! -f $HOME/.ssh/id_ed25519  ]]; then 
+            ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
+        fi 
+        ssh-copy-id wanliz@$remote_ip
+    fi 
+
+    echo "Files to upload (~/.rsyncignore applied):"
+    ( IFS=$'\n'; echo "${home_files[*]}" )
+    echo 
+
+    ssh wanliz@$remote_ip "mkdir -p /mnt/d/${USER}@$(hostname)"
+    rsync -lth --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' "${home_files[@]}" wanliz@$remote_ip:/mnt/d/${USER}@$(hostname)/
 fi 
 
