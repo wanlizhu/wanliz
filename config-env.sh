@@ -115,6 +115,27 @@ fi
 
 read -p "Install profiling scripts? [Yes/no]: " install_symlinks 
 if [[ -z ${install_symlinks//[[:space:]]/} || $install_symlinks =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+    if [[ $sudo_access == yes ]]; then 
+        remove_confirmed=
+        find /usr/local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
+            if real_target=$(readlink -f "$link"); then  
+                if [[ $real_target == *"/wanliz/"* ]]; then 
+                    if [[ -z $remove_confirmed ]]; then 
+                        read -p "Remove deprecated wanliz-* symlinks in /usr/local/bin? [Yes/no]: " remove_confirmed
+                        if [[ -z ${remove_confirmed//[[:space:]]/} || $remove_confirmed =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+                            remove_confirmed=yes 
+                        else
+                            remove_confirmed=no
+                        fi 
+                    fi 
+                    if [[ $remove_confirmed == yes ]]; then 
+                        sudo rm -f "$link" &>/dev/null 
+                    fi 
+                fi 
+            fi 
+        done 
+    fi 
+
     mkdir -p $HOME/.local/bin
     read -e -i $(dirname $(readlink -f $0)) -p "Create symlinks to scripts in: " scripts_dir
     find $HOME/.local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
