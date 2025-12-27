@@ -20,10 +20,9 @@ if [[ $sudo_access == yes ]]; then
         echo " /etc/timezone: $etc_timezone"
         read -p "Update /etc/timezone? [Yes/no]: " adjust_tz
         if [[ $adjust_tz =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-            sudo timedatectl set-timezone "$tz_localtime" 2>/dev/null || {
-                sudo ln -sf "/usr/share/zoneinfo/$tz_localtime" /etc/localtime
-                echo "$tz_localtime" | sudo tee /etc/timezone >/dev/null
-            }
+            sudo timedatectl set-timezone "$tz_localtime" 
+            sudo ln -sf "/usr/share/zoneinfo/$tz_localtime" /etc/localtime
+            echo "$tz_localtime" | sudo tee /etc/timezone >/dev/null
         fi 
     fi
 
