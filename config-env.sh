@@ -113,17 +113,31 @@ Host nvtest-galaxy-048
 EOF
 fi 
 
-if [[ ! -f $HOME/.ssh/id_ed25519 ]]; then 
-    read -p "Restore wanliz's SSH ID from xterm? [Yes/no]: " ssh_id
-    if [[ $ssh_id =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-        mkdir -p $HOME/.ssh 
-        rsync -ah --progress wanliz@xterm:/home/wanliz/.ssh/id_ed25519     $HOME/.ssh/id_ed25519
-        rsync -ah --progress wanliz@xterm:/home/wanliz/.ssh/id_ed25519.pub $HOME/.ssh/id_ed25519.pub
-        # SSH may refuse keys without correct permission
-        chmod 700 $HOME/.ssh 
-        chmod 600 $HOME/.ssh/id_ed25519
-        chmod 644 $HOME/.ssh/id_ed25519.pub 
-    fi 
+if [[ -f $HOME/.vimrc ]]; then 
+    read -p "Reconfigure (override) ~/.vimrc? [Yes/no]: " config_vimrc
+else 
+    read -p "Configure ~/.vimrc? [Yes/no]: " config_vimrc
+fi 
+if [[ $config_vimrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+    cat > $HOME/.vimrc <<'EOF'
+set expandtab        
+set tabstop=4        
+set shiftwidth=4     
+set softtabstop=4    
+EOF
+fi 
+
+if [[ -f $HOME/.screenrc ]]; then 
+    read -p "Reconfigure (override) ~/.screenrc? [Yes/no]: " config_screenrc
+else 
+    read -p "Configure ~/.screenrc? [Yes/no]: " config_screenrc
+fi 
+if [[ $config_screenrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+    cat > $HOME/.screenrc <<'EOF' 
+startup_message off     
+hardstatus alwaysfirstline 
+hardstatus string '%{= bW} [SCREEN %S]%{= bW} win:%n:%t %=%-Lw%{= kW}%n:%t%{-}%+Lw %=%Y-%m-%d %c:%s '
+EOF
 fi 
 
 if [[ $sudo_access == yes ]]; then 
@@ -180,33 +194,6 @@ if [[ $install_symlinks =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
         cmdname=${cmdname%.py}
         ln -sf $file $HOME/.local/bin/$cmdname &>/dev/null 
     done 
-fi 
-
-if [[ -f $HOME/.vimrc ]]; then 
-    read -p "Reconfigure (override) ~/.vimrc? [Yes/no]: " config_vimrc
-else 
-    read -p "Configure ~/.vimrc? [Yes/no]: " config_vimrc
-fi 
-if [[ $config_vimrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-    cat > $HOME/.vimrc <<'EOF'
-set expandtab        
-set tabstop=4        
-set shiftwidth=4     
-set softtabstop=4    
-EOF
-fi 
-
-if [[ -f $HOME/.screenrc ]]; then 
-    read -p "Reconfigure (override) ~/.screenrc? [Yes/no]: " config_screenrc
-else 
-    read -p "Configure ~/.screenrc? [Yes/no]: " config_screenrc
-fi 
-if [[ $config_screenrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-    cat > $HOME/.screenrc <<'EOF' 
-startup_message off     
-hardstatus alwaysfirstline 
-hardstatus string '%{= bW} [SCREEN %S]%{= bW} win:%n:%t %=%-Lw%{= kW}%n:%t%{-}%+Lw %=%Y-%m-%d %c:%s '
-EOF
 fi 
 
 if [[ $sudo_access == yes ]]; then 
