@@ -9,6 +9,24 @@ else
 fi 
 
 if [[ $sudo_access == yes ]]; then 
+    etc_timezone=$(tr -d ' \t\r\n' </etc/timezone 2>/dev/null || true)
+    localtime=$(readlink -f /etc/localtime 2>/dev/null || true)
+    tz_localtime=""
+    if [[ "$localtime" == /usr/share/zoneinfo/* ]]; then  
+        tz_localtime="${localtime#/usr/share/zoneinfo/}"
+    fi 
+    if [[ ! -z "$tz_localtime" && ( -z "$etc_timezone" || "$etc_timezone" != "$tz_localtime" ) ]]; then
+        echo "Local timezone: $tz_localtime"
+        echo " /etc/timezone: $etc_timezone"
+        read -p "Update /etc/timezone? [Yes/no]: " adjust_tz
+        if [[ $adjust_tz =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+            sudo timedatectl set-timezone "$tz_localtime" 2>/dev/null || {
+                sudo ln -sf "/usr/share/zoneinfo/$tz_localtime" /etc/localtime
+                echo "$tz_localtime" | sudo tee /etc/timezone >/dev/null
+            }
+        fi 
+    fi
+
     timedatectl
     echo "If machine clock is behind, apt refuses to use some repos."
     read -p "Is the local time correct? [Yes/no]: " time_correct
@@ -194,6 +212,13 @@ if [[ $install_symlinks =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
         cmdname=${cmdname%.py}
         ln -sf $file $HOME/.local/bin/$cmdname &>/dev/null 
     done 
+fi 
+
+if [[ -d $HOME/SinglePassCapture ]]; then 
+    read -p "Install python packages for pi-upload.sh? [Yes/no]: " install_piupload
+    if [[ $install_piupload =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+        python3 -m pip install --break-system-packages -r $HOME/SinglePassCapture/Scripts/requirements.txt
+    fi 
 fi 
 
 if [[ $sudo_access == yes ]]; then 
