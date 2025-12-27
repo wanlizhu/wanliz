@@ -217,7 +217,7 @@ fi
 if [[ -d $HOME/SinglePassCapture ]]; then 
     read -p "Install python packages for pi-upload.sh? [Yes/no]: " install_piupload
     if [[ $install_piupload =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-        python3 -m pip install --break-system-packages -r $HOME/SinglePassCapture/Scripts/requirements.txt
+        python3 -m pip install --break-system-packages -r $HOME/SinglePassCapture/Scripts/requirements.txt &>/dev/null 
     fi 
 fi 
 
