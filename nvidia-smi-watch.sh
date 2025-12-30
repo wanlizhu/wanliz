@@ -30,7 +30,7 @@ fi
 nohup bash -lic "
     trap 'exit 130' INT
     set -euo pipefail
-    
+
     while :; do 
         APP_PID=\$(pgrep -n -x \"$PROC_NAME\" 2>/dev/null || true)
         [[ ! -z \$APP_PID ]] && break 
@@ -53,3 +53,5 @@ nohup bash -lic "
 " &
 echo " $!" >> $HOME/nvidia-smi-watch.list 
 disown 
+
+"$@"
