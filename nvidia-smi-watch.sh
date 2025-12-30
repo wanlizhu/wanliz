@@ -30,19 +30,26 @@ fi
 nohup bash -lic "
     trap 'exit 130' INT
     set -euo pipefail
+    
     while :; do 
         APP_PID=\$(pgrep -n -x \"$PROC_NAME\" 2>/dev/null || true)
         [[ ! -z \$APP_PID ]] && break 
-        sleep 0.2
+        echo \"Wait for named proc: $PROC_NAME\"
+        sleep 0.5
     done
 
+    echo \"Running nvidia-smi in detached mode ...\"
     nvidia-smi --query-gpu=timestamp,clocks.current.graphics,clocks.current.memory --format=csv -lms $INTERVAL_MS > \"$OUTPUT_FILE\" &
     SMI_PID=\$!
 
     while kill -0 \$APP_PID 2>/dev/null; do 
-        sleep 0.2
+        sleep 0.5
     done 
-    kill -INT \$SMI_PID 2>/dev/null || true 
-" >/dev/null 2>&1 &
+
+    echo \"Killing nvidia-smi\"
+    [[ -d /proc/\$SMI_PID ]] && kill -INT \$SMI_PID 2>/dev/null  
+    sleep 0.5 
+    [[ -d /proc/\$SMI_PID ]] && kill -9 \$SMI_PID 2>/dev/null 
+" &
 echo " $!" >> $HOME/nvidia-smi-watch.list 
 disown 
