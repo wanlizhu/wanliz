@@ -10,12 +10,6 @@ while (( $# )); do
         -p|-proc) shift; PROC_NAME=$1 ;;
         -o|-output) shift; OUTPUT_FILE=$1 ;;
         -ms) shift; INTERVAL_MS=$1 ;;
-        -r|-reset) 
-            if [[ -f $HOME/nvidia-smi-watch.list ]]; then 
-                kill -INT $(cat $HOME/nvidia-smi-watch.list)
-                rm -f $HOME/nvidia-smi-watch.list
-            fi 
-        ;;
         --) shift; break ;;
         *) break ;;
     esac
@@ -39,7 +33,7 @@ nohup bash -lic "
     done
 
     echo \"Running nvidia-smi in detached mode ...\"
-    nvidia-smi --query-gpu=timestamp,clocks.current.graphics,clocks.current.memory --format=csv -lms $INTERVAL_MS > \"$OUTPUT_FILE\" &
+    nvidia-smi --query-gpu=timestamp,clocks.current.graphics,clocks.current.memory --format=csv -lms $INTERVAL_MS > $OUTPUT_FILE &
     SMI_PID=\$!
 
     while kill -0 \$APP_PID 2>/dev/null; do 
@@ -51,7 +45,6 @@ nohup bash -lic "
     sleep 0.5 
     [[ -d /proc/\$SMI_PID ]] && kill -9 \$SMI_PID 2>/dev/null 
 " &
-echo " $!" >> $HOME/nvidia-smi-watch.list 
 disown 
 
 "$@"
