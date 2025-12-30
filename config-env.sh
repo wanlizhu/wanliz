@@ -186,6 +186,8 @@ fi
 if [[ $sudo_access == yes ]]; then 
     read -p "Install profiling packages? [Yes/no]: " install_pkg 
     if [[ $install_pkg =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+        echo "Updating apt sources ..."
+        sudo apt update &>/dev/null 
         if [[ -z $(which python3) ]]; then 
             sudo apt install -y python3 &>/dev/null 
         fi 
