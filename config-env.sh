@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 trap 'exit 130' INT
 
+verbose_mode=
+if [[ $1 == -v ]]; then 
+    verbose_mode=yes 
+fi 
+
 read -p "Do you have sudo access? [Yes/no]: " sudo_access
 if [[ $sudo_access =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then 
     sudo_access=yes
@@ -45,7 +50,11 @@ if [[ $sudo_access == yes ]]; then
         if [[ $time_correct =~ ^[[:space:]]*([nN]|[nN][oO])[[:space:]]*$ ]]; then 
             read -e -i "$(date '+%F %T')" -p "The correct local time: " corrected_time
             sudo date -s "$corrected_time"
-            sudo apt update &>/dev/null 
+            if [[ $verbose_mode == yes ]]; then 
+                sudo apt update 
+            else
+                sudo apt update &>/dev/null
+            fi 
         fi 
     fi 
 fi 
@@ -187,9 +196,18 @@ if [[ $sudo_access == yes ]]; then
     read -p "Install profiling packages? [Yes/no]: " install_pkg 
     if [[ $install_pkg =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
         echo "Updating apt sources ..."
-        sudo apt update &>/dev/null 
+        if [[ $verbose_mode == yes ]]; then 
+            sudo apt update 
+        else 
+            sudo apt update &>/dev/null
+        fi 
         if [[ -z $(which python3) ]]; then 
-            sudo apt install -y python3 &>/dev/null 
+            echo -n "Installing python3 ..."
+            if [[ $verbose_mode == yes ]]; then 
+                sudo apt install -y python3 
+            else 
+                sudo apt install -y python3 &>/dev/null && echo "[OK]" || echo "[FAILED]"
+            fi 
         fi 
 
         python_version=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
@@ -200,16 +218,24 @@ if [[ $sudo_access == yes ]]; then
             mesa-utils vulkan-tools xserver-xorg-core \
             samba samba-common-bin socat cmake build-essential \
             ninja-build pkg-config libjpeg-dev smbclient \
-            libboost-program-options-dev 
+            libboost-program-options-dev unzip 
         do 
             if ! dpkg -s $pkg &>/dev/null; then
-                echo -n "Installing $pkg ... "
-                sudo apt install -y $pkg &>/dev/null && echo "[OK]" || echo "[FAILED]"
+                if [[ $verbose_mode == yes ]]; then 
+                    sudo apt install -y $pkg
+                else 
+                    echo -n "Installing $pkg ... "
+                    sudo apt install -y $pkg &>/dev/null && echo "[OK]" || echo "[FAILED]"
+                fi 
             fi 
         done 
 
         if [[ -d $HOME/SinglePassCapture ]]; then 
-            python3 -m pip install --break-system-packages -r $HOME/SinglePassCapture/Scripts/requirements.txt &>/dev/null 
+            if [[ $verbose_mode == yes ]]; then 
+                python3 -m pip install --break-system-packages -r $HOME/SinglePassCapture/Scripts/requirements.txt
+            else 
+                python3 -m pip install --break-system-packages -r $HOME/SinglePassCapture/Scripts/requirements.txt &>/dev/null
+            fi 
         fi 
     fi 
 fi 
@@ -227,7 +253,7 @@ if [[ $install_symlinks =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
         find $HOME/.local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
             if real_target=$(readlink -f "$link"); then  
                 if [[ $real_target == *"/wanliz/"* ]]; then 
-                    rm -f "$link" &>/dev/null 
+                    rm -f "$link" &>/dev/null
                 fi 
             else
                 rm -f "$link" &>/dev/null 
@@ -238,7 +264,11 @@ if [[ $install_symlinks =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
             cmdname=$(basename "$file")
             cmdname=${cmdname%.sh}
             cmdname=${cmdname%.py}
-            ln -sf $file $HOME/.local/bin/$cmdname &>/dev/null 
+            if [[ $verbose_mode == yes ]]; then 
+                ln -vsf $file $HOME/.local/bin/$cmdname
+            else 
+                ln -sf $file $HOME/.local/bin/$cmdname &>/dev/null
+            fi 
         done 
     fi 
 fi 
@@ -258,7 +288,7 @@ if [[ $sudo_access == yes ]]; then
         else 
             read -p "Mount /mnt/linuxqa? [Yes/no]: " mount_linuxqa 
             if [[ $mount_linuxqa =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-                echo -n "Mounting /mnt/linuxqa ... "
+                echo "Mounting /mnt/linuxqa ... "
                 sudo mkdir -p /mnt/linuxqa &&
                 sudo mount -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa || echo "Failed to mount /mnt/linuxqa"
             fi 
@@ -267,4 +297,5 @@ if [[ $sudo_access == yes ]]; then
     # findmnt -o TARGET,SOURCE,FSTYPE,OPTIONS
 fi 
 
+echo "(optional) Install pic-x: https://gitlab-master.nvidia.com/perf-inspector/gift/-/releases"
 echo "All done!"

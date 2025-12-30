@@ -168,9 +168,9 @@ docker ps -a | grep -i wanliz
 docker start -ai wanliz-ubuntu
 docker rm -f wanliz-ubuntu
 
-srun -p galaxy_gb300_preprod_pairx2 -t 8:00:00 --pty bash -lc 'docker run -it --name=wanliz-ubuntu --cpuset-cpus=0-71 --cpuset-mems=0 -e CUDA_VISIBLE_DEVICES=0 -e __GL_DeviceModalityPreference=1 --gpus "device=0" ubuntu:latest bash'
+srun -p galaxy_gb300_preprod_pairx2 -t 8:00:00 --pty     bash -lc 'docker run -it --name=wanliz-ubuntu --cpuset-cpus=0-71 --cpuset-mems=0 -e CUDA_VISIBLE_DEVICES=0 -e __GL_DeviceModalityPreference=1 --gpus "device=0" ubuntu:latest bash'
 
-srun -p gb300nvl72_preprod -t 8:00:00 --pty bash -lc 'docker run -it --name=wanliz-ubuntu --cpuset-cpus=0-71 --cpuset-mems=0 -e CUDA_VISIBLE_DEVICES=0 --gpus "device=0" ubuntu:latest bash'
+srun -p gb300nvl72_preprod -t 8:00:00 --pty     bash -lc 'docker run -it --name=wanliz-ubuntu --cpuset-cpus=0-71 --cpuset-mems=0 -e CUDA_VISIBLE_DEVICES=0 --gpus "device=0" ubuntu:latest bash'
 
 
 
@@ -188,12 +188,12 @@ for desc in ${groups_desc//,/ }; do
     fi 
     usermod -aG $group_name wanliz && echo "$group_name += wanliz"
 done 
-apt update; apt install -y sudo >/dev/null && echo "Installed sudo"
-usermod -aG sudo wanliz && echo "sudo += wanliz"
+apt update; apt install -y sudo 
+usermod -aG sudo wanliz  
 passwd wanliz 
 su - wanliz 
 
 # Inside wanliz's home dir, config env 
-sudo apt install -y git 
+sudo apt install -y git  
 git clone https://github.com/wanlizhu/wanliz 
 ./wanliz/config-env.sh 
