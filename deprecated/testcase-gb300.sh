@@ -146,6 +146,9 @@ sudo ./SinglePassCapture/pic-x --api=vk --check_clocks=0 --exe="$HOME/nvperf_vul
 # Use the cache PM-Capture config file: /home/nvidia/SinglePassCapture/PerfInspector/exp/t254_gfx_extended
 
 
+
+
+
 ssh wanliz@dlcluster 
 # Show the max time limit for allocation 
 sinfo -p gb300nvl72_preprod -o "%P  max=%l  def=%L  nodes=%D  state=%t"
@@ -157,13 +160,34 @@ __GL_DeviceModalityPreference=1 ./vulkaninfo
 
 rsync -ah --progress wanliz@10.221.32.35:/home/wanliz/sw/apps/gpu/drivers/vulkan/microbench/_out/Linux_aarch64_develop/nvperf_vulkan $HOME
 
-srun -p galaxy_gb300_preprod_pairx2 -t 8:00:00 --pty bash -lc 'docker run --rm -it --cpuset-cpus=0-71 --cpuset-mems=0 -e CUDA_VISIBLE_DEVICES=0 -e __GL_DeviceModalityPreference=1 --gpus "device=0" ubuntu:latest bash'
 
-srun -p gb300nvl72_preprod -t 8:00:00 --pty bash -lc 'docker run --rm -it --cpuset-cpus=0-71 --cpuset-mems=0 -e CUDA_VISIBLE_DEVICES=0 --gpus "device=0" ubuntu:latest bash'
+
+
+# Start a docker image with a given name
+docker ps -a | grep -i wanliz
+docker start -ai wanliz-ubuntu
+
+srun -p galaxy_gb300_preprod_pairx2 -t 8:00:00 --pty bash -lc 'docker run -it --name=wanliz-ubuntu --cpuset-cpus=0-71 --cpuset-mems=0 -e CUDA_VISIBLE_DEVICES=0 -e __GL_DeviceModalityPreference=1 --gpus "device=0" ubuntu:latest bash'
+
+srun -p gb300nvl72_preprod -t 8:00:00 --pty bash -lc 'docker run -it --name=wanliz-ubuntu --cpuset-cpus=0-71 --cpuset-mems=0 -e CUDA_VISIBLE_DEVICES=0 --gpus "device=0" ubuntu:latest bash'
+
+
+
 
 # Inside docker image, create user wanliz with given uid and gid 
-apt update; apt install -y sudo
 useradd -m -u 49928 -g 30 -s /bin/bash wanliz
+groups_desc='30(dip),1626(gpu-lgy-design),1655(mobile),1661(gpu-lgy-info),1666(gpu-prd-info),1685(mobile-info),1692(gpu-dev-info),2107(perf-inspector-users),2151(engr-info),20338(3e991-nvgpu_legacy-soul),20360(3e991-rubin-info),20367(computelab-users),20404(hwlibs-design-3e001_legacy_20231022),20405(hwlibs-design-3e001),20406(hwlibs-design-3e001_encrypted),20427(hwlibs-design-3e991),20922(graceperfvteam),20977(nvmem-info-3e991)'
+desc_regex="^([0-9]+)\\(([^)]*)\\)$"
+for desc in ${groups_desc//,/ }; do 
+    [[ $desc =~ $desc_regex ]] || continue
+    group_id="${BASH_REMATCH[1]}"
+    group_name="${BASH_REMATCH[2]}"
+    if ! getent group $group_id >/dev/null; then 
+        groupadd -g $group_id $group_name 2>/dev/null || continue 
+    fi 
+    usermod -aG $group_name wanliz  
+done 
+apt update; apt install -y sudo >/dev/null 
 usermod -aG sudo wanliz 
 passwd wanliz 
 su - wanliz 
