@@ -166,6 +166,7 @@ rsync -ah --progress wanliz@10.221.32.35:/home/wanliz/sw/apps/gpu/drivers/vulkan
 # Start a docker image with a given name
 docker ps -a | grep -i wanliz
 docker start -ai wanliz-ubuntu
+docker rm -f wanliz-ubuntu
 
 srun -p galaxy_gb300_preprod_pairx2 -t 8:00:00 --pty bash -lc 'docker run -it --name=wanliz-ubuntu --cpuset-cpus=0-71 --cpuset-mems=0 -e CUDA_VISIBLE_DEVICES=0 -e __GL_DeviceModalityPreference=1 --gpus "device=0" ubuntu:latest bash'
 
@@ -174,7 +175,7 @@ srun -p gb300nvl72_preprod -t 8:00:00 --pty bash -lc 'docker run -it --name=wanl
 
 
 
-# Inside docker image, create user wanliz with given uid and gid 
+# (optional) Inside docker image, create user wanliz with given uid and gid 
 useradd -m -u 49928 -g 30 -s /bin/bash wanliz
 groups_desc='30(dip),1626(gpu-lgy-design),1655(mobile),1661(gpu-lgy-info),1666(gpu-prd-info),1685(mobile-info),1692(gpu-dev-info),2107(perf-inspector-users),2151(engr-info),20338(3e991-nvgpu_legacy-soul),20360(3e991-rubin-info),20367(computelab-users),20404(hwlibs-design-3e001_legacy_20231022),20405(hwlibs-design-3e001),20406(hwlibs-design-3e001_encrypted),20427(hwlibs-design-3e991),20922(graceperfvteam),20977(nvmem-info-3e991)'
 desc_regex="^([0-9]+)\\(([^)]*)\\)$"
@@ -185,10 +186,10 @@ for desc in ${groups_desc//,/ }; do
     if ! getent group $group_id >/dev/null; then 
         groupadd -g $group_id $group_name 2>/dev/null || continue 
     fi 
-    usermod -aG $group_name wanliz  
+    usermod -aG $group_name wanliz && echo "$group_name += wanliz"
 done 
-apt update; apt install -y sudo >/dev/null 
-usermod -aG sudo wanliz 
+apt update; apt install -y sudo >/dev/null && echo "Installed sudo"
+usermod -aG sudo wanliz && echo "sudo += wanliz"
 passwd wanliz 
 su - wanliz 
 

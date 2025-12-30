@@ -247,12 +247,12 @@ if [[ $sudo_access == yes ]]; then
         # It works on a real Linux host on the same network, 
         # but WSL lacks the kernel RPC plumbing NFS expects, 
         # even when basic TCP connectivity exists.
-        if [[ -d /mnt/c/Users/ ]]; then 
+        if [[ -d /mnt/c/Users/ || $inside_container == yes ]]; then 
             # Mount NFS folder
             # mount.exe linuxqa.nvidia.com:/storage/people Z:
             # Mount SMB folder
             # \\linuxqa\people (login with wanliz@nvidia.com)
-            echo >/dev/null 
+            echo "NFS mounting is not supported, skipped!" 
         else 
             read -p "Mount /mnt/linuxqa? [Yes/no]: " mount_linuxqa 
             if [[ $mount_linuxqa =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
