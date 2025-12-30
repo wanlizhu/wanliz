@@ -145,3 +145,10 @@ sudo ./SinglePassCapture/pic-x --api=vk --check_clocks=0 --exe="$HOME/nvperf_vul
 # /home/nvidia/SinglePassCapture/PerfInspector/misc/pmlsplitter/chips/gb20b
 # Use the cache PM-Capture config file: /home/nvidia/SinglePassCapture/PerfInspector/exp/t254_gfx_extended
 
+
+ssh wanliz@dlcluster 
+srun -p galaxy_gb300_preprod_pairx2 --pty /bin/bash
+srun -p gb300nvl72_preprod --pty /bin/bash 
+
+__GL_DeviceModalityPreference=1 ./vulkaninfo 
+
