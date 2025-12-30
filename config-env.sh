@@ -16,6 +16,8 @@ fi
 inside_container=
 if [[ -f /.dockerenv || -f /run/.containerenv ]]; then
     inside_container=yes 
+    verbose_mode=yes
+    echo "Verbose mode forced to enabled inside container"
 fi 
 
 booted_with_systemd=
