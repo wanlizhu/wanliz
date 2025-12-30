@@ -8,44 +8,58 @@ else
     sudo_access=
 fi 
 
-if [[ $sudo_access == yes ]]; then 
-    etc_timezone=$(tr -d ' \t\r\n' </etc/timezone 2>/dev/null || true)
-    localtime=$(readlink -f /etc/localtime 2>/dev/null || true)
-    tz_localtime=""
-    if [[ "$localtime" == /usr/share/zoneinfo/* ]]; then  
-        tz_localtime="${localtime#/usr/share/zoneinfo/}"
-    fi 
-    if [[ ! -z "$tz_localtime" && ( -z "$etc_timezone" || "$etc_timezone" != "$tz_localtime" ) ]]; then
-        echo "Local timezone: $tz_localtime"
-        echo " /etc/timezone: $etc_timezone"
-        read -p "Update /etc/timezone? [Yes/no]: " adjust_tz
-        if [[ $adjust_tz =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-            sudo timedatectl set-timezone "$tz_localtime" 
-            sudo ln -sf "/usr/share/zoneinfo/$tz_localtime" /etc/localtime
-            echo "$tz_localtime" | sudo tee /etc/timezone >/dev/null
-        fi 
-    fi
+inside_container=
+if [[ -f /.dockerenv || -f /run/.containerenv ]]; then
+    inside_container=yes 
+fi 
 
-    timedatectl
-    echo "If machine clock is behind, apt refuses to use some repos."
-    read -p "Is the local time correct? [Yes/no]: " time_correct
-    if [[ $time_correct =~ ^[[:space:]]*([nN]|[nN][oO])[[:space:]]*$ ]]; then 
-        read -e -i "$(date '+%F %T')" -p "The correct local time: " corrected_time
-        sudo date -s "$corrected_time"
-        sudo apt update &>/dev/null 
+booted_with_systemd=
+if [[ "$(ps -p 1 -o comm= 2>/dev/null)" == systemd ]]; then
+    booted_with_systemd=yes 
+fi 
+
+if [[ $sudo_access == yes ]]; then 
+    if [[ $booted_with_systemd == yes ]]; then 
+        if [[ -e /etc/timezone ]]; then 
+            etc_timezone=$(tr -d ' \t\r\n' </etc/timezone 2>/dev/null || true)
+            localtime=$(readlink -f /etc/localtime 2>/dev/null || true)
+            tz_localtime=""
+            if [[ "$localtime" == /usr/share/zoneinfo/* ]]; then  
+                tz_localtime="${localtime#/usr/share/zoneinfo/}"
+            fi 
+            if [[ ! -z "$tz_localtime" && ( -z "$etc_timezone" || "$etc_timezone" != "$tz_localtime" ) ]]; then
+                echo "Local timezone: $tz_localtime"
+                echo " /etc/timezone: $etc_timezone"
+                read -p "Update /etc/timezone? [Yes/no]: " adjust_tz
+                if [[ $adjust_tz =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+                    sudo timedatectl set-timezone "$tz_localtime" 
+                    sudo ln -sf "/usr/share/zoneinfo/$tz_localtime" /etc/localtime
+                    echo "$tz_localtime" | sudo tee /etc/timezone >/dev/null
+                fi 
+            fi
+        fi 
+
+        timedatectl
+        echo "If machine clock is behind, apt refuses to use some repos."
+        read -p "Is the local time correct? [Yes/no]: " time_correct
+        if [[ $time_correct =~ ^[[:space:]]*([nN]|[nN][oO])[[:space:]]*$ ]]; then 
+            read -e -i "$(date '+%F %T')" -p "The correct local time: " corrected_time
+            sudo date -s "$corrected_time"
+            sudo apt update &>/dev/null 
+        fi 
     fi 
 fi 
 
 if [[ $sudo_access == yes && $EUID != 0 ]]; then 
     if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
-        read -p "Enable no-password sudo for $USER? [Yes/no]: " nopasswd_sudo 
-        if [[ $nopasswd_sudo =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+        read -p "Enable passwordless sudo for $USER? [Yes/no]: " passwordless_sudo 
+        if [[ $passwordless_sudo =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
             echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
         fi 
     fi
 fi 
 
-if [[ -d /mnt/c/Users/ ]]; then 
+if [[ -d /mnt/c/Users/ || $inside_container == yes ]]; then 
     download_bashrc=no
 else 
     if [[ ! -f $HOME/.bashrc_wsl2 ]]; then 
@@ -80,10 +94,14 @@ if [[ $download_bashrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     } || echo "Failed to download ~/.bashrc_wsl2 from $remote_ip"
 fi 
 
-if [[ -f $HOME/.ssh/config  ]]; then 
-    read -p "Reconfigure (override) ~/.ssh/config? [Yes/no]: " ssh_config
+if [[ $inside_container == yes ]]; then 
+    ssh_config=no
 else 
-    read -p "Configure ~/.ssh/config? [Yes/no]: " ssh_config
+    if [[ -f $HOME/.ssh/config  ]]; then 
+        read -p "Reconfigure (override) ~/.ssh/config? [Yes/no]: " ssh_config
+    else 
+        read -p "Configure ~/.ssh/config? [Yes/no]: " ssh_config
+    fi 
 fi 
 if [[ $ssh_config =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     mkdir -p $HOME/.ssh 
@@ -130,10 +148,14 @@ Host nvtest-galaxy-048
 EOF
 fi 
 
-if [[ -f $HOME/.vimrc ]]; then 
-    read -p "Reconfigure (override) ~/.vimrc? [Yes/no]: " config_vimrc
+if [[ $inside_container == yes ]]; then 
+    config_vimrc=no
 else 
-    read -p "Configure ~/.vimrc? [Yes/no]: " config_vimrc
+    if [[ -f $HOME/.vimrc ]]; then 
+        read -p "Reconfigure (override) ~/.vimrc? [Yes/no]: " config_vimrc
+    else 
+        read -p "Configure ~/.vimrc? [Yes/no]: " config_vimrc
+    fi 
 fi 
 if [[ $config_vimrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     cat > $HOME/.vimrc <<'EOF'
@@ -144,10 +166,14 @@ set softtabstop=4
 EOF
 fi 
 
-if [[ -f $HOME/.screenrc ]]; then 
-    read -p "Reconfigure (override) ~/.screenrc? [Yes/no]: " config_screenrc
+if [[ $inside_container == yes ]]; then 
+    config_screenrc=no
 else 
-    read -p "Configure ~/.screenrc? [Yes/no]: " config_screenrc
+    if [[ -f $HOME/.screenrc ]]; then 
+        read -p "Reconfigure (override) ~/.screenrc? [Yes/no]: " config_screenrc
+    else 
+        read -p "Configure ~/.screenrc? [Yes/no]: " config_screenrc
+    fi 
 fi 
 if [[ $config_screenrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     cat > $HOME/.screenrc <<'EOF' 
@@ -160,6 +186,10 @@ fi
 if [[ $sudo_access == yes ]]; then 
     read -p "Install profiling packages? [Yes/no]: " install_pkg 
     if [[ $install_pkg =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+        if [[ -z $(which python3) ]]; then 
+            sudo apt install -y python3 &>/dev/null 
+        fi 
+
         python_version=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
         for pkg in python${python_version}-dev python${python_version}-venv \
             python3-pip python3-protobuf protobuf-compiler \
@@ -175,48 +205,39 @@ if [[ $sudo_access == yes ]]; then
                 sudo apt install -y $pkg &>/dev/null && echo "[OK]" || echo "[FAILED]"
             fi 
         done 
+
+        if [[ -d $HOME/SinglePassCapture ]]; then 
+            python3 -m pip install --break-system-packages -r $HOME/SinglePassCapture/Scripts/requirements.txt &>/dev/null 
+        fi 
     fi 
 fi 
 
 read -p "Install profiling scripts? [Yes/no]: " install_symlinks 
 if [[ $install_symlinks =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-    if [[ $sudo_access == yes ]]; then 
-        find /usr/local/bin -maxdepth 1 -xtype l -print >/tmp/broken_symlinks 2>/dev/null
-        broken_count=$(cat /tmp/broken_symlinks | wc -l)
-        if (( broken_count > 0 )); then 
-            read -p "Remove broken symlinks in /usr/local/bin? [Yes/no]: " remove_confirmed
-            if [[ $remove_confirmed =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-                while IFS= read -r link; do
-                    sudo rm -f -- "$link" &>/dev/null
-                done < /tmp/broken_symlinks
-            fi
-        fi 
+    mkdir -p $HOME/.local/bin
+    if [[ -d /home/wanliz/wanliz ]]; then 
+        read -e -i $HOME/wanliz -p "Confirm scripts folder: " scripts_dir
+    else
+        read -p "Set scripts folder: " scripts_dir
     fi 
 
-    mkdir -p $HOME/.local/bin
-    read -e -i $(dirname $(readlink -f $0)) -p "Scripts folder: " scripts_dir
-    find $HOME/.local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
-        if real_target=$(readlink -f "$link"); then  
-            if [[ $real_target == *"/wanliz/"* ]]; then 
+    if [[ -d $scripts_dir ]]; then 
+        find $HOME/.local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
+            if real_target=$(readlink -f "$link"); then  
+                if [[ $real_target == *"/wanliz/"* ]]; then 
+                    rm -f "$link" &>/dev/null 
+                fi 
+            else
                 rm -f "$link" &>/dev/null 
             fi 
-        else
-            rm -f "$link" &>/dev/null 
-        fi 
-    done 
-    for file in $scripts_dir/*.*; do 
-        [[ -f $file && -x $file ]] || continue 
-        cmdname=$(basename "$file")
-        cmdname=${cmdname%.sh}
-        cmdname=${cmdname%.py}
-        ln -sf $file $HOME/.local/bin/$cmdname &>/dev/null 
-    done 
-fi 
-
-if [[ -d $HOME/SinglePassCapture ]]; then 
-    read -p "Install python packages for pi-upload.sh? [Yes/no]: " install_piupload
-    if [[ $install_piupload =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-        python3 -m pip install --break-system-packages -r $HOME/SinglePassCapture/Scripts/requirements.txt &>/dev/null 
+        done 
+        for file in $scripts_dir/*.*; do 
+            [[ -f $file && -x $file ]] || continue 
+            cmdname=$(basename "$file")
+            cmdname=${cmdname%.sh}
+            cmdname=${cmdname%.py}
+            ln -sf $file $HOME/.local/bin/$cmdname &>/dev/null 
+        done 
     fi 
 fi 
 

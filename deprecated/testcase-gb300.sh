@@ -147,8 +147,28 @@ sudo ./SinglePassCapture/pic-x --api=vk --check_clocks=0 --exe="$HOME/nvperf_vul
 
 
 ssh wanliz@dlcluster 
-srun -p galaxy_gb300_preprod_pairx2 --pty /bin/bash
-srun -p gb300nvl72_preprod --pty /bin/bash 
+# Show the max time limit for allocation 
+sinfo -p gb300nvl72_preprod -o "%P  max=%l  def=%L  nodes=%D  state=%t"
+
+srun -p galaxy_gb300_preprod_pairx2 -t 8:00:00 --pty /bin/bash
+srun -p gb300nvl72_preprod -t 8:00:00 --pty /bin/bash 
 
 __GL_DeviceModalityPreference=1 ./vulkaninfo 
 
+rsync -ah --progress wanliz@10.221.32.35:/home/wanliz/sw/apps/gpu/drivers/vulkan/microbench/_out/Linux_aarch64_develop/nvperf_vulkan $HOME
+
+srun -p galaxy_gb300_preprod_pairx2 -t 8:00:00 --pty bash -lc 'docker run --rm -it --cpuset-cpus=0-71 --cpuset-mems=0 -e CUDA_VISIBLE_DEVICES=0 -e __GL_DeviceModalityPreference=1 --gpus "device=0" ubuntu:latest bash'
+
+srun -p gb300nvl72_preprod -t 8:00:00 --pty bash -lc 'docker run --rm -it --cpuset-cpus=0-71 --cpuset-mems=0 -e CUDA_VISIBLE_DEVICES=0 --gpus "device=0" ubuntu:latest bash'
+
+# Inside docker image, create user wanliz with given uid and gid 
+apt update; apt install -y sudo
+useradd -m -u 49928 -g 30 -s /bin/bash wanliz
+usermod -aG sudo wanliz 
+passwd wanliz 
+su - wanliz 
+
+# Inside wanliz's home dir, config env 
+sudo apt install -y git 
+git clone https://github.com/wanlizhu/wanliz 
+./wanliz/config-env.sh 
