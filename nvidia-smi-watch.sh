@@ -21,7 +21,7 @@ if [[ -z $PROC_NAME ]]; then
     exit 1
 fi 
 
-nohup bash -lic "
+bash -lic "
     trap 'exit 130' INT
     set -euo pipefail
 
@@ -32,19 +32,14 @@ nohup bash -lic "
         sleep 0.5
     done
 
-    echo \"Running nvidia-smi in detached mode ...\"
+    echo \"Running nvidia-smi in background ...\"
     nvidia-smi --query-gpu=timestamp,clocks.current.graphics,clocks.current.memory --format=csv -lms $INTERVAL_MS > $OUTPUT_FILE &
     SMI_PID=\$!
 
     while kill -0 \$APP_PID 2>/dev/null; do 
         sleep 0.5
     done 
-
-    echo \"Killing nvidia-smi\"
-    [[ -d /proc/\$SMI_PID ]] && kill -INT \$SMI_PID 2>/dev/null  
-    sleep 0.5 
-    [[ -d /proc/\$SMI_PID ]] && kill -9 \$SMI_PID 2>/dev/null 
+    kill -INT \$SMI_PID 2>/dev/null  
 " &
-disown 
 
 "$@"
