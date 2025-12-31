@@ -83,11 +83,17 @@ fi
 
 if [[ $TARGET == opengl ]]; then 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL >/dev/null || exit 1
-    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $GENERATE $EXTRA_ARGS || exit 1
+    if [[ ! -z $GENERATE ]]; then 
+        nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $GENERATE $EXTRA_ARGS || exit 1
+    fi 
+    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL/win/egl/build >/dev/null || exit 1
-    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $GENERATE $EXTRA_ARGS || exit 1
+    if [[ ! -z $GENERATE ]]; then 
+        nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $GENERATE $EXTRA_ARGS || exit 1
+    fi 
+    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL/win/egl/glsi >/dev/null || exit 1
