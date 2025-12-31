@@ -74,7 +74,7 @@ if [[ $sudo_access == yes && $EUID != 0 ]]; then
     fi
 fi 
 
-if [[ -d /mnt/c/Users/ || $inside_container == yes ]]; then 
+if [[ -z $sudo_access || -d /mnt/c/Users/ || $inside_container == yes ]]; then 
     download_bashrc=no
 else 
     if [[ ! -f $HOME/.bashrc_wsl2 ]]; then 
@@ -109,7 +109,7 @@ if [[ $download_bashrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     } || echo "Failed to download ~/.bashrc_wsl2 from $remote_ip"
 fi 
 
-if [[ $inside_container == yes ]]; then 
+if [[ -z $sudo_access || $inside_container == yes ]]; then 
     ssh_config=no
 else 
     if [[ -f $HOME/.ssh/config  ]]; then 
@@ -163,7 +163,7 @@ Host nvtest-galaxy-048
 EOF
 fi 
 
-if [[ $inside_container == yes ]]; then 
+if [[ -z $sudo_access || $inside_container == yes ]]; then 
     config_vimrc=no
 else 
     if [[ -f $HOME/.vimrc ]]; then 
@@ -181,7 +181,7 @@ set softtabstop=4
 EOF
 fi 
 
-if [[ $inside_container == yes ]]; then 
+if [[ -z $sudo_access || $inside_container == yes ]]; then 
     config_screenrc=no
 else 
     if [[ -f $HOME/.screenrc ]]; then 

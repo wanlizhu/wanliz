@@ -41,7 +41,10 @@ done
 [[ -z $TARGET  ]] && { echo  "TARGET is not specified"; exit 1; }
 [[ -z $CONFIG  ]] && { echo  "CONFIG is not specified"; exit 1; }
 [[ -z $VERSION ]] && { echo "VERSION is not specified"; exit 1; }
-[[ -z $NOSUDO && -z $(sudo -n true 2>/dev/null && echo 1) ]] && { echo "--nosysdir option is required for regular users"; exit 1; }
+[[ -z $(sudo -n true 2>/dev/null && echo 1) ]] && { 
+    echo "Running with forced option --nosudo"
+    NOSUDO=1
+}
 
 if [[ -z $(which rsync) ]]; then 
     sudo apt install -y rsync || exit 1
