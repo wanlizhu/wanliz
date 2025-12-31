@@ -3,12 +3,13 @@ trap 'exit 130' INT
 set -euo pipefail
 
 PROC_NAME=
-OUTPUT_FILE=$HOME/nvidia-smi-watch.log 
+OUTPUT_FILE=$HOME/nvidia-smi-watch 
 INTERVAL_MS=100
 while (( $# )); do
     case $1 in 
         -p|-proc) shift; PROC_NAME=$1 ;;
         -o|-output) shift; OUTPUT_FILE=$1 ;;
+        -s|-suffix) shift; OUTPUT_FILE+=$1 ;;
         -ms) shift; INTERVAL_MS=$1 ;;
         --) shift; break ;;
         *) break ;;
