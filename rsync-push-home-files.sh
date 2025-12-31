@@ -11,11 +11,15 @@ while IFS= read -r -d '' file; do
 done < <(find "$HOME" -maxdepth 1 -type f -not -name '.*' -print0)
 
 if ((${#home_files[@]})); then 
-    if [[ -f $HOME/.bashrc_wsl2_ip ]]; then 
-        if ! sudo ping -c 1 -W 3 "$(cat $HOME/.bashrc_wsl2_ip 2>/dev/null)"; then 
-            sudo rm -f $HOME/.bashrc_wsl2_ip
-        fi  
-    fi 
+    [[ -z $(sudo -n true 2>/dev/null && echo 1) ]] && { 
+        echo "Load remote IP from ~/.bashrc_wsl2_ip"
+    } || {
+        if [[ -f $HOME/.bashrc_wsl2_ip ]]; then 
+            if ! sudo ping -c 1 -W 3 "$(cat $HOME/.bashrc_wsl2_ip 2>/dev/null)"; then 
+                sudo rm -f $HOME/.bashrc_wsl2_ip
+            fi  
+        fi 
+    }
     if [[ ! -f $HOME/.bashrc_wsl2_ip ]]; then 
         read -p "Remote server IP: " remote_ip
         echo "$remote_ip" > $HOME/.bashrc_wsl2_ip
