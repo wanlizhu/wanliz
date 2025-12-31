@@ -33,6 +33,7 @@ CONFIG=develop
 THREADS=$(nproc)
 CLEAN_BUILD=
 COMPILE_COMMANDS=
+GENERATE=
 EXTRA_ARGS=
 while [[ ! -z $1 ]]; do 
     case $1 in 
@@ -43,6 +44,8 @@ while [[ ! -z $1 ]]; do
         -j[0-9]*) THREADS=${1#-j} ;;
         -c|-clean) CLEAN_BUILD="-c" ;;
         -cc|-compilecommands) COMPILE_COMMANDS="-cc" ;;
+        -g|-generate) GENERATE="@generate" ;;
+        -rg|-regenerate) GENERATE="@regenerate" ;;
         *) EXTRA_ARGS+=" $1" ;;
     esac
     shift 
@@ -80,11 +83,11 @@ fi
 
 if [[ $TARGET == opengl ]]; then 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL >/dev/null || exit 1
-    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $GENERATE $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL/win/egl/build >/dev/null || exit 1
-    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $EXTRA_ARGS || exit 1
+    nvmake $ARCH $CONFIG -j$THREADS $CLEAN_BUILD $GENERATE $EXTRA_ARGS || exit 1
     popd >/dev/null 
 
     pushd $P4ROOT/branch/$BRANCH/drivers/OpenGL/win/egl/glsi >/dev/null || exit 1
