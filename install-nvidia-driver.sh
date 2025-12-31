@@ -50,6 +50,12 @@ if [[ -z $(which rsync) ]]; then
     sudo apt install -y rsync || exit 1
 fi 
 
+if [[ ! -e /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION ]]; then 
+    ldconfig -p | grep -F libnvidia-glcore.so
+    echo "Incompatible incoming version $VERSION"
+    exit 1
+fi 
+
 if [[ $TARGET == drivers ]]; then 
     rsync -ah --info=progress2 $LOGIN_INFO:$P4ROOT/branch/$BRANCH/_out/Linux_${ARCH}_${CONFIG}/NVIDIA-Linux-$(uname -m)-${VERSION}-internal.run $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run || exit 1
     rsync -ah --info=progress2 $LOGIN_INFO:$P4ROOT/branch/$BRANCH/_out/Linux_${ARCH}_${CONFIG}/tests-Linux-$(uname -m).tar $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-tests.tar
@@ -116,11 +122,6 @@ elif [[ $TARGET == opengl ]]; then
         rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/OpenGL/win/unix/tls/Linux-elf/_out/Linux_${ARCH}_${CONFIG}/libnvidia-tls.so $RSYNC_DST/libnvidia-tls.so.$VERSION 
         rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/OpenGL/win/glx/lib/_out/Linux_${ARCH}_${CONFIG}/libGLX_nvidia.so $RSYNC_DST/libGLX_nvidia.so.$VERSION  
         rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/khronos/egl/egl/_out/Linux_${ARCH}_${CONFIG}/libEGL_nvidia.so $RSYNC_DST/libEGL_nvidia.so.$VERSION  
-        
-        if [[ ! -e /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION ]]; then 
-            echo "Incompatible version $VERSION"
-            exit 1
-        fi 
 
         if [[ $NOSUDO == 1 ]]; then
             pushd $RSYNC_DST >/dev/null || exit 1
