@@ -126,7 +126,15 @@ elif [[ $TARGET == opengl ]]; then
             pushd $RSYNC_DST >/dev/null || exit 1
             ln -sf libGLX_nvidia.so.$VERSION libGLX_nvidia.so.0
             ln -sf libEGL_nvidia.so.$VERSION libEGL_nvidia.so.0
-            cp -f /etc/vulkan/icd.d/nvidia_icd.json .
+
+            icd_json_file=$(find /etc/vulkan /usr/share/vulkan /usr/local/share/vulkan -path '*/icd.d/*nvidia*icd*.json' -type f -print 2>/dev/null | head -1)
+            if [[ -f $icd_json_file ]]; then 
+                cp -f $icd_json_file .
+            else 
+                echo "nvidia_icd.json doesn't exist in system"
+                exit 1
+            fi 
+
             sed -i "s|libGLX_nvidia\.so\.0|$RSYNC_DST/libGLX_nvidia.so.0|g" nvidia_icd.json
             popd >/dev/null 
             echo 
