@@ -138,7 +138,7 @@ elif [[ $TARGET == opengl ]]; then
             sed -i "s|libGLX_nvidia\.so\.0|$RSYNC_DST/libGLX_nvidia.so.0|g" nvidia_icd.json
             popd >/dev/null 
             echo 
-            echo "LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-opengl${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} VK_ICD_FILENAMES=$HOME/NVIDIA-Linux-aarch64-develop-580.82.07-opengl/nvidia_icd.json ..." 
+            echo "LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-opengl${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} VK_ICD_FILENAMES=$RSYNC_DST/nvidia_icd.json ..." 
         else 
             read -p "Press [Enter] to continue: "
             if [[ -f $HOME/libnvidia-glcore.so.$VERSION.backup ]]; then 
