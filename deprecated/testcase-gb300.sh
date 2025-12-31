@@ -215,3 +215,11 @@ export NVIDIA_DRIVER_CAPABILITIES=all
 sudo apt install -y git vim curl unzip vulkan-tools rsync libxext6 file 
 rsync -ah --progress wanliz@10.221.32.35:/home/wanliz/sw/apps/gpu/drivers/vulkan/microbench/_out/Linux_aarch64_develop/nvperf_vulkan . 
 rsync -ah --progress wanliz@10.221.32.35:/home/wanliz/PIC-X_Package_v1.4.1_Linux_L4t_Release.zip .
+
+
+
+
+# Watch GPC and MEM clocks
+sudo nvidia-smi -lgc <MIN_GPU_CLOCK>,<MAX_GPU_CLOCK>
+sudo nvidia-smi -lmc <MIN_MEMORY_CLOCK>,<MAX_MEMORY_CLOCK>
+nvidia-smi --format=csv --query-gpu=clocks.gr,clocks.sm,clocks.mem
