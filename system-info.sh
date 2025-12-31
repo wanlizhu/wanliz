@@ -7,6 +7,10 @@ if [[ -z $DISPLAY ]]; then
     echo "Fallback to DISPLAY=$DISPLAY"
 fi 
 
+if [[ -z $(which ip) ]]; then 
+    sudo apt install -y iproute2 >/dev/null 
+fi 
+
 ip=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
 echo "My IP: $ip"
 

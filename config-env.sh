@@ -65,7 +65,11 @@ if [[ $sudo_access == yes && $EUID != 0 ]]; then
     if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
         read -p "Enable passwordless sudo for $USER? [Yes/no]: " passwordless_sudo 
         if [[ $passwordless_sudo =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-            echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
+            if [[ $verbose_mode == yes ]]; then 
+                echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
+            else 
+                echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
+            fi 
         fi 
     fi
 fi 
@@ -213,8 +217,8 @@ if [[ $sudo_access == yes ]]; then
         fi 
 
         python_version=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
-        for pkg in python${python_version}-dev python${python_version}-venv \
-            python3-pip python3-protobuf protobuf-compiler \
+        for pkg in python${python_version}-dev python${python_version}-venv python3-pip \
+            python3-protobuf protobuf-compiler \
             libxcb-dri2-0 nis autofs jq rsync vim curl screen sshpass \
             lsof x11-xserver-utils x11-utils openbox obconf x11vnc \
             mesa-utils vulkan-tools xserver-xorg-core \

@@ -105,14 +105,14 @@ cmake .. -DCMAKE_CUDA_ARCHITECTURES=100
 cmake .. -DCMAKE_CUDA_ARCHITECTURES=86 
 
 ```
-For RTX GPU:
+#For RTX GPU:
 export __GL_DeviceModalityPreference=2
 export CUDA_VISIBLE_DEVICES=1
 
-For B300 GPU:
+#For B300 GPU:
 export __GL_DeviceModalityPreference=1
 export CUDA_DEVICE_MODALITY=1
-and you may also need to set this, from what I saw in a recent bug report
+#and you may also need to set this, from what I saw in a recent bug report
 export CUDA_VISIBLE_DEVICES=0
 ```
 
@@ -168,9 +168,24 @@ docker ps -a | grep -i wanliz
 docker start -ai wanliz-ubuntu
 docker rm -f wanliz-ubuntu
 
-srun -p galaxy_gb300_preprod_pairx2 -t 8:00:00 --pty     bash -lc 'docker run -it --name=wanliz-ubuntu --cpuset-cpus=0-71 --cpuset-mems=0 -e CUDA_VISIBLE_DEVICES=0 -e __GL_DeviceModalityPreference=1 --gpus "device=0" ubuntu:latest bash'
+srun -p galaxy_gb300_preprod_pairx2 -t 8:00:00 --pty bash     -lc 'docker run -it --name=wanliz-ubuntu --cpuset-cpus=0-71 --cpuset-mems=0 -e NVIDIA_VISIBLE_DEVICES=0 -e NVIDIA_DRIVER_CAPABILITIES=all -e __GL_DeviceModalityPreference=1 --gpus "device=0" -v /usr/share/vulkan/icd.d/nvidia_icd.json:/usr/share/vulkan/icd.d/nvidia_icd.json:ro ubuntu:latest bash'
 
-srun -p gb300nvl72_preprod -t 8:00:00 --pty     bash -lc 'docker run -it --name=wanliz-ubuntu --cpuset-cpus=0-71 --cpuset-mems=0 -e CUDA_VISIBLE_DEVICES=0 --gpus "device=0" ubuntu:latest bash'
+srun -p gb300nvl72_preprod -t 8:00:00 --pty bash     -lc 'docker run -it --name=wanliz-ubuntu --cpuset-cpus=0-71 --cpuset-mems=0 -e NVIDIA_VISIBLE_DEVICES=0 -e NVIDIA_DRIVER_CAPABILITIES=all --gpus "device=0" -v /etc/vulkan/icd.d/nvidia_icd.json:/etc/vulkan/icd.d/nvidia_icd.json:ro ubuntu:latest bash'
+
+
+
+
+# Test to attach device=0
+docker run -it --name=wanliz-ubuntu --cpuset-cpus=0-71 --cpuset-mems=0 -e NVIDIA_VISIBLE_DEVICES=0 -e NVIDIA_DRIVER_CAPABILITIES=all -e __GL_DeviceModalityPreference=1 --gpus "device=0" --device /dev/dri:/dev/dri -v /usr/share/vulkan/icd.d/nvidia_icd.json:/usr/share/vulkan/icd.d/nvidia_icd.json:ro gitlab-master.nvidia.com/dl/core-models/core-models/vllm:main_40929615 bash
+# Test to attach all GPUs
+docker run -it --name=wanliz-ubuntu --cpuset-cpus=0-71 --cpuset-mems=0 -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all -e __GL_DeviceModalityPreference=1  --gpus all --device /dev/dri:/dev/dri -v /usr/share/vulkan/icd.d/nvidia_icd.json:/usr/share/vulkan/icd.d/nvidia_icd.json:ro gitlab-master.nvidia.com/dl/core-models/core-models/vllm:main_40929615 bash
+
+docker run -it --name=wanliz-ubuntu --cpuset-cpus=0-71 --cpuset-mems=0 --gpus all --device /dev/dri:/dev/dri -v /usr/share/vulkan/icd.d/nvidia_icd.json:/usr/share/vulkan/icd.d/nvidia_icd.json:ro -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute -e __GL_DeviceModalityPreference=1 gitlab-master.nvidia.com/dl/core-models/core-models/vllm:main_40929615 bash
+
+apt update; apt install -y git vim curl unzip vulkan-tools rsync libxext6 file 
+
+ldconfig -p | grep -F libGLX_nvidia.so.0
+VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/nvidia_icd.json VK_LOADER_DEBUG=all vulkaninfo --summary 2>&1 | grep -v -i LAYER
 
 
 
@@ -194,6 +209,9 @@ passwd wanliz
 su - wanliz 
 
 # Inside wanliz's home dir, config env 
-sudo apt install -y git  
-git clone https://github.com/wanlizhu/wanliz 
-./wanliz/config-env.sh 
+export __GL_DeviceModalityPreference=1  # For Galaxy ONLY
+export NVIDIA_VISIBLE_DEVICES=0
+export NVIDIA_DRIVER_CAPABILITIES=all 
+sudo apt install -y git vim curl unzip vulkan-tools rsync libxext6 file 
+rsync -ah --progress wanliz@10.221.32.35:/home/wanliz/sw/apps/gpu/drivers/vulkan/microbench/_out/Linux_aarch64_develop/nvperf_vulkan . 
+rsync -ah --progress wanliz@10.221.32.35:/home/wanliz/PIC-X_Package_v1.4.1_Linux_L4t_Release.zip .
