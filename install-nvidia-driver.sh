@@ -23,7 +23,7 @@ CONFIG=develop
 ARCH=$(uname -m | sed 's/x86_64/amd64/g')
 VERSION=
 RESTORE=
-NOSYSDIR=
+NOSUDO=
 shift 
 while [[ ! -z $1 ]]; do 
     case $1 in 
@@ -33,7 +33,7 @@ while [[ ! -z $1 ]]; do
         debug|release|develop) CONFIG=$1 ;;
         [0-9]*) VERSION=$1 ;;
         -r|--restore) RESTORE=1 ;;
-        -n|--nosysdir) NOSYSDIR=1 ;;
+        -n|--nosudo) NOSUDO=1 ;;
     esac
     shift 
 done  
@@ -41,13 +41,17 @@ done
 [[ -z $TARGET  ]] && { echo  "TARGET is not specified"; exit 1; }
 [[ -z $CONFIG  ]] && { echo  "CONFIG is not specified"; exit 1; }
 [[ -z $VERSION ]] && { echo "VERSION is not specified"; exit 1; }
-[[ -z $NOSYSDIR && -z $(sudo -n true 2>/dev/null && echo 1) ]] && { echo "--nosysdir option is required for regular users"; exit 1; }
+[[ -z $NOSUDO && -z $(sudo -n true 2>/dev/null && echo 1) ]] && { echo "--nosysdir option is required for regular users"; exit 1; }
+
+if [[ -z $(which rsync) ]]; then 
+    sudo apt install -y rsync || exit 1
+fi 
 
 if [[ $TARGET == drivers ]]; then 
     rsync -ah --info=progress2 $LOGIN_INFO:$P4ROOT/branch/$BRANCH/_out/Linux_${ARCH}_${CONFIG}/NVIDIA-Linux-$(uname -m)-${VERSION}-internal.run $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run || exit 1
     rsync -ah --info=progress2 $LOGIN_INFO:$P4ROOT/branch/$BRANCH/_out/Linux_${ARCH}_${CONFIG}/tests-Linux-$(uname -m).tar $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-tests.tar
     
-    if [[ $NOSYSDIR == 1 ]]; then 
+    if [[ $NOSUDO == 1 ]]; then 
         pushd $HOME >/dev/null
             sudo mv -f NVIDIA-Linux-$(uname -m)-${VERSION}-internal /tmp/
             chmod +x $HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-internal.run
@@ -74,7 +78,7 @@ if [[ $TARGET == drivers ]]; then
     fi 
 elif [[ $TARGET == opengl ]]; then 
     if [[ $RESTORE == 1 ]]; then 
-        if [[ $NOSYSDIR == 1 ]]; then 
+        if [[ $NOSUDO == 1 ]]; then 
             echo "--restore option has been ignored"
             exit 0
         fi  
@@ -97,7 +101,7 @@ elif [[ $TARGET == opengl ]]; then
             echo "$HOME/libnvidia-glcore.so.$VERSION.backup doesn't exist"
         fi 
     else 
-        if [[ $NOSYSDIR == 1 ]]; then
+        if [[ $NOSUDO == 1 ]]; then
             RSYNC_DST=$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-opengl
             mkdir -p $RSYNC_DST
         else
@@ -115,7 +119,7 @@ elif [[ $TARGET == opengl ]]; then
             exit 1
         fi 
 
-        if [[ $NOSYSDIR == 1 ]]; then
+        if [[ $NOSUDO == 1 ]]; then
             pushd $RSYNC_DST >/dev/null || exit 1
             ln -sf libGLX_nvidia.so.$VERSION libGLX_nvidia.so.0
             ln -sf libEGL_nvidia.so.$VERSION libEGL_nvidia.so.0
@@ -143,6 +147,6 @@ elif [[ $TARGET == opengl ]]; then
             sudo cp -vf --remove-destination $HOME/libnvidia-tls.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libnvidia-tls.so.$VERSION
             sudo cp -vf --remove-destination $HOME/libGLX_nvidia.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libGLX_nvidia.so.$VERSION
             sudo cp -vf --remove-destination $HOME/libEGL_nvidia.so.$VERSION /usr/lib/$(uname -m)-linux-gnu/libEGL_nvidia.so.$VERSION
-        fi # if [[ $NOSYSDIR == 1 ]]
+        fi # if [[ $NOSUDO == 1 ]]
     fi # if [[ $RESTORE == 1 ]]
 fi # if [[ $TARGET == opengl ]]
