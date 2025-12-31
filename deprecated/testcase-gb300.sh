@@ -222,4 +222,5 @@ rsync -ah --progress wanliz@10.221.32.35:/home/wanliz/PIC-X_Package_v1.4.1_Linux
 # Watch GPC and MEM clocks
 sudo nvidia-smi -lgc <MIN_GPU_CLOCK>,<MAX_GPU_CLOCK>
 sudo nvidia-smi -lmc <MIN_MEMORY_CLOCK>,<MAX_MEMORY_CLOCK>
-nvidia-smi-watch -p nvperf_vulkan -- ./nvperf_vulkan -nullDisplay texcopy:24
+nvidia-smi-watch -p nvperf_vulkan -s "-NVL.log" -- ./nvperf_vulkan -nullDisplay texcopy:24
+nvidia-smi-watch -p nvperf_vulkan -s "-GALAXY.log" -- ./nvperf_vulkan -nullDisplay texcopy:24

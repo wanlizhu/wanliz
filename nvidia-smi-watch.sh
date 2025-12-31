@@ -4,7 +4,7 @@ set -euo pipefail
 
 PROC_NAME=
 OUTPUT_FILE=$HOME/nvidia-smi-watch 
-INTERVAL_MS=100
+INTERVAL_MS=200
 while (( $# )); do
     case $1 in 
         -p|-proc) shift; PROC_NAME=$1 ;;
