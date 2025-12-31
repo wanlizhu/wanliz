@@ -50,7 +50,7 @@ if [[ -z $(which rsync) ]]; then
     sudo apt install -y rsync || exit 1
 fi 
 
-if [[ ! -e /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION ]]; then 
+if [[ ! -e /usr/lib/libnvidia-glcore.so.$VERSION && ! -e /usr/lib/$(uname -m)-linux-gnu/libnvidia-glcore.so.$VERSION ]]; then 
     ldconfig -p | grep -F libnvidia-glcore.so
     echo "Incompatible incoming version $VERSION"
     exit 1
