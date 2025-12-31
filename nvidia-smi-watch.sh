@@ -24,16 +24,20 @@ fi
 bash -lic "
     trap 'exit 130' INT
     set -euo pipefail
+    rm -f /tmp/stop 
 
     while :; do 
         APP_PID=\$(pgrep -n -x \"$PROC_NAME\" 2>/dev/null || true)
         [[ ! -z \$APP_PID ]] && break 
         echo \"Wait for named proc: $PROC_NAME\"
         sleep 0.5
+        if [[ -f /tmp/stop ]]; then
+            exit 
+        fi 
     done
 
     echo \"Running nvidia-smi in background ...\"
-    nvidia-smi --query-gpu=timestamp,clocks.current.graphics,clocks.current.memory --format=csv -lms $INTERVAL_MS > $OUTPUT_FILE &
+    nvidia-smi --query-gpu=timestamp,clocks.current.graphics,clocks.current.memory --format=csv,noheader,nounits -lms $INTERVAL_MS > $OUTPUT_FILE &
     SMI_PID=\$!
 
     while kill -0 \$APP_PID 2>/dev/null; do 
