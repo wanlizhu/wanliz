@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 function backup-wsl2-home() {
     if [[ -d /mnt/d/wsl2_home.backup ]]; then
         rsync -ah --ignore-missing-args --delete --info=progress2 \
