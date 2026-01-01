@@ -224,3 +224,11 @@ sudo nvidia-smi -lgc <MIN_GPU_CLOCK>,<MAX_GPU_CLOCK>
 sudo nvidia-smi -lmc <MIN_MEMORY_CLOCK>,<MAX_MEMORY_CLOCK>
 nvidia-smi-watch -p nvperf_vulkan -s "-NVL.log" -- ./nvperf_vulkan -nullDisplay texcopy:24
 nvidia-smi-watch -p nvperf_vulkan -s "-GALAXY.log" -- ./nvperf_vulkan -nullDisplay texcopy:24
+
+
+
+# Galaxy GB300 DGX station
+salloc -N 1 -p galaxy_gb300_preprod_pairx2 -t 8:00:00  
+
+# GB300 NVL
+salloc -N 1 -p gb300nvl72_preprod -t 8:00:00  
