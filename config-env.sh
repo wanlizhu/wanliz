@@ -309,7 +309,7 @@ if [[ $sudo_access == yes ]]; then
 fi 
 
 if [[ -d /mnt/c/Users/ && -d $HOME/sw/branch ]]; then
-    find $HOME/sw/branch -type d -path '*/.*' -prune -o -type d -print0 |
+    find $HOME/sw/branch -mindepth 1 -maxdepth 1 -type d -path '*/.*' -prune -o -type d -print0 |
     while IFS= read -r -d '' nvsrc; do 
         if [[ -d $nvsrc/drivers/OpenGL ]]; then 
             if [[ ! -f $nvsrc/drivers/OpenGL/.cursorignore ]]; then 
