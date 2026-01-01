@@ -57,3 +57,18 @@ function pi-upload() {
     ./upload_report.sh
     popd >/dev/null
 }
+
+function vulkaninfo-grep-section {
+    vulkaninfo 2>/dev/null | grep -B1 -- --- | grep -v -- - | grep -i $1 >/tmp/sections
+    if [[ $(cat /tmp/sections | wc -l) == 0 ]]; then 
+        echo "Find no section title matches $1"
+        return 1
+    fi 
+    for title in $(cat /tmp/sections); do 
+        vulkaninfo 2>/dev/null | awk -v section_title="$title" '
+            $0 ~ section_title { inside_section=1 }
+            inside_section && /^[[:space:]]*$/ { exit }
+            inside_section { print }
+        '
+    done 
+}
