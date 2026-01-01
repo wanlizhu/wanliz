@@ -8,7 +8,8 @@ bool VK_image::init(
     VkFormat format, 
     VkExtent2D extent, 
     VkImageUsageFlags usageFlags, 
-    VkMemoryPropertyFlags memoryFlags
+    VkMemoryPropertyFlags memoryFlags,
+    VkImageTiling tiling
 ) {
     this->device_ptr = device;
     this->format = format;
@@ -41,7 +42,7 @@ bool VK_image::init(
     imageInfo.mipLevels = 1;
     imageInfo.arrayLayers = 1;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.tiling = tiling;
     imageInfo.usage = usageFlags;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -303,12 +304,15 @@ void VK_image::write_noise() {
     }
 
     std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<uint16_t> dist(0, 255);
+    std::mt19937_64 gen(rd());
 
     std::vector<uint8_t> randomData(sizeInBytes);
-    for (uint32_t i = 0; i < sizeInBytes; i++) {
-        randomData[i] = static_cast<uint8_t>(dist(gen));
+    uint64_t* ptr64 = reinterpret_cast<uint64_t*>(randomData.data());
+    for (size_t i = 0; i < sizeInBytes / 8 / 4; i+=4) {
+        ptr64[i] = gen();
+        ptr64[i + 1] = ptr64[i] & (i > 1 ? ptr64[i-1] : 0x31415926);
+        ptr64[i + 2] = ptr64[i] & ptr64[i + 1];
+        ptr64[i + 3] = ptr64[i] & ptr64[i + 2];
     }
 
     write(randomData.data(), sizeInBytes);

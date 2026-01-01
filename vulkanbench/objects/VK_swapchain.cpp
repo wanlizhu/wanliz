@@ -1,7 +1,6 @@
 #include "VK_swapchain.h"
 #include "VK_device.h"
 #include "VK_instance.h"
-#include <stdexcept>
 
 #ifdef _WIN32
 static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {

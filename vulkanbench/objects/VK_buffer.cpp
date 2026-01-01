@@ -2,7 +2,6 @@
 #include "VK_common.h"
 #include "VK_image.h"
 #include "VK_device.h"
-#include <iostream>
 
 bool VK_buffer::init(
     VK_device* device, 
@@ -247,6 +246,17 @@ VK_gpu_timer VK_buffer::copy_from_image(VK_image& src) {
     VkImageLayout oldLayout = src.currentImageLayout;
     src.image_layout_transition(internal, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
+    size_t srcPixelCount = (size_t)src.extent.width * src.extent.height;
+    size_t pixelSize = (srcPixelCount > 0) ? (src.sizeInBytes / srcPixelCount) : 1;
+    size_t maxPixels = sizeInBytes / pixelSize;
+    
+    uint32_t copyWidth = src.extent.width;
+    uint32_t copyHeight = (uint32_t)std::min((size_t)src.extent.height, maxPixels / copyWidth);
+    if (copyHeight == 0 && maxPixels > 0) {
+        copyWidth = (uint32_t)std::min((size_t)src.extent.width, maxPixels);
+        copyHeight = 1;
+    }
+
     VkBufferImageCopy region = {};
     region.bufferOffset = 0;
     region.bufferRowLength = 0;
@@ -256,7 +266,7 @@ VK_gpu_timer VK_buffer::copy_from_image(VK_image& src) {
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
     region.imageOffset = {0, 0, 0};
-    region.imageExtent = {src.extent.width, src.extent.height, 1};
+    region.imageExtent = {copyWidth, copyHeight, 1};
 
     timer.gpu_begin(internal);
     vkCmdCopyImageToBuffer(

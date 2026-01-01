@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
+option(ENABLE_RT_SHADER_COMPILE OFF "Enable runtime shader compilation")
+
 if(UNIX AND NOT APPLE)
     execute_process(COMMAND uname -m OUTPUT_VARIABLE HOST_ARCH OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
     if(NOT HOST_ARCH)
@@ -75,8 +77,9 @@ message(STATUS "Host: ${HOST_ARCH}, Target: ${TARGET_ARCH}")
 
 add_executable(vulkanbench 
     vulkanbench/main.cpp
-    vulkanbench/test_cases.h 
-    vulkanbench/test_bufcopy.cpp 
+    vulkanbench/VK_TestCase.h 
+    vulkanbench/VK_TestCase_IMPL_buffercopy.cpp 
+    vulkanbench/VK_TestCase_IMPL_imagebuffercopy.cpp 
     vulkanbench/objects/VK_common.h              vulkanbench/objects/VK_common.cpp 
     vulkanbench/objects/VK_instance.cpp          vulkanbench/objects/VK_instance.h
     vulkanbench/objects/VK_queue.cpp             vulkanbench/objects/VK_queue.h
@@ -90,12 +93,18 @@ add_executable(vulkanbench
     vulkanbench/objects/VK_compute_pipeline.cpp  vulkanbench/objects/VK_compute_pipeline.h
 )
 
+target_compile_definitions(vulkanbench PRIVATE
+    $<$<BOOL:${ENABLE_RT_SHADER_COMPILE}>:ENABLE_RT_SHADER_COMPILE=1>
+)
+
 if(UNIX AND NOT APPLE)
     find_package(X11 REQUIRED)
     find_package(Vulkan REQUIRED)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(SHADERC REQUIRED IMPORTED_TARGET shaderc)
-    pkg_check_modules(SPIRV_CROSS_C_SHARED REQUIRED IMPORTED_TARGET spirv-cross-c-shared)
+    if(ENABLE_RT_SHADER_COMPILE)
+        find_package(PkgConfig REQUIRED)
+        pkg_check_modules(SHADERC REQUIRED IMPORTED_TARGET shaderc)
+        pkg_check_modules(SPIRV_CROSS_C_SHARED REQUIRED IMPORTED_TARGET spirv-cross-c-shared)
+    endif()
 
     target_include_directories(vulkanbench PRIVATE 
         ${X11_INCLUDE_DIR}
@@ -104,19 +113,21 @@ if(UNIX AND NOT APPLE)
     target_link_libraries(vulkanbench PRIVATE 
         ${X11_LIBRARIES}
         Vulkan::Vulkan 
-        PkgConfig::SHADERC 
-        PkgConfig::SPIRV_CROSS_C_SHARED
+        $<$<BOOL:${ENABLE_RT_SHADER_COMPILE}>:PkgConfig::SHADERC>
+        $<$<BOOL:${ENABLE_RT_SHADER_COMPILE}>:PkgConfig::SPIRV_CROSS_C_SHARED>
     )
 else()
     find_package(Vulkan REQUIRED)
-    find_library(SHADERC_LIBRARY
-        NAMES shaderc_shared shaderc_combined
-        PATHS "$ENV{VULKAN_SDK}/Lib"
-    )
-    find_library(SPIRV_CROSS_C_SHARED_LIBRARY
-        NAMES spirv-cross-c-shared
-        PATHS "$ENV{VULKAN_SDK}/Lib"
-    )
+    if(ENABLE_RT_SHADER_COMPILE)
+        find_library(SHADERC_LIBRARY
+            NAMES shaderc_shared shaderc_combined
+            PATHS "$ENV{VULKAN_SDK}/Lib"
+        )
+        find_library(SPIRV_CROSS_C_SHARED_LIBRARY
+            NAMES spirv-cross-c-shared
+            PATHS "$ENV{VULKAN_SDK}/Lib"
+        )
+    endif()
 
     target_include_directories(vulkanbench PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/vulkanbench
@@ -124,7 +135,7 @@ else()
     )
     target_link_libraries(vulkanbench PRIVATE
         Vulkan::Vulkan
-        ${SHADERC_LIBRARY}
-        ${SPIRV_CROSS_C_SHARED_LIBRARY}
+        $<$<BOOL:${ENABLE_RT_SHADER_COMPILE}>:${SHADERC_LIBRARY}>
+        $<$<BOOL:${ENABLE_RT_SHADER_COMPILE}>:${SPIRV_CROSS_C_SHARED_LIBRARY}>
     )
 endif()

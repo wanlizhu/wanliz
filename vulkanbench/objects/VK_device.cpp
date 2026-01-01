@@ -1,6 +1,4 @@
 #include "VK_device.h"
-#include <stdexcept>
-#include <algorithm>
 
 static bool is_blacklisted(const VK_physdev& dev) {
     std::string deviceName = dev.properties.deviceName;

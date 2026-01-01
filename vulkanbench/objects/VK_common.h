@@ -1,10 +1,14 @@
 #pragma once
+#ifdef _WIN32
 #include <basetsd.h>
+#endif
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <cstring>
+#include <stdexcept>
+#include <algorithm>
 #include <vector>
 #include <filesystem>
 #include <thread>
@@ -32,8 +36,11 @@
 #include <iomanip>
 #include <stdexcept>
 #include <string>
+
+#ifdef ENABLE_RT_SHADER_COMPILE
 #include <shaderc/shaderc.h>
 #include <spirv_cross/spirv_cross_c.h>
+#endif 
 
 #ifdef _WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
@@ -97,3 +104,4 @@ struct VK_gpu_referred_object {
 std::string VkResult_str(VkResult result);
 std::string VkMemoryPropertyFlags_str(VkMemoryPropertyFlags flags, bool short_str);
 std::string human_readable_size(size_t bytes);
+void print_table(const std::vector<std::vector<std::string>>& rows, std::ostream& out = std::cout);

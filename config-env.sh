@@ -308,5 +308,22 @@ if [[ $sudo_access == yes ]]; then
     # findmnt -o TARGET,SOURCE,FSTYPE,OPTIONS
 fi 
 
+if [[ -d /mnt/c/Users/ && -d $HOME/sw/branch ]]; then
+    find $HOME/sw/branch -type d -path '*/.*' -prune -o -type d -print0 |
+    while IFS= read -r -d '' nvsrc; do 
+        if [[ -d $nvsrc/drivers/OpenGL ]]; then 
+            if [[ ! -f $nvsrc/drivers/OpenGL/.cursorignore ]]; then 
+                ln -sf $HOME/sw/branch/.cursorignore $nvsrc/drivers/OpenGL/.cursorignore &&
+                echo "Added symlink: $nvsrc/drivers/OpenGL/.cursorignore"
+            fi 
+            if [[ ! -d $nvsrc/drivers/OpenGL/.cursor ]]; then 
+                ln -sf $HOME/sw/branch/.cursor $nvsrc/drivers/OpenGL/.cursor &&
+                echo "Added symlink: $nvsrc/drivers/OpenGL/.cursor"
+            fi 
+        fi 
+    done 
+fi 
+
+echo 
 echo "(optional) Install pic-x: https://gitlab-master.nvidia.com/perf-inspector/gift/-/releases"
 echo "All done!"

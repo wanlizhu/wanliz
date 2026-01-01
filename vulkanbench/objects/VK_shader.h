@@ -9,6 +9,7 @@ struct VK_shader {
     std::string glsl_code;
     
     inline operator VkShaderModule() const { return handle; }
+#ifdef ENABLE_RT_SHADER_COMPILE
     bool init_from_glsl_file(
         VK_device* device_ptr,
         const std::filesystem::path& path,
@@ -24,4 +25,5 @@ struct VK_shader {
     void deinit();
     std::vector<std::string> reflect_all_variables() const;
     std::optional<VkDescriptorSetLayoutBinding> reflect_binding_with_name(const std::string& name) const;
+#endif 
 };

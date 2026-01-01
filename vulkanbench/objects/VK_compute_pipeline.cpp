@@ -1,5 +1,6 @@
 #include "VK_compute_pipeline.h"
 #include "VK_device.h"
+#include <stdexcept>
 
 bool VK_compute_pipeline::init(
     VK_device* dev_ptr, 
@@ -11,10 +12,11 @@ bool VK_compute_pipeline::init(
     }
 
     device_ptr = dev_ptr;
+
+#ifdef ENABLE_RT_SHADER_COMPILE
     std::vector<std::string> variable_names = shader.reflect_all_variables();
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindingMap.clear();
-    
     for (const auto& var_name : variable_names) {
         auto binding_opt = shader.reflect_binding_with_name(var_name);
         if (binding_opt) {
@@ -22,6 +24,10 @@ bool VK_compute_pipeline::init(
             bindingMap[var_name] = *binding_opt;
         }
     }
+#else 
+    throw std::runtime_error("runtime shader compile is disabled");
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+#endif 
 
     VkDescriptorSetLayoutCreateInfo descSetLayoutInfo = {};
     descSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;

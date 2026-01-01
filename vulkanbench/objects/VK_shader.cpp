@@ -1,6 +1,7 @@
 #include "VK_shader.h"
 #include "VK_device.h"
 
+#ifdef ENABLE_RT_SHADER_COMPILE
 bool VK_shader::init_from_glsl_string(
     VK_device* dev_ptr,
     const std::string& glsl, 
@@ -332,4 +333,4 @@ std::optional<VkDescriptorSetLayoutBinding> VK_shader::reflect_binding_with_name
     spvc_context_destroy(context);
     return std::nullopt;
 }
-
+#endif // #ifdef ENABLE_RT_SHADER_COMPILE

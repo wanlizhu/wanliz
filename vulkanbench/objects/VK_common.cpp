@@ -1,6 +1,5 @@
 #include "VK_common.h"
 #include "VK_device.h"
-#include <cstdint>
 
 VK_gpu_timer::VK_gpu_timer(VK_device* device_ptr) {
     m_device_ptr = device_ptr;
@@ -134,4 +133,22 @@ std::string human_readable_size(size_t bytes) {
     std::ostringstream oss;
     oss << std::setfill(' ') << std::setw(5) << std::fixed << std::setprecision(1) << size << " " << units[unit];
     return oss.str();
+}
+
+void print_table(const std::vector<std::vector<std::string>>& rows, std::ostream& out) {
+    if (rows.empty()) return;
+    
+    std::vector<size_t> widths(rows[0].size(), 0);
+    for (const auto& row : rows) {
+        for (size_t i = 0; i < row.size() && i < widths.size(); i++) {
+            widths[i] = std::max(widths[i], row[i].size());
+        }
+    }
+    
+    for (const auto& row : rows) {
+        for (size_t i = 0; i < row.size(); i++) {
+            out << std::left << std::setw(widths[i] + 2) << row[i];
+        }
+        out << "\n";
+    }
 }

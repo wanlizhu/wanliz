@@ -1,6 +1,5 @@
 #include "VK_query_pool.h"
 #include "VK_device.h"
-#include <stdexcept>
 
 bool VK_query_pool::init(VK_device* dev_ptr) {
     device_ptr = dev_ptr;

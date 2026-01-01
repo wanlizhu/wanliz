@@ -20,7 +20,8 @@ struct VK_image : public VK_gpu_referred_object {
         VkFormat format, 
         VkExtent2D extent, 
         VkImageUsageFlags usageFlags, 
-        VkMemoryPropertyFlags memoryFlags
+        VkMemoryPropertyFlags memoryFlags,
+        VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL
     );
     void deinit();
     void write(const void* src, size_t sizeMax);

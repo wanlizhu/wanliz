@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+
+It is not allowed to include system headers in source files, all system and external headers must be included in VK_common.h, and other source files need to include VK_common.h to include those external headers indirectly. 
+
+For code generation, do not add comments except I ask you to add comments. 
