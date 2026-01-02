@@ -1,7 +1,7 @@
 #pragma once
 #include "VK_common.h"
 
-struct VK_image : public VK_gpu_referred_object {
+struct VK_image : public VK_refcounted_object {
     VK_device* device_ptr = nullptr;
     VkImage handle = NULL;
     VkImageView view = NULL;
@@ -13,6 +13,7 @@ struct VK_image : public VK_gpu_referred_object {
     size_t sizeInBytes = 0;
     VkDeviceMemory memory = NULL;
     VkMemoryPropertyFlags memoryFlags = 0;
+    uint32_t memoryTypeIndex = UINT32_MAX;
 
     inline operator VkImage() const { return handle; }
     bool init(
@@ -20,7 +21,7 @@ struct VK_image : public VK_gpu_referred_object {
         VkFormat format, 
         VkExtent2D extent, 
         VkImageUsageFlags usageFlags, 
-        VkMemoryPropertyFlags memoryFlags,
+        VK_createInfo_memType memType,
         VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL
     );
     void deinit();

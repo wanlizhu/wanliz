@@ -39,8 +39,7 @@ bool VK_device::init(int index, uint32_t queueFlags, int window_width, int windo
     if (index < 0) {
         std::vector<VK_physdev> allDevices = VK_physdev::LIST();
         if (allDevices.empty()) {
-            std::cerr << "No Vulkan physical devices found" << std::endl;
-            throw std::runtime_error("Failed to create logical device");
+            throw std::runtime_error("No Vulkan physical devices found");
         }
 
         int bestScore = -1;
@@ -59,16 +58,14 @@ bool VK_device::init(int index, uint32_t queueFlags, int window_width, int windo
         }
         
         if (bestIndex == UINT32_MAX) {
-            std::cerr << "No suitable GPU found (all devices are blacklisted)" << std::endl;
-            throw std::runtime_error("Failed to create logical device");
+            throw std::runtime_error("No suitable GPU found (all devices are blacklisted)");
         }
 
         index = bestIndex;
     }
 
     if (!physdev.init(index)) {
-        std::cerr << "Failed to initialize physical device" << std::endl;
-        throw std::runtime_error("Failed to create logical device");
+        throw std::runtime_error("Failed to initialize physical device");
     }
     
     std::cout << "Selected GPU: " << physdev.properties.deviceName << std::endl;
@@ -82,19 +79,17 @@ bool VK_device::init(int index, uint32_t queueFlags, int window_width, int windo
             }
         }
         if (!hasSwapchain) {
-            std::cerr << "Missing required device extension: " << VK_KHR_SWAPCHAIN_EXTENSION_NAME << std::endl;
-            throw std::runtime_error("Failed to create logical device");
+            throw std::runtime_error(std::string("Missing required device extension: ") + VK_KHR_SWAPCHAIN_EXTENSION_NAME);
         }
     }
 
     uint32_t queueFamily = physdev.find_first_queue_family_supports(queueFlags, presenting);
     if (queueFamily == UINT32_MAX) {
-        std::cerr << "No queue family found that supports requested flags";
+        std::string msg = "No queue family found that supports requested flags";
         if (presenting) {
-            std::cerr << " and presenting";
+            msg += " and presenting";
         }
-        std::cerr << std::endl;
-        throw std::runtime_error("Failed to create logical device");
+        throw std::runtime_error(msg);
     }
 
     float queuePriority = 1.0f;
@@ -119,24 +114,16 @@ bool VK_device::init(int index, uint32_t queueFlags, int window_width, int windo
 
     VkResult result = vkCreateDevice(physdev.handle, &createInfo, nullptr, &handle);
     if (result != VK_SUCCESS) {
-        std::cerr << "Failed to create logical device" << std::endl;
         throw std::runtime_error("Failed to create logical device");
     }
 
     if (!cmdqueue.init(this, queueFamily, presenting)) {
-        std::cerr << "Failed to initialize command queue" << std::endl;
-        vkDestroyDevice(handle, nullptr);
-        handle = VK_NULL_HANDLE;
-        throw std::runtime_error("Failed to create logical device");
+        throw std::runtime_error("Failed to initialize command queue");
     }
 
     if (presenting) {
         if (!swapchain.init(this, window_width, window_height)) {
-            std::cerr << "Failed to initialize swapchain" << std::endl;
-            cmdqueue.deinit();
-            vkDestroyDevice(handle, nullptr);
-            handle = VK_NULL_HANDLE;
-            throw std::runtime_error("Failed to create logical device");
+            throw std::runtime_error("Failed to initialize swapchain");
         }
     }
 

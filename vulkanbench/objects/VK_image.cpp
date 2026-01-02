@@ -1,5 +1,6 @@
 #include "VK_image.h"
 #include "VK_buffer.h"
+#include "VK_common.h"
 #include "VK_device.h"
 #include "VK_compute_pipeline.h"
 
@@ -8,14 +9,13 @@ bool VK_image::init(
     VkFormat format, 
     VkExtent2D extent, 
     VkImageUsageFlags usageFlags, 
-    VkMemoryPropertyFlags memoryFlags,
+    VK_createInfo_memType memType,
     VkImageTiling tiling
 ) {
     this->device_ptr = device;
     this->format = format;
     this->extent = extent;
     this->usageFlags = usageFlags;
-    this->memoryFlags = memoryFlags;
 
     if (format == VK_FORMAT_D16_UNORM || 
         format == VK_FORMAT_D32_SFLOAT ||
@@ -49,21 +49,29 @@ bool VK_image::init(
 
     VkResult result = vkCreateImage(device->handle, &imageInfo, nullptr, &handle);
     if (result != VK_SUCCESS) {
-        return false;
+        throw std::runtime_error("Failed to create image");
     }
 
     VkMemoryRequirements memReqs;
     vkGetImageMemoryRequirements(device->handle, handle, &memReqs);
     sizeInBytes = static_cast<uint32_t>(memReqs.size);
 
-    uint32_t memoryTypeIndex = device->physdev.find_first_memtype_supports(
-        memoryFlags, 
-        memReqs.memoryTypeBits
-    );
+    if (memType.index == UINT32_MAX) {
+        memoryFlags = memType.flags;
+        memoryTypeIndex = device->physdev.find_first_memtype_supports(
+            memType.flags,
+            memReqs.memoryTypeBits
+        );
+    } else {
+        if ((memReqs.memoryTypeBits & (1u << memType.index)) == 0) {
+            throw std::runtime_error("Requested memory type index is not supported by buffer");
+        }
+        memoryFlags = device->physdev.flags_of_memory_type_index(memType.index);
+        memoryTypeIndex = memType.index;
+    }
+
     if (memoryTypeIndex == UINT32_MAX) {
-        vkDestroyImage(device->handle, handle, nullptr);
-        handle = VK_NULL_HANDLE;
-        return false;
+        throw std::runtime_error("Failed to get desired memory type index");
     }
 
     VkMemoryAllocateInfo allocInfo = {};
@@ -73,18 +81,12 @@ bool VK_image::init(
 
     result = vkAllocateMemory(device->handle, &allocInfo, nullptr, &memory);
     if (result != VK_SUCCESS) {
-        vkDestroyImage(device->handle, handle, nullptr);
-        handle = VK_NULL_HANDLE;
-        return false;
+        throw std::runtime_error("Failed to allocate memory");
     }
 
     result = vkBindImageMemory(device->handle, handle, memory, 0);
     if (result != VK_SUCCESS) {
-        vkFreeMemory(device->handle, memory, nullptr);
-        vkDestroyImage(device->handle, handle, nullptr);
-        handle = VK_NULL_HANDLE;
-        memory = VK_NULL_HANDLE;
-        return false;
+        throw std::runtime_error("Failed to bind image memory");
     }
 
     VkImageViewCreateInfo viewInfo = {};
@@ -104,11 +106,7 @@ bool VK_image::init(
 
     result = vkCreateImageView(device->handle, &viewInfo, nullptr, &view);
     if (result != VK_SUCCESS) {
-        vkFreeMemory(device->handle, memory, nullptr);
-        vkDestroyImage(device->handle, handle, nullptr);
-        handle = VK_NULL_HANDLE;
-        memory = VK_NULL_HANDLE;
-        return false;
+        throw std::runtime_error("Failed to create image view");
     }
 
     currentImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -248,10 +246,12 @@ void VK_image::write(
     size_t copySize = (sizeMax > 0 && sizeMax < sizeInBytes) ? sizeMax : sizeInBytes;
 
     VK_buffer stagingBuffer;
+    VK_createInfo_memType memType;
+    memType.flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     if (!stagingBuffer.init(device_ptr, 
         copySize, 
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+        memType)) {
         throw std::runtime_error("Failed to create staging buffer");
     }
 
@@ -472,9 +472,11 @@ std::shared_ptr<std::vector<uint8_t>> VK_image::readback() {
     }
 
     VK_buffer stagingBuffer;
+    VK_createInfo_memType memType;
+    memType.flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     if (!stagingBuffer.init(device_ptr, sizeInBytes, 
         VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+        memType)) {
         return result;
     }
 

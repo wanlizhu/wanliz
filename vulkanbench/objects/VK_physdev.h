@@ -18,6 +18,7 @@ struct VK_physdev {
     bool init(int idx);
     void deinit();
 
-    uint32_t find_first_queue_family_supports(VkQueueFlags flags, bool presenting);
-    uint32_t find_first_memtype_supports(VkMemoryPropertyFlags flags, uint32_t filters = UINT32_MAX, bool exclusive = false);
+    uint32_t find_first_queue_family_supports(VkQueueFlags flags, bool presenting) const;
+    uint32_t find_first_memtype_supports(VkMemoryPropertyFlags flags, uint32_t filters = UINT32_MAX, bool exclusive = false) const;
+    VkMemoryPropertyFlags flags_of_memory_type_index(uint32_t index) const;
 };

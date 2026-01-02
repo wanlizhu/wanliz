@@ -97,8 +97,13 @@ private:
     bool m_gpu_time_acquired = false;
 };
 
-struct VK_gpu_referred_object {
+struct VK_refcounted_object {
     uint32_t refcount = 0;
+};
+
+struct VK_createInfo_memType {
+    VkMemoryPropertyFlags flags = 0; // Use flags only if index is invalid
+    uint32_t index = UINT32_MAX; // Try to use index first
 };
 
 std::string VkResult_str(VkResult result);

@@ -7,8 +7,7 @@ bool VK_compute_pipeline::init(
     const VK_shader& shader
 ) {
     if (dev_ptr == nullptr || shader.handle == VK_NULL_HANDLE) {
-        std::cerr << "Invalid device or shader" << std::endl;
-        return false;
+        throw std::runtime_error("Invalid device or shader");
     }
 
     device_ptr = dev_ptr;
@@ -36,8 +35,7 @@ bool VK_compute_pipeline::init(
 
     VkResult result = vkCreateDescriptorSetLayout(device_ptr->handle, &descSetLayoutInfo, nullptr, &descSetLayout);
     if (result != VK_SUCCESS) {
-        std::cerr << "Failed to create descriptor set layout" << std::endl;
-        return false;
+        throw std::runtime_error("Failed to create descriptor set layout");
     }
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
@@ -49,10 +47,7 @@ bool VK_compute_pipeline::init(
 
     result = vkCreatePipelineLayout(device_ptr->handle, &pipelineLayoutInfo, nullptr, &layout);
     if (result != VK_SUCCESS) {
-        std::cerr << "Failed to create pipeline layout" << std::endl;
-        vkDestroyDescriptorSetLayout(device_ptr->handle, descSetLayout, nullptr);
-        descSetLayout = VK_NULL_HANDLE;
-        return false;
+        throw std::runtime_error("Failed to create pipeline layout");
     }
 
     VkComputePipelineCreateInfo pipelineInfo = {};
@@ -65,12 +60,7 @@ bool VK_compute_pipeline::init(
 
     result = vkCreateComputePipelines(device_ptr->handle, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &handle);
     if (result != VK_SUCCESS) {
-        std::cerr << "Failed to create compute pipeline" << std::endl;
-        vkDestroyPipelineLayout(device_ptr->handle, layout, nullptr);
-        vkDestroyDescriptorSetLayout(device_ptr->handle, descSetLayout, nullptr);
-        layout = VK_NULL_HANDLE;
-        descSetLayout = VK_NULL_HANDLE;
-        return false;
+        throw std::runtime_error("Failed to create compute pipeline");
     }
 
     descPool = VK_NULL_HANDLE;
@@ -98,14 +88,7 @@ bool VK_compute_pipeline::init(
 
         result = vkCreateDescriptorPool(device_ptr->handle, &poolInfo, nullptr, &descPool);
         if (result != VK_SUCCESS) {
-            std::cerr << "Failed to create descriptor pool" << std::endl;
-            vkDestroyPipeline(device_ptr->handle, handle, nullptr);
-            vkDestroyPipelineLayout(device_ptr->handle, layout, nullptr);
-            vkDestroyDescriptorSetLayout(device_ptr->handle, descSetLayout, nullptr);
-            handle = VK_NULL_HANDLE;
-            layout = VK_NULL_HANDLE;
-            descSetLayout = VK_NULL_HANDLE;
-            return false;
+            throw std::runtime_error("Failed to create descriptor pool");
         }
 
         VkDescriptorSetAllocateInfo allocInfo = {};
@@ -116,16 +99,7 @@ bool VK_compute_pipeline::init(
 
         result = vkAllocateDescriptorSets(device_ptr->handle, &allocInfo, &descSet);
         if (result != VK_SUCCESS) {
-            std::cerr << "Failed to allocate descriptor set" << std::endl;
-            vkDestroyDescriptorPool(device_ptr->handle, descPool, nullptr);
-            vkDestroyPipeline(device_ptr->handle, handle, nullptr);
-            vkDestroyPipelineLayout(device_ptr->handle, layout, nullptr);
-            vkDestroyDescriptorSetLayout(device_ptr->handle, descSetLayout, nullptr);
-            descPool = VK_NULL_HANDLE;
-            handle = VK_NULL_HANDLE;
-            layout = VK_NULL_HANDLE;
-            descSetLayout = VK_NULL_HANDLE;
-            return false;
+            throw std::runtime_error("Failed to allocate descriptor set");
         }
     }
 

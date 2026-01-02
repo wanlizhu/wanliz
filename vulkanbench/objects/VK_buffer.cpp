@@ -2,17 +2,17 @@
 #include "VK_common.h"
 #include "VK_image.h"
 #include "VK_device.h"
+#include <cstdint>
 
 bool VK_buffer::init(
     VK_device* device, 
     size_t size,
     VkBufferUsageFlags usageFlags, 
-    VkMemoryPropertyFlags memoryFlags
+    VK_createInfo_memType memType
 ) {
     this->device_ptr = device;
     this->sizeInBytes = size;
     this->usageFlags = usageFlags;
-    this->memoryFlags = memoryFlags;
 
     VkBufferCreateInfo bufferInfo = {};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -22,20 +22,28 @@ bool VK_buffer::init(
 
     VkResult result = vkCreateBuffer(device->handle, &bufferInfo, nullptr, &handle);
     if (result != VK_SUCCESS) {
-        return false;
+        throw std::runtime_error("Failed to create buffer");
     }
 
     VkMemoryRequirements memReqs;
     vkGetBufferMemoryRequirements(device->handle, handle, &memReqs);
 
-    uint32_t memoryTypeIndex = device->physdev.find_first_memtype_supports(
-        memoryFlags, 
-        memReqs.memoryTypeBits
-    );
+    if (memType.index == UINT32_MAX) {
+        memoryFlags = memType.flags;
+        memoryTypeIndex = device->physdev.find_first_memtype_supports(
+            memType.flags,
+            memReqs.memoryTypeBits
+        );
+    } else {
+        if ((memReqs.memoryTypeBits & (1u << memType.index)) == 0) {
+            throw std::runtime_error("Requested memory type index is not supported by buffer");
+        }
+        memoryFlags = device->physdev.flags_of_memory_type_index(memType.index);
+        memoryTypeIndex = memType.index;
+    }
+
     if (memoryTypeIndex == UINT32_MAX) {
-        vkDestroyBuffer(device->handle, handle, nullptr);
-        handle = VK_NULL_HANDLE;
-        return false;
+        throw std::runtime_error("Failed to get desired memory type index");
     }
 
     VkMemoryAllocateInfo allocInfo = {};
@@ -45,18 +53,12 @@ bool VK_buffer::init(
 
     result = vkAllocateMemory(device->handle, &allocInfo, nullptr, &memory);
     if (result != VK_SUCCESS) {
-        vkDestroyBuffer(device->handle, handle, nullptr);
-        handle = VK_NULL_HANDLE;
-        return false;
+        throw std::runtime_error("Failed to allocate memory");
     }
 
     result = vkBindBufferMemory(device->handle, handle, memory, 0);
     if (result != VK_SUCCESS) {
-        vkFreeMemory(device->handle, memory, nullptr);
-        vkDestroyBuffer(device->handle, handle, nullptr);
-        handle = VK_NULL_HANDLE;
-        memory = VK_NULL_HANDLE;
-        return false;
+        throw std::runtime_error("Failed to bind buffer memory");
     }
 
     return true;
@@ -307,9 +309,6 @@ std::shared_ptr<std::vector<uint8_t>> VK_buffer::readback() {
     }
 
     VkCommandBuffer internal = device_ptr->cmdqueue.alloc_and_begin_command_buffer("VK_buffer::readback");
-    if (internal == VK_NULL_HANDLE) {
-        return result;
-    }
 
     VkBufferCreateInfo stagingBufferInfo = {};
     stagingBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -320,42 +319,34 @@ std::shared_ptr<std::vector<uint8_t>> VK_buffer::readback() {
     VkBuffer stagingBuffer = VK_NULL_HANDLE;
     VkResult vkResult = vkCreateBuffer(device_ptr->handle, &stagingBufferInfo, nullptr, &stagingBuffer);
     if (vkResult != VK_SUCCESS) {
-        device_ptr->cmdqueue.submit_and_wait_command_buffer(internal);
-        return result;
+        throw std::runtime_error("Failed to create staging buffer for readback");
     }
 
     VkMemoryRequirements memReqs;
     vkGetBufferMemoryRequirements(device_ptr->handle, stagingBuffer, &memReqs);
 
-    uint32_t memoryTypeIndex = device_ptr->physdev.find_first_memtype_supports(
+    uint32_t stagingMemoryTypeIndex = device_ptr->physdev.find_first_memtype_supports(
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         memReqs.memoryTypeBits
     );
-    if (memoryTypeIndex == UINT32_MAX) {
-        vkDestroyBuffer(device_ptr->handle, stagingBuffer, nullptr);
-        device_ptr->cmdqueue.submit_and_wait_command_buffer(internal);
-        return result;
+    if (stagingMemoryTypeIndex == UINT32_MAX) {
+        throw std::runtime_error("Failed to find suitable memory type for staging buffer");
     }
 
     VkMemoryAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memReqs.size;
-    allocInfo.memoryTypeIndex = memoryTypeIndex;
+    allocInfo.memoryTypeIndex = stagingMemoryTypeIndex;
 
     VkDeviceMemory stagingMemory;
     vkResult = vkAllocateMemory(device_ptr->handle, &allocInfo, nullptr, &stagingMemory);
     if (vkResult != VK_SUCCESS) {
-        vkDestroyBuffer(device_ptr->handle, stagingBuffer, nullptr);
-        device_ptr->cmdqueue.submit_and_wait_command_buffer(internal);
-        return result;
+        throw std::runtime_error("Failed to allocate staging memory for readback");
     }
 
     vkResult = vkBindBufferMemory(device_ptr->handle, stagingBuffer, stagingMemory, 0);
     if (vkResult != VK_SUCCESS) {
-        vkFreeMemory(device_ptr->handle, stagingMemory, nullptr);
-        vkDestroyBuffer(device_ptr->handle, stagingBuffer, nullptr);
-        device_ptr->cmdqueue.submit_and_wait_command_buffer(internal);
-        return result;
+        throw std::runtime_error("Failed to bind staging buffer memory for readback");
     }
 
     VkBufferCopy copyRegion = {};

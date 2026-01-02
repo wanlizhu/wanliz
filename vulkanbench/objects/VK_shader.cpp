@@ -9,7 +9,7 @@ bool VK_shader::init_from_glsl_string(
     const std::map<std::string, std::string>& macros
 ) {
     if (dev_ptr == nullptr) {
-        return false;
+        throw std::runtime_error("Device pointer is null");
     }
 
     device_ptr = dev_ptr;
@@ -37,14 +37,12 @@ bool VK_shader::init_from_glsl_string(
             kind = shaderc_glsl_tess_evaluation_shader;
             break;
         default:
-            std::cerr << "Unsupported shader stage" << std::endl;
-            return false;
+            throw std::runtime_error("Unsupported shader stage");
     }
 
     shaderc_compiler_t compiler = shaderc_compiler_initialize();
     if (!compiler) {
-        std::cerr << "Failed to initialize shaderc compiler" << std::endl;
-        return false;
+        throw std::runtime_error("Failed to initialize shaderc compiler");
     }
 
     shaderc_compile_options_t options = shaderc_compile_options_initialize();
@@ -62,11 +60,8 @@ bool VK_shader::init_from_glsl_string(
         compiler, glsl.c_str(), glsl.size(), kind, "shader", "main", options);
 
     if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
-        std::cerr << "Shader compilation failed: " << shaderc_result_get_error_message(result) << std::endl;
-        shaderc_result_release(result);
-        shaderc_compile_options_release(options);
-        shaderc_compiler_release(compiler);
-        return false;
+        std::string errorMsg = shaderc_result_get_error_message(result);
+        throw std::runtime_error("Shader compilation failed: " + errorMsg);
     }
 
     const uint32_t* spirv_data = reinterpret_cast<const uint32_t*>(shaderc_result_get_bytes(result));
@@ -84,7 +79,7 @@ bool VK_shader::init_from_glsl_string(
 
     VkResult vkResult = vkCreateShaderModule(device_ptr->handle, &createInfo, nullptr, &handle);
     if (vkResult != VK_SUCCESS) {
-        return false;
+        throw std::runtime_error("Failed to create shader module");
     }
 
     return true;
@@ -97,12 +92,12 @@ bool VK_shader::init_from_glsl_file(
     const std::map<std::string, std::string>& macros
 ) {
     if (dev_ptr == nullptr) {
-        return false;
+        throw std::runtime_error("Device pointer is null");
     }
 
     std::ifstream file(path);
     if (!file.is_open()) {
-        return false;
+        throw std::runtime_error("Failed to open shader file: " + path.string());
     }
 
     std::stringstream buffer;

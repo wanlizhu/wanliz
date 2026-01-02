@@ -4,8 +4,7 @@
 
 bool VK_queue::init(VK_device* dev_ptr, uint32_t family, bool presenting) {
     if (dev_ptr == nullptr) {
-        std::cerr << "Invalid device pointer" << std::endl;
-        return false;
+        throw std::runtime_error("Invalid device pointer");
     }
 
     device_ptr = dev_ptr;
@@ -22,20 +21,17 @@ bool VK_queue::init(VK_device* dev_ptr, uint32_t family, bool presenting) {
     if (family_index < queueFamilyCount) {
         properties = queueFamilies[family_index];
     } else {
-        std::cerr << "Invalid queue family index" << std::endl;
-        return false;
+        throw std::runtime_error("Invalid queue family index");
     }
 
     vkGetDeviceQueue(device_ptr->handle, family_index, 0, &handle);
     if (handle == VK_NULL_HANDLE) {
-        std::cerr << "Failed to get device queue" << std::endl;
-        return false;
+        throw std::runtime_error("Failed to get device queue");
     }
 
     create_command_pool();
     if (commandPool == VK_NULL_HANDLE) {
-        std::cerr << "Failed to create command pool" << std::endl;
-        return false;
+        throw std::runtime_error("Failed to create command pool");
     }
 
     return true;
@@ -66,14 +62,13 @@ void VK_queue::create_command_pool() {
 
     VkResult result = vkCreateCommandPool(device_ptr->handle, &poolInfo, nullptr, &commandPool);
     if (result != VK_SUCCESS) {
-        std::cerr << "Failed to create command pool" << std::endl;
+        throw std::runtime_error("Failed to create command pool");
     }
 }
 
 VkCommandBuffer VK_queue::alloc_and_begin_command_buffer(const std::string& name) {
     if (device_ptr == nullptr || commandPool == VK_NULL_HANDLE) {
-        std::cerr << "Cannot allocate command buffer: pool not created" << std::endl;
-        return VK_NULL_HANDLE;
+        throw std::runtime_error("Cannot allocate command buffer: pool not created");
     }
 
     VkCommandBufferAllocateInfo allocInfo = {};
@@ -85,8 +80,7 @@ VkCommandBuffer VK_queue::alloc_and_begin_command_buffer(const std::string& name
     VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
     VkResult result = vkAllocateCommandBuffers(device_ptr->handle, &allocInfo, &commandBuffer);
     if (result != VK_SUCCESS) {
-        std::cerr << "Failed to allocate command buffer" << std::endl;
-        return VK_NULL_HANDLE;
+        throw std::runtime_error("Failed to allocate command buffer");
     }
 
     if (!name.empty()) {
@@ -109,9 +103,7 @@ VkCommandBuffer VK_queue::alloc_and_begin_command_buffer(const std::string& name
 
     result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
     if (result != VK_SUCCESS) {
-        std::cerr << "Failed to begin command buffer" << std::endl;
-        vkFreeCommandBuffers(device_ptr->handle, commandPool, 1, &commandBuffer);
-        return VK_NULL_HANDLE;
+        throw std::runtime_error("Failed to begin command buffer");
     }
 
     return commandBuffer;
@@ -178,13 +170,12 @@ void VK_queue::cmdbuf_debug_range_end(VkCommandBuffer cmdbuf) {
 
 void VK_queue::submit_and_wait_command_buffer(VkCommandBuffer cmdbuf) {
     if (cmdbuf == VK_NULL_HANDLE || device_ptr == nullptr) {
-        return;
+        throw std::runtime_error("Invalid command buffer or device pointer");
     }
 
     VkResult result = vkEndCommandBuffer(cmdbuf);
     if (result != VK_SUCCESS) {
-        std::cerr << "Failed to end command buffer" << std::endl;
-        return;
+        throw std::runtime_error("Failed to end command buffer");
     }
 
     VkSubmitInfo submitInfo = {};

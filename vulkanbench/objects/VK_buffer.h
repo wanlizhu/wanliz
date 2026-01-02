@@ -1,20 +1,21 @@
 #pragma once
 #include "VK_common.h"
 
-struct VK_buffer : public VK_gpu_referred_object {
+struct VK_buffer : public VK_refcounted_object {
     VK_device* device_ptr = nullptr;
     VkBuffer handle = NULL;
     VkBufferUsageFlags usageFlags = 0;
     size_t sizeInBytes = 0;
     VkDeviceMemory memory = NULL;
     VkMemoryPropertyFlags memoryFlags = 0;
+    uint32_t memoryTypeIndex = UINT32_MAX;
 
     inline operator VkBuffer() const { return handle; }
     bool init(
         VK_device* device_ptr, 
         size_t sizeInBytes,
         VkBufferUsageFlags usageFlags, 
-        VkMemoryPropertyFlags memoryFlags
+        VK_createInfo_memType memType
     );
     void deinit();
     void write(const void* src, uint32_t sizeMax);  

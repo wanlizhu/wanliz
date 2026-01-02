@@ -11,8 +11,7 @@ bool VK_query_pool::init(VK_device* dev_ptr) {
 
     VkResult result = vkCreateQueryPool(device_ptr->handle, &queryPoolInfo, nullptr, &handle);
     if (result != VK_SUCCESS) {
-        std::cerr << "Failed to create timestamp query pool" << std::endl;
-        return false;
+        throw std::runtime_error("Failed to create timestamp query pool");
     }
 
     next_query_id = 0;

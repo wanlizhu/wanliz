@@ -57,6 +57,9 @@ function pi-upload() {
 }
 
 function vulkaninfo-grep-section {
+    if [[ -z $(which vulkaninfo) && -e $HOME/vulkaninfo ]]; then 
+        alias vulkaninfo="$HOME/vulkaninfo"
+    fi 
     vulkaninfo 2>/dev/null >/tmp/vulkaninfo
     rm -f /tmp/sections
     cat /tmp/vulkaninfo | grep -B1 -- === | grep -v -- = | grep -i "$1" | sort | uniq >>/tmp/sections

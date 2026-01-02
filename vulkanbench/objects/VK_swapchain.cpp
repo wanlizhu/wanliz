@@ -1,4 +1,5 @@
 #include "VK_swapchain.h"
+#include "VK_common.h"
 #include "VK_device.h"
 #include "VK_instance.h"
 
@@ -120,8 +121,7 @@ bool VK_swapchain::create_window() {
     );
 
     if (!hwnd) {
-        std::cerr << "Failed to create window" << std::endl;
-        return false;
+        throw std::runtime_error("Failed to create window");
     }
 
     SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
@@ -133,8 +133,7 @@ bool VK_swapchain::create_window() {
 #elif defined(__linux__)
     Display* display = XOpenDisplay(nullptr);
     if (!display) {
-        std::cerr << "Failed to open X11 display" << std::endl;
-        return false;
+        throw std::runtime_error("Failed to open X11 display");
     }
 
     x11_display = display;
@@ -161,8 +160,7 @@ bool VK_swapchain::create_window() {
     );
 
     if (!window) {
-        std::cerr << "Failed to create X11 window" << std::endl;
-        return false;
+        throw std::runtime_error("Failed to create X11 window");
     }
 
     XStoreName(display, window, "Vulkan Stress Test");
@@ -181,8 +179,7 @@ bool VK_swapchain::create_window() {
 bool VK_swapchain::create_surface() {
 #ifdef _WIN32
     if (win32_hwnd == nullptr) {
-        std::cerr << "Window not created" << std::endl;
-        return false;
+        throw std::runtime_error("Window not created");
     }
 
     VkWin32SurfaceCreateInfoKHR createInfo = {};
@@ -192,20 +189,17 @@ bool VK_swapchain::create_surface() {
 
     auto vkCreateWin32SurfaceKHR = reinterpret_cast<PFN_vkCreateWin32SurfaceKHR>(vkGetInstanceProcAddr(VK_instance::GET().handle, "vkCreateWin32SurfaceKHR"));
     if (!vkCreateWin32SurfaceKHR) {
-        std::cerr << "Failed to load vkCreateWin32SurfaceKHR" << std::endl;
-        return false;
+        throw std::runtime_error("Failed to load vkCreateWin32SurfaceKHR");
     }
 
     VkResult result = vkCreateWin32SurfaceKHR(VK_instance::GET().handle, &createInfo, nullptr, &surface);
     if (result != VK_SUCCESS) {
-        std::cerr << "Failed to create Win32 surface" << std::endl;
-        return false;
+        throw std::runtime_error("Failed to create Win32 surface");
     }
 
 #elif defined(__linux__)
     if (x11_display == nullptr || x11_window == 0) {
-        std::cerr << "Window not created" << std::endl;
-        return false;
+        throw std::runtime_error("Window not created");
     }
 
     VkXlibSurfaceCreateInfoKHR createInfo = {};
@@ -215,19 +209,16 @@ bool VK_swapchain::create_surface() {
 
     auto vkCreateXlibSurfaceKHR = reinterpret_cast<PFN_vkCreateXlibSurfaceKHR>(vkGetInstanceProcAddr(VK_instance::GET().handle, "vkCreateXlibSurfaceKHR"));
     if (!vkCreateXlibSurfaceKHR) {
-        std::cerr << "Failed to load vkCreateXlibSurfaceKHR" << std::endl;
-        return false;
+        throw std::runtime_error("Failed to load vkCreateXlibSurfaceKHR");
     }
 
     VkResult result = vkCreateXlibSurfaceKHR(VK_instance::GET().handle, &createInfo, nullptr, &surface);
     if (result != VK_SUCCESS) {
-        std::cerr << "Failed to create Xlib surface" << std::endl;
-        return false;
+        throw std::runtime_error("Failed to create Xlib surface");
     }
 
 #else
-    std::cerr << "Unsupported platform for surface creation" << std::endl;
-    return false;
+    throw std::runtime_error("Unsupported platform for surface creation");
 #endif
 
     return true;
@@ -251,8 +242,7 @@ bool VK_swapchain::create_swapchain() {
     uint32_t formatCount;
     vkGetPhysicalDeviceSurfaceFormatsKHR(device_ptr->physdev.handle, surface, &formatCount, nullptr);
     if (formatCount == 0) {
-        std::cerr << "No surface formats available" << std::endl;
-        return false;
+        throw std::runtime_error("No surface formats available");
     }
 
     std::vector<VkSurfaceFormatKHR> formats(formatCount);
@@ -292,8 +282,7 @@ bool VK_swapchain::create_swapchain() {
 
     VkResult result = vkCreateSwapchainKHR(device_ptr->handle, &createInfo, nullptr, &handle);
     if (result != VK_SUCCESS) {
-        std::cerr << "Failed to create swapchain" << std::endl;
-        return false;
+        throw std::runtime_error("Failed to create swapchain");
     }
 
     return true;
@@ -309,13 +298,14 @@ bool VK_swapchain::create_backingstores() {
 
     bool hasDepthStencil = (depthstencilFormat != VK_FORMAT_UNDEFINED);
     if (hasDepthStencil) {
+        VK_createInfo_memType memType;
+        memType.flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         if (!depthstencilImage.init(
                 device_ptr, depthstencilFormat, swapchainExtent,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                memType 
             )) {
-            std::cerr << "Failed to create depth stencil image" << std::endl;
-            return false;
+            throw std::runtime_error("Failed to create depth stencil image");
         }
     }
 
@@ -370,8 +360,7 @@ bool VK_swapchain::create_backingstores() {
 
     VkResult result = vkCreateRenderPass(device_ptr->handle, &renderPassInfo, nullptr, &defaultRenderPass);
     if (result != VK_SUCCESS) {
-        std::cerr << "Failed to create render pass" << std::endl;
-        return false;
+        throw std::runtime_error("Failed to create render pass");
     }
 
     for (size_t i = 0; i < backingstores.size(); i++) {
@@ -391,8 +380,7 @@ bool VK_swapchain::create_backingstores() {
 
         result = vkCreateImageView(device_ptr->handle, &viewInfo, nullptr, &backingstores[i].imageView_color0);
         if (result != VK_SUCCESS) {
-            std::cerr << "Failed to create color image view" << std::endl;
-            return false;
+            throw std::runtime_error("Failed to create color image view");
         }
 
         if (hasDepthStencil) {
@@ -415,8 +403,7 @@ bool VK_swapchain::create_backingstores() {
 
         result = vkCreateFramebuffer(device_ptr->handle, &framebufferInfo, nullptr, &backingstores[i].framebuffer);
         if (result != VK_SUCCESS) {
-            std::cerr << "Failed to create framebuffer" << std::endl;
-            return false;
+            throw std::runtime_error("Failed to create framebuffer");
         }
     }
 
@@ -454,8 +441,7 @@ void VK_swapchain::delete_swapchain_resources() {
 
 bool VK_swapchain::init(VK_device* dev_ptr, int window_width, int window_height) {
     if (dev_ptr == nullptr) {
-        std::cerr << "Invalid device pointer" << std::endl;
-        return false;
+        throw std::runtime_error("Invalid device pointer");
     }
 
     device_ptr = dev_ptr;
@@ -478,28 +464,23 @@ bool VK_swapchain::init(VK_device* dev_ptr, int window_width, int window_height)
 #endif
 
     if (!device_ptr->cmdqueue.supportPresenting) {
-        std::cerr << "Command queue does not support presenting" << std::endl;
-        return false;
+        throw std::runtime_error("Command queue does not support presenting");
     }
 
     if (!create_window()) {
-        deinit();
-        return false;
+        throw std::runtime_error("Failed to create window");
     }
 
     if (!create_surface()) {
-        deinit();
-        return false;
+        throw std::runtime_error("Failed to create surface");
     }
 
     if (!create_swapchain()) {
-        deinit();
-        return false;
+        throw std::runtime_error("Failed to create swapchain");
     }
 
     if (!create_backingstores()) {
-        deinit();
-        return false;
+        throw std::runtime_error("Failed to create backingstores");
     }
 
     VkFenceCreateInfo fenceInfo = {};
@@ -508,9 +489,7 @@ bool VK_swapchain::init(VK_device* dev_ptr, int window_width, int window_height)
 
     VkResult result = vkCreateFence(device_ptr->handle, &fenceInfo, nullptr, &imageAvailableFence);
     if (result != VK_SUCCESS) {
-        std::cerr << "Failed to create image available fence" << std::endl;
-        deinit();
-        return false;
+        throw std::runtime_error("Failed to create image available fence");
     }
 
     currentImageIndex = UINT32_MAX;
@@ -630,7 +609,7 @@ void VK_swapchain::present() {
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         on_window_resized();
     } else if (result != VK_SUCCESS) {
-        std::cerr << "Failed to present swapchain image" << std::endl;
+        throw std::runtime_error("Failed to present swapchain image");
     }
 
     vkQueueWaitIdle(device_ptr->cmdqueue.handle);

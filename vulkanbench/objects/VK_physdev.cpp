@@ -91,7 +91,7 @@ bool VK_physdev::init(int idx) {
 
 void VK_physdev::deinit() {}
 
-uint32_t VK_physdev::find_first_queue_family_supports(VkQueueFlags flags, bool presenting) {
+uint32_t VK_physdev::find_first_queue_family_supports(VkQueueFlags flags, bool presenting) const {
     VkSurfaceKHR tempSurface = VK_NULL_HANDLE;
 #ifdef __linux__
     Display* display = nullptr;
@@ -193,7 +193,7 @@ uint32_t VK_physdev::find_first_queue_family_supports(VkQueueFlags flags, bool p
     return result;
 }
 
-uint32_t VK_physdev::find_first_memtype_supports(VkMemoryPropertyFlags flags, uint32_t filters, bool exclusive) {
+uint32_t VK_physdev::find_first_memtype_supports(VkMemoryPropertyFlags flags, uint32_t filters, bool exclusive) const {
     for (uint32_t i = 0; i < memory.memoryTypeCount; i++) {
         if ((filters & (1 << i)) == 0) {
             continue;
@@ -207,4 +207,11 @@ uint32_t VK_physdev::find_first_memtype_supports(VkMemoryPropertyFlags flags, ui
         }
     }
     return UINT32_MAX;
+}
+
+VkMemoryPropertyFlags VK_physdev::flags_of_memory_type_index(uint32_t index) const {
+    if (index >= memory.memoryTypeCount) {
+        throw std::runtime_error("Memory type index out of range");
+    }
+    return memory.memoryTypes[index].propertyFlags;
 }
