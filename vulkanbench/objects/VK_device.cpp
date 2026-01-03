@@ -33,7 +33,7 @@ static int get_device_score(const VK_physdev& dev) {
     return score;
 }
 
-bool VK_device::init(int index, uint32_t queueFlags, int window_width, int window_height) {
+void VK_device::init(int index, uint32_t queueFlags, int window_width, int window_height) {
     bool presenting = (window_width > 0 && window_height > 0);
 
     if (index < 0) {
@@ -64,9 +64,7 @@ bool VK_device::init(int index, uint32_t queueFlags, int window_width, int windo
         index = bestIndex;
     }
 
-    if (!physdev.init(index)) {
-        throw std::runtime_error("Failed to initialize physical device");
-    }
+    physdev.init(index);
     
     std::cout << "Selected GPU: " << physdev.properties.deviceName << std::endl;
 
@@ -117,14 +115,10 @@ bool VK_device::init(int index, uint32_t queueFlags, int window_width, int windo
         throw std::runtime_error("Failed to create logical device");
     }
 
-    if (!cmdqueue.init(this, queueFamily, presenting)) {
-        throw std::runtime_error("Failed to initialize command queue");
-    }
+    cmdqueue.init(this, queueFamily, presenting);
 
     if (presenting) {
-        if (!swapchain.init(this, window_width, window_height)) {
-            throw std::runtime_error("Failed to initialize swapchain");
-        }
+        swapchain.init(this, window_width, window_height);
     }
 
     querypool.init(this);
@@ -136,8 +130,6 @@ bool VK_device::init(int index, uint32_t queueFlags, int window_width, int windo
         << "   Vulkan: " << VK_VERSION_MAJOR(physdev.properties.apiVersion) << "." << VK_VERSION_MINOR(physdev.properties.apiVersion) << "." << VK_VERSION_PATCH(physdev.properties.apiVersion) << "\n"
         << "Max Alloc: " << (physdev.maxAllocSize / (1024 * 1024)) << " MB" << "\n"
         << std::endl;
-
-    return true;
 }
 
 void VK_device::deinit() {

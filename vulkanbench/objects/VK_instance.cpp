@@ -23,7 +23,7 @@ VK_instance& VK_instance::GET() {
     return instance;
 }
 
-bool VK_instance::init() {
+void VK_instance::init() {
     uint32_t maxApiVersion = VK_API_VERSION_1_3;
     auto _vkEnumerateInstanceVersion = reinterpret_cast<PFN_vkEnumerateInstanceVersion>(vkGetInstanceProcAddr(NULL, "vkEnumerateInstanceVersion"));
     if (_vkEnumerateInstanceVersion) {
@@ -135,8 +135,6 @@ bool VK_instance::init() {
             }
         }
     }
-
-    return true;
 }
 
 void VK_instance::deinit() {

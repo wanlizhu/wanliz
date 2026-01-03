@@ -2,7 +2,7 @@
 #include "VK_device.h"
 #include "VK_instance.h"
 
-bool VK_queue::init(VK_device* dev_ptr, uint32_t family, bool presenting) {
+void VK_queue::init(VK_device* dev_ptr, uint32_t family, bool presenting) {
     if (dev_ptr == nullptr) {
         throw std::runtime_error("Invalid device pointer");
     }
@@ -33,8 +33,6 @@ bool VK_queue::init(VK_device* dev_ptr, uint32_t family, bool presenting) {
     if (commandPool == VK_NULL_HANDLE) {
         throw std::runtime_error("Failed to create command pool");
     }
-
-    return true;
 }
 
 void VK_queue::deinit() {

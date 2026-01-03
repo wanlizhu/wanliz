@@ -79,41 +79,6 @@ if [[ $sudo_access == yes && $EUID != 0 ]]; then
     fi
 fi 
 
-if [[ -z $sudo_access || -d /mnt/c/Users/ || $inside_container == yes ]]; then 
-    download_bashrc=no
-else 
-    if [[ ! -f $HOME/.bashrc_wsl2 ]]; then 
-        read -p "Download ~/.bashrc_wsl2 from remote workspace? [Yes/no]: " download_bashrc
-    else
-        read -p "Download ~/.bashrc_wsl2 (override) from remote workspace? [Yes/no]: " download_bashrc
-    fi 
-fi 
-if [[ $download_bashrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-    if [[ -f $HOME/.bashrc_wsl2_ip ]]; then 
-        if ! sudo ping -c 1 -W 3 "$(cat $HOME/.bashrc_wsl2_ip 2>/dev/null)"; then 
-            sudo rm -f $HOME/.bashrc_wsl2_ip
-        fi  
-    fi 
-    if [[ ! -f $HOME/.bashrc_wsl2_ip ]]; then 
-        read -p "Remote server IP: " remote_ip
-        echo "$remote_ip" > $HOME/.bashrc_wsl2_ip
-    fi 
-    remote_ip=$(cat $HOME/.bashrc_wsl2_ip)
-
-    if ! ssh -o BatchMode=yes -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o ConnectTimeout=5 wanliz@$remote_ip 'true' &>/dev/null; then 
-        if [[ ! -f $HOME/.ssh/id_ed25519  ]]; then 
-            ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
-        fi 
-        ssh-copy-id wanliz@$remote_ip
-    fi 
-
-    rsync -ah --progress wanliz@$remote_ip:/home/wanliz/.bashrc $HOME/.bashrc_wsl2 && {
-        awk -v m='# wanliz env vars' 'found {print} $0==m {found=1; print}' $HOME/.bashrc_wsl2 >/tmp/bashrc_wsl2 &&
-        mv -f /tmp/bashrc_wsl2 $HOME/.bashrc_wsl2 &&
-        echo "Downloaded $HOME/.bashrc_wsl2"
-    } || echo "Failed to download ~/.bashrc_wsl2 from $remote_ip"
-fi 
-
 if [[ -z $sudo_access || $inside_container == yes ]]; then 
     ssh_config=no
 else 
@@ -254,7 +219,7 @@ fi
 read -p "Install profiling scripts? [Yes/no]: " install_symlinks 
 if [[ $install_symlinks =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     mkdir -p $HOME/.local/bin
-    if [[ -d /home/wanliz/wanliz ]]; then 
+    if [[ -d $HOME/wanliz ]]; then 
         read -e -i $HOME/wanliz -p "Confirm scripts folder: " scripts_dir
     else
         read -p "Set scripts folder: " scripts_dir

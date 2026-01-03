@@ -64,6 +64,8 @@
 #undef False
 #endif
 
+#define STR_EQUAL(a, b) ((a == nullptr || b == nullptr) ? false : (strcmp(a, b) == 0))
+
 struct VK_device;
 struct VK_buffer;
 struct VK_image;
@@ -74,6 +76,10 @@ enum class VK_color {
     RED,
     GREEN,
     BLUE
+};
+
+struct VK_config {
+    static std::string pi_capture_mode;
 };
 
 struct VK_gpu_timer {
@@ -97,14 +103,15 @@ private:
     bool m_gpu_time_acquired = false;
 };
 
-struct VK_refcounted_object {
-    uint32_t refcount = 0;
-};
-
 struct VK_createInfo_memType {
     VkMemoryPropertyFlags flags = 0; // Use flags only if index is invalid
     uint32_t index = UINT32_MAX; // Try to use index first
 };
+
+bool str_starts_with(const char* str, const char* substr);
+bool str_ends_with(const char* str, const char* substr);
+bool str_contains(const char* str, const char* substr);
+const char* str_after_rchar(const char* str, char chr);
 
 std::string VkResult_str(VkResult result);
 std::string VkMemoryPropertyFlags_str(VkMemoryPropertyFlags flags, bool short_str);

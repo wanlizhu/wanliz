@@ -12,6 +12,6 @@ struct VK_device {
     VK_query_pool querypool;
 
     inline operator VkDevice() const { return handle; }
-    bool init(int index, uint32_t queueFlags, int window_width, int window_height);
+    void init(int index, uint32_t queueFlags, int window_width, int window_height);
     void deinit();
 };

@@ -11,15 +11,14 @@ std::vector<VK_physdev> VK_physdev::LIST() {
 
     for (uint32_t i = 0; i < count; i++) {
         VK_physdev d;
-        if (d.init(i)) {
-            out.push_back(d);
-        }
+        d.init(i);
+        out.push_back(d);
     }
 
     return out;
 }
 
-bool VK_physdev::init(int idx) {
+void VK_physdev::init(int idx) {
     handle = VK_NULL_HANDLE;
     index = UINT32_MAX;
     features = {};
@@ -85,8 +84,6 @@ bool VK_physdev::init(int idx) {
     vkGetPhysicalDeviceProperties2(handle, &props2);
 
     maxAllocSize = maintenance3.maxMemoryAllocationSize;
-
-    return true;
 }
 
 void VK_physdev::deinit() {}

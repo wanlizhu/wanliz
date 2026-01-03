@@ -1,10 +1,13 @@
 #include "VK_TestCase.h"
+#include "objects/VK_common.h"
 
 int main(int argc, char **argv) {
-    VK_device device;
-    if (!device.init(-1, VK_QUEUE_TRANSFER_BIT, 0, 0)) {
-        throw std::runtime_error("Failed to init logical device");
+    if (argc == 2 && str_starts_with(argv[1], "-pi=")) {
+        VK_config::pi_capture_mode = str_after_rchar(argv[1], '=');
     }
+
+    VK_device device;
+    device.init(-1, VK_QUEUE_TRANSFER_BIT, 0, 0);
 
     VK_TestCase_buffercopy test_b2b;
     VK_TestCase_imagebuffercopy test_i2b;

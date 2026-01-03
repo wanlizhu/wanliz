@@ -4,7 +4,7 @@
 #include "VK_device.h"
 #include "VK_compute_pipeline.h"
 
-bool VK_image::init(
+void VK_image::init(
     VK_device* device, 
     VkFormat format, 
     VkExtent2D extent, 
@@ -110,13 +110,9 @@ bool VK_image::init(
     }
 
     currentImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    return true;
 }
 
 void VK_image::deinit() {
-    if (refcount > 0) {
-        vkDeviceWaitIdle(device_ptr->handle);
-    }
     if (view != VK_NULL_HANDLE) {
         vkDestroyImageView(device_ptr->handle, view, nullptr);
         view = VK_NULL_HANDLE;
@@ -239,21 +235,17 @@ void VK_image::write(
     const void* src, 
     size_t sizeMax
 ) {
-    if (refcount > 0) {
-        throw std::runtime_error("GPU refcount is not zero");
-    }
-
     size_t copySize = (sizeMax > 0 && sizeMax < sizeInBytes) ? sizeMax : sizeInBytes;
 
     VK_buffer stagingBuffer;
     VK_createInfo_memType memType;
     memType.flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    if (!stagingBuffer.init(device_ptr, 
-        copySize, 
+    stagingBuffer.init(
+        device_ptr,
+        copySize,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        memType)) {
-        throw std::runtime_error("Failed to create staging buffer");
-    }
+        memType
+    );
 
     void* data = nullptr;
     VkResult result = vkMapMemory(device_ptr->handle, stagingBuffer.memory, 0, copySize, 0, &data);
@@ -319,10 +311,6 @@ void VK_image::write_noise() {
 }
 
 VK_gpu_timer VK_image::copy_from_buffer(VK_buffer& src) {
-    if (refcount > 0 || src.refcount > 0) {
-        throw std::runtime_error("GPU refcount is not zero");
-    }
-
     VK_gpu_timer timer(device_ptr);
     timer.cpu_begin();
 
@@ -381,10 +369,6 @@ VK_gpu_timer VK_image::copy_from_buffer(VK_buffer& src) {
 }
 
 VK_gpu_timer VK_image::copy_from_image(VK_image& src) {
-    if (refcount > 0 || src.refcount > 0) {
-        throw std::runtime_error("GPU refcount is not zero");
-    }
-
     VK_gpu_timer timer(device_ptr);
     timer.cpu_begin();
 
@@ -455,10 +439,6 @@ VK_gpu_timer VK_image::copy_from_image(VK_image& src) {
 }
 
 std::shared_ptr<std::vector<uint8_t>> VK_image::readback() {
-    if (refcount > 0) {
-        throw std::runtime_error("GPU refcount is not zero");
-    }
-
     auto result = std::make_shared<std::vector<uint8_t>>(sizeInBytes);
 
     if (memoryFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
@@ -474,11 +454,12 @@ std::shared_ptr<std::vector<uint8_t>> VK_image::readback() {
     VK_buffer stagingBuffer;
     VK_createInfo_memType memType;
     memType.flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    if (!stagingBuffer.init(device_ptr, sizeInBytes, 
+    stagingBuffer.init(
+        device_ptr, 
+        sizeInBytes,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        memType)) {
-        return result;
-    }
+        memType
+    );
 
     VkCommandBuffer internal = device_ptr->cmdqueue.alloc_and_begin_command_buffer("VK_image::readback");
     if (internal == VK_NULL_HANDLE) {
@@ -526,3 +507,51 @@ std::shared_ptr<std::vector<uint8_t>> VK_image::readback() {
     return result;
 }
 
+void VK_image_group::init(
+    size_t image_count,
+    VK_device* device_ptr,
+    VkFormat format,
+    VkExtent2D extent,
+    VkImageUsageFlags usageFlags,
+    VK_createInfo_memType memType,
+    VkImageTiling tiling
+) {
+    images.resize(image_count);
+    for (size_t i = 0; i < image_count; i++) {
+        images[i].init(
+            device_ptr,
+            format,
+            extent,
+            usageFlags,
+            memType,
+            tiling
+        );
+    }
+}
+
+void VK_image_group::deinit() {
+    for (auto& image : images) {
+        image.deinit();
+    }
+}
+
+void VK_image_group::write_noise() {
+    for (auto& image : images) {
+        image.write_noise();
+    }
+}
+
+VK_image& VK_image_group::random_pick() {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static uint32_t previous_index = UINT32_MAX;
+    std::uniform_int_distribution<size_t> dist(0, images.size() - 1);
+    uint32_t index = 0;
+
+    do {
+        index = (uint32_t)dist(gen);
+    } while (previous_index == index);
+    previous_index = index;
+
+    return images[index];
+}

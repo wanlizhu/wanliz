@@ -1,7 +1,7 @@
 #pragma once
 #include "VK_common.h"
 
-struct VK_buffer : public VK_refcounted_object {
+struct VK_buffer {
     VK_device* device_ptr = nullptr;
     VkBuffer handle = NULL;
     VkBufferUsageFlags usageFlags = 0;
@@ -11,7 +11,7 @@ struct VK_buffer : public VK_refcounted_object {
     uint32_t memoryTypeIndex = UINT32_MAX;
 
     inline operator VkBuffer() const { return handle; }
-    bool init(
+    void init(
         VK_device* device_ptr, 
         size_t sizeInBytes,
         VkBufferUsageFlags usageFlags, 
@@ -23,4 +23,19 @@ struct VK_buffer : public VK_refcounted_object {
     VK_gpu_timer copy_from_buffer(VK_buffer& src);
     VK_gpu_timer copy_from_image(VK_image& src);
     std::shared_ptr<std::vector<uint8_t>> readback();  
+};
+
+struct VK_buffer_group {
+    std::vector<VK_buffer> buffers;
+
+    void init(
+        size_t buffer_count,
+        VK_device* device_ptr,
+        size_t sizeInBytes,
+        VkBufferUsageFlags usageFlags,
+        VK_createInfo_memType memType
+    );
+    void deinit();
+    void write_noise();
+    VK_buffer& random_pick();
 };

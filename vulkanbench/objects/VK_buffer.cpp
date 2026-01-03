@@ -4,7 +4,7 @@
 #include "VK_device.h"
 #include <cstdint>
 
-bool VK_buffer::init(
+void VK_buffer::init(
     VK_device* device, 
     size_t size,
     VkBufferUsageFlags usageFlags, 
@@ -60,14 +60,9 @@ bool VK_buffer::init(
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to bind buffer memory");
     }
-
-    return true;
 }
 
 void VK_buffer::deinit() {
-    if (refcount > 0) {
-        vkDeviceWaitIdle(device_ptr->handle);
-    }
     if (memory != VK_NULL_HANDLE) {
         vkFreeMemory(device_ptr->handle, memory, nullptr);
         memory = VK_NULL_HANDLE;
@@ -80,10 +75,6 @@ void VK_buffer::deinit() {
 }
 
 void VK_buffer::write(const void* src, uint32_t sizeMax) {
-    if (refcount > 0) {
-        throw std::runtime_error("GPU refcount is not zero");
-    }
-
     size_t copySize = (sizeMax > 0 && sizeMax < sizeInBytes) ? sizeMax : sizeInBytes;
 
     if (memoryFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
@@ -177,10 +168,6 @@ void VK_buffer::write_noise() {
 }
 
 VK_gpu_timer VK_buffer::copy_from_buffer(VK_buffer& src) {
-    if (refcount > 0 || src.refcount > 0) {
-        throw std::runtime_error("GPU refcount is not zero");
-    }
-
     VK_gpu_timer timer(device_ptr);
     timer.cpu_begin();
 
@@ -219,10 +206,6 @@ VK_gpu_timer VK_buffer::copy_from_buffer(VK_buffer& src) {
 }
 
 VK_gpu_timer VK_buffer::copy_from_image(VK_image& src) {
-    if (refcount > 0 || src.refcount > 0) {
-        throw std::runtime_error("GPU refcount is not zero");
-    }
-
     VK_gpu_timer timer(device_ptr);
     timer.cpu_begin();
 
@@ -292,10 +275,6 @@ VK_gpu_timer VK_buffer::copy_from_image(VK_image& src) {
 }
 
 std::shared_ptr<std::vector<uint8_t>> VK_buffer::readback() {
-    if (refcount > 0) {
-        throw std::runtime_error("GPU refcount is not zero");
-    }
-
     auto result = std::make_shared<std::vector<uint8_t>>(sizeInBytes);
 
     if (memoryFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
@@ -368,4 +347,49 @@ std::shared_ptr<std::vector<uint8_t>> VK_buffer::readback() {
     vkFreeMemory(device_ptr->handle, stagingMemory, nullptr);
     vkDestroyBuffer(device_ptr->handle, stagingBuffer, nullptr);
     return result;
+}
+
+void VK_buffer_group::init(
+    size_t buffer_count,
+    VK_device* device_ptr,
+    size_t sizeInBytes,
+    VkBufferUsageFlags usageFlags,
+    VK_createInfo_memType memType
+) {
+    buffers.resize(buffer_count);
+    for (size_t i = 0; i < buffer_count; i++) {
+        buffers[i].init(
+            device_ptr,
+            sizeInBytes,
+            usageFlags,
+            memType
+        );
+    }
+}
+
+void VK_buffer_group::deinit() {
+    for (auto& buffer : buffers) {
+        buffer.deinit();
+    }
+}
+
+void VK_buffer_group::write_noise() {
+    for (auto& buffer : buffers) {
+        buffer.write_noise();
+    }
+}
+
+VK_buffer& VK_buffer_group::random_pick() {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static uint32_t previous_index = UINT32_MAX;
+    std::uniform_int_distribution<size_t> dist(0, buffers.size() - 1);
+    uint32_t index = 0;
+
+    do {
+        index = (uint32_t)dist(gen);
+    } while (previous_index == index);
+    previous_index = index;
+
+    return buffers[index];
 }

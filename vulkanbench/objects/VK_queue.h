@@ -11,7 +11,7 @@ struct VK_queue {
     VkCommandPool commandPool = NULL;
 
     inline operator VkQueue() const { return handle; }
-    bool init(VK_device* device_ptr, uint32_t family, bool presenting);
+    void init(VK_device* device_ptr, uint32_t family, bool presenting);
     void deinit();
 
     void create_command_pool();

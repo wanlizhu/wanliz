@@ -7,7 +7,7 @@ struct VK_instance {
 
     static VK_instance& GET();
     inline operator VkInstance() const { return handle; }
-    bool init();
+    void init();
     void deinit();
 }; 
 

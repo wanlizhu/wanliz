@@ -300,13 +300,13 @@ bool VK_swapchain::create_backingstores() {
     if (hasDepthStencil) {
         VK_createInfo_memType memType;
         memType.flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        if (!depthstencilImage.init(
-                device_ptr, depthstencilFormat, swapchainExtent,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                memType 
-            )) {
-            throw std::runtime_error("Failed to create depth stencil image");
-        }
+        depthstencilImage.init(
+            device_ptr, 
+            depthstencilFormat, 
+            swapchainExtent,
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+            memType
+        );
     }
 
     VkAttachmentDescription colorAttachment = {};
@@ -439,7 +439,7 @@ void VK_swapchain::delete_swapchain_resources() {
     }
 }
 
-bool VK_swapchain::init(VK_device* dev_ptr, int window_width, int window_height) {
+void VK_swapchain::init(VK_device* dev_ptr, int window_width, int window_height) {
     if (dev_ptr == nullptr) {
         throw std::runtime_error("Invalid device pointer");
     }
@@ -493,8 +493,6 @@ bool VK_swapchain::init(VK_device* dev_ptr, int window_width, int window_height)
     }
 
     currentImageIndex = UINT32_MAX;
-
-    return true;
 }
 
 void VK_swapchain::deinit() {

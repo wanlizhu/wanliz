@@ -1,6 +1,8 @@
 #include "VK_common.h"
 #include "VK_device.h"
 
+std::string VK_config::pi_capture_mode = "";
+
 VK_gpu_timer::VK_gpu_timer(VK_device* device_ptr) {
     m_device_ptr = device_ptr;
 }
@@ -40,6 +42,51 @@ bool VK_gpu_timer::validate() const {
         return m_gpu_time_acquired;
     }
     return true;
+}
+
+bool str_starts_with(const char* str, const char* substr) {
+    if (!str || !substr) {
+        return false;
+    }
+
+    while (*substr) {
+        if (*str++ != *substr++) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool str_ends_with(const char* str, const char* substr) {
+    if (!str || !substr) {
+        return false;
+    }
+
+    size_t str_len = strlen(str);
+    size_t substr_len = strlen(substr);
+    if (substr_len > str_len) {
+        return false;
+    }
+
+    return strcmp(str + str_len - substr_len, substr) == 0;
+}
+
+bool str_contains(const char* str, const char* substr) {
+    if (!str || !substr) {
+        return false;
+    }
+
+    return strstr(str, substr) != nullptr;
+}
+
+const char* str_after_rchar(const char* str, char chr) {
+    if (!str) {
+        return nullptr;
+    }
+
+    const char* last = strrchr(str, chr);
+    return last ? last + 1 : str;
 }
 
 std::string VkResult_str(VkResult result) {

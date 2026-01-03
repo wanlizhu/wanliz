@@ -12,7 +12,7 @@ struct VK_compute_pipeline {
     std::map<std::string, VkDescriptorSetLayoutBinding> bindingMap;
 
     inline operator VkPipeline() const { return handle; }
-    bool init(
+    void init(
         VK_device* device_ptr, 
         const VK_shader& shader
     );

@@ -8,7 +8,7 @@ struct VK_query_pool {
     uint32_t next_query_id = 0;
     
     inline operator VkQueryPool() const { return handle; }
-    bool init(VK_device* device_ptr);
+    void init(VK_device* device_ptr);
     void deinit();
     void reset(VkCommandBuffer cmdbuf);
     uint32_t write_timestamp(VkCommandBuffer cmdbuf, VkPipelineStageFlagBits stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);

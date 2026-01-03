@@ -15,7 +15,7 @@ struct VK_physdev {
 
     static std::vector<VK_physdev> LIST();
     inline operator VkPhysicalDevice() const { return handle; }
-    bool init(int idx);
+    void init(int idx);
     void deinit();
 
     uint32_t find_first_queue_family_supports(VkQueueFlags flags, bool presenting) const;

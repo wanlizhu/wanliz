@@ -1,7 +1,7 @@
 #include "VK_query_pool.h"
 #include "VK_device.h"
 
-bool VK_query_pool::init(VK_device* dev_ptr) {
+void VK_query_pool::init(VK_device* dev_ptr) {
     device_ptr = dev_ptr;
 
     VkQueryPoolCreateInfo queryPoolInfo = {};
@@ -15,7 +15,6 @@ bool VK_query_pool::init(VK_device* dev_ptr) {
     }
 
     next_query_id = 0;
-    return true;
 }
 
 void VK_query_pool::deinit() {

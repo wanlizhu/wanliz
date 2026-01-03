@@ -2,7 +2,7 @@
 #include "VK_device.h"
 #include <stdexcept>
 
-bool VK_compute_pipeline::init(
+void VK_compute_pipeline::init(
     VK_device* dev_ptr, 
     const VK_shader& shader
 ) {
@@ -102,8 +102,6 @@ bool VK_compute_pipeline::init(
             throw std::runtime_error("Failed to allocate descriptor set");
         }
     }
-
-    return true;
 }
 
 void VK_compute_pipeline::deinit() {

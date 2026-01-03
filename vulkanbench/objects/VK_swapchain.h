@@ -33,7 +33,7 @@ struct VK_swapchain {
     uint32_t currentImageIndex = UINT32_MAX;
 
     inline operator VkSwapchainKHR() const { return handle; }
-    bool init(VK_device* device_ptr, int window_width, int window_height);
+    void init(VK_device* device_ptr, int window_width, int window_height);
     void deinit();
 
     void on_window_visible();
