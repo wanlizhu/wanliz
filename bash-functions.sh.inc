@@ -59,7 +59,8 @@ function pi-upload() {
     elif [[ -d $HOME/SinglePassCapture/PerfInspector/output/$1 ]]; then
         pushd $HOME/SinglePassCapture/PerfInspector/output/$1 >/dev/null
     else
-        echo "$1 doesn't exist"
+        echo "Available reports to upload:"
+        find $HOME/SinglePassCapture/PerfInspector/output/ -mindepth 1 -maxdepth 1 -type d -name perf_inspector_v2 -prune -o -type d -printf '%f\n'
         return 1
     fi
     ./upload_report.sh
