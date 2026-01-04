@@ -1,0 +1,20 @@
+#!/bin/bash 
+
+build_dir="build-linux-$(uname -m)"
+if [[ $1 == "--regen-clangd-db" ]]; then 
+    build_dir="build-linux-$(uname -m)-temp"
+fi 
+
+rm -rf $build_dir 
+mkdir -p $build_dir
+cd $build_dir 
+
+cmake ..  -DCMAKE_BUILD_TYPE=Release || exit 1
+cmake --build . || exit 1
+
+if [[ $1 == "--regen-clangd-db" ]]; then 
+    cp -vf compile_commands.json .. || exit 1
+    cd ..
+    rm -rf $build_dir
+    touch $(readlink -f .clangd)
+fi 

@@ -36,6 +36,7 @@
 #include <iomanip>
 #include <stdexcept>
 #include <string>
+#include "cxxopts.hpp"
 
 #ifdef ENABLE_RT_SHADER_COMPILE
 #include <shaderc/shaderc.h>
@@ -79,13 +80,12 @@ enum class VK_color {
 };
 
 struct VK_config {
-    static std::string pi_capture_mode;
+    static cxxopts::ParseResult args;
 };
 
 struct VK_gpu_timer {
     uint64_t cpu_ns = 0;
     uint64_t gpu_ns = 0;
-    uint64_t loops = 0;
 
     VK_gpu_timer() = default;
     VK_gpu_timer(VK_device* device_ptr);
@@ -101,6 +101,19 @@ private:
     uint32_t m_gpu_begin_id = UINT32_MAX;
     uint32_t m_gpu_end_id = UINT32_MAX;
     bool m_gpu_time_acquired = false;
+};
+
+struct VK_GB_per_second {
+    double cpu_speed = 0.0;
+    double cpu_robust_CoV = 0.0;
+    double gpu_speed = 0.0;
+    double gpu_robust_CoV = 0.0;
+
+    VK_GB_per_second() = default;
+    VK_GB_per_second(size_t bytes, const std::vector<VK_gpu_timer>& timers);
+
+private:
+    double robust_CoV(const std::vector<double>& samples);
 };
 
 struct VK_createInfo_memType {

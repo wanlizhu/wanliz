@@ -77,6 +77,7 @@ message(STATUS "Host: ${HOST_ARCH}, Target: ${TARGET_ARCH}")
 
 add_executable(vulkanbench 
     vulkanbench/main.cpp
+    vulkanbench/cxxopts.hpp
     vulkanbench/VK_TestCase.h 
     vulkanbench/VK_TestCase_IMPL_buffercopy.cpp 
     vulkanbench/VK_TestCase_IMPL_imagebuffercopy.cpp 

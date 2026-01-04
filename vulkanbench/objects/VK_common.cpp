@@ -1,7 +1,7 @@
 #include "VK_common.h"
 #include "VK_device.h"
 
-std::string VK_config::pi_capture_mode = "";
+cxxopts::ParseResult VK_config::args;
 
 VK_gpu_timer::VK_gpu_timer(VK_device* device_ptr) {
     m_device_ptr = device_ptr;
@@ -42,6 +42,88 @@ bool VK_gpu_timer::validate() const {
         return m_gpu_time_acquired;
     }
     return true;
+}
+
+VK_GB_per_second::VK_GB_per_second(size_t bytes, const std::vector<VK_gpu_timer>& timers) {
+    constexpr double GB = 1024.0 * 1024.0 * 1024.0;
+
+    auto median_of = [](std::vector<double>& a) -> double {
+        const std::size_t n = a.size();
+        const std::size_t mid = n / 2;
+
+        std::nth_element(a.begin(), a.begin() + mid, a.end());
+        double m = a[mid];
+
+        if ((n % 2) == 0) {
+            std::nth_element(a.begin(), a.begin() + (mid - 1), a.end());
+            m = 0.5 * (m + a[mid - 1]);
+        }
+        return m;
+    };
+
+    std::vector<double> cpu_speed_list;
+    for (const auto& timer : timers) {
+        cpu_speed_list.push_back((double)bytes / timer.cpu_ns * (1e9 / GB));
+    }
+    cpu_robust_CoV = robust_CoV(cpu_speed_list);
+    cpu_speed = median_of(cpu_speed_list);
+
+    std::vector<double> gpu_speed_list;
+    for (const auto& timer : timers) {
+        gpu_speed_list.push_back((double)bytes / timer.gpu_ns * (1e9 / GB));
+    }
+    gpu_robust_CoV = robust_CoV(gpu_speed_list);
+    gpu_speed = median_of(gpu_speed_list);
+}
+
+double VK_GB_per_second::robust_CoV(const std::vector<double>& samples) {
+    std::vector<double> samples_dup = samples;
+    for (double v : samples_dup) {
+        if (!std::isfinite(v)) {
+            throw std::invalid_argument("robust_CoV: infinite value in samples");
+        }
+        if (v < 0.0) {
+            throw std::invalid_argument("robust_CoV: negative value in samples");
+        }
+    }
+
+    auto median_of = [](std::vector<double>& a) -> double {
+        const std::size_t n = a.size();
+        const std::size_t mid = n / 2;
+
+        std::nth_element(a.begin(), a.begin() + mid, a.end());
+        double m = a[mid];
+
+        if ((n % 2) == 0) {
+            std::nth_element(a.begin(), a.begin() + (mid - 1), a.end());
+            m = 0.5 * (m + a[mid - 1]);
+        }
+        return m;
+    };
+
+    double med = median_of(samples_dup);
+    if (med == 0.0) {
+        bool all_zero = true;
+        for (double v : samples) {
+            if (v != 0.0) { all_zero = false; break; }
+        }
+        if (all_zero) {
+            return 0.0;
+        }
+        return std::numeric_limits<double>::infinity();
+    }
+
+    std::vector<double> dev;
+    dev.reserve(samples.size());
+    for (double v : samples) {
+        dev.push_back(std::fabs(v - med));
+    }
+
+    double mad = median_of(dev);
+    constexpr double k = 1.4826;
+    double robust_sigma = k * mad;
+
+    return robust_sigma / med;
 }
 
 bool str_starts_with(const char* str, const char* substr) {

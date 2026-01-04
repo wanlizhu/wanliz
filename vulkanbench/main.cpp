@@ -1,13 +1,16 @@
 #include "VK_TestCase.h"
 #include "objects/VK_common.h"
 
+
 int main(int argc, char **argv) {
-    if (argc == 2 && str_starts_with(argv[1], "-pi=")) {
-        VK_config::pi_capture_mode = str_after_rchar(argv[1], '=');
-    }
+    cxxopts::Options options("vulkanbench", "Vulkan benchmark app for Linux and Windows platforms");
+    options.add_options("global options")
+        ("p,profile", "Run for PI profiling", cxxopts::value<std::string>())
+        ("d,device", "GPU device index to use", cxxopts::value<int>()->default_value("-1"));
+    VK_config::args = options.parse(argc, argv);
 
     VK_device device;
-    device.init(-1, VK_QUEUE_TRANSFER_BIT, 0, 0);
+    device.init(VK_config::args["device"].as<int>(), VK_QUEUE_TRANSFER_BIT, 0, 0);
 
     VK_TestCase_buffercopy test_b2b;
     VK_TestCase_imagebuffercopy test_i2b;

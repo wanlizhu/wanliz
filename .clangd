@@ -1,0 +1,22 @@
+CompileFlags:
+  Add:
+    - -Wno-unused-command-line-argument
+    - -Wno-unknown-warning-option
+  CompilationDatabase: .
+
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+  ClangTidy:
+    Remove:
+      - modernize-*
+      - readability-*
+      - google-*
+    
+InlayHints:
+  Enabled: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes
+
+Hover:
+  ShowAKA: Yes

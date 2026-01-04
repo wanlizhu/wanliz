@@ -1,3 +1,13 @@
+export P4PORT=p4proxy-sc.nvidia.com:2006
+export P4USER=wanliz
+export P4CLIENT=wanliz_sw_windows_wsl2
+export P4ROOT=/home/wanliz/sw
+export P4IGNORE=$HOME/.p4ignore
+export NVM_GTLAPI_TOKEN='eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlMGZkYWU4LWM5YmUtNDgwOS1iMTQ3LTJiN2UxNDAwOTAwMyIsInNlY3JldCI6IndEUU1uMUdyT1RaY0Z0aHFXUThQT2RiS3lGZ0t5NUpaalU3QWFweUxGSmM9In0.Iad8z1fcSjA6P7SHIluppA_tYzOGxGv4koMyNawvERQ'                                      export GDK_SCALE=1                                                                      
+export GDK_DPI_SCALE=1.25                                                               
+export QT_SCALE_FACTOR=1.25                                                             
+export PATH="$HOME/.local/bin:$HOME/p4v/bin:$PATH"
+
 function backup-wsl2-home() {
     if [[ -d /mnt/d/wsl2_home.backup ]]; then
         rsync -ah --ignore-missing-args --delete --info=progress2 \
