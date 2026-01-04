@@ -16,5 +16,7 @@ if [[ $1 == "--regen-clangd-db" ]]; then
     cp -vf compile_commands.json .. || exit 1
     cd ..
     rm -rf $build_dir
-    touch $(readlink -f .clangd)
+    if [[ -e .clangd ]]; then 
+        touch $(readlink -f .clangd)
+    fi 
 fi 

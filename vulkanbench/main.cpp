@@ -5,8 +5,9 @@
 int main(int argc, char **argv) {
     cxxopts::Options options("vulkanbench", "Vulkan benchmark app for Linux and Windows platforms");
     options.add_options("global options")
-        ("p,profile", "Run for PI profiling", cxxopts::value<std::string>())
-        ("d,device", "GPU device index to use", cxxopts::value<int>()->default_value("-1"));
+        ("p,profile", "Run for PI profiling (=buf, =img)", cxxopts::value<std::string>())
+        ("d,device", "GPU device index to use", cxxopts::value<int>()->default_value("-1"))
+        ("s,single-draw-call", "Make a single draw call (only valid with -p specified), useful for pushbuffer dump", cxxopts::value<bool>()->default_value("false"));
     VK_config::args = options.parse(argc, argv);
 
     VK_device device;

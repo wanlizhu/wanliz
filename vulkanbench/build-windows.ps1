@@ -19,5 +19,7 @@ if ($regen_clangd_db) {
     Copy-Item -Force -Verbose -Path "compile_commands.json" -Destination ".." -ErrorAction Stop
     Set-Location ".." 
     Remove-Item -Recurse -Force $build_dir -ErrorAction SilentlyContinue
-    (Get-Content .clangd) | Set-Content .clangd
+    if (Test-Path .clangd) {
+        (Get-Content .clangd) | Set-Content .clangd
+    }
 }

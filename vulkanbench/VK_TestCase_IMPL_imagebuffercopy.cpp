@@ -98,11 +98,14 @@ void VK_TestCase_imagebuffercopy::run_for_pi_capture(VK_device& device) {
         memType
     );
 
-    std::cout << "IMG->BUF: Running for 10 seconds ...\n";
-
-    auto start_time = std::chrono::steady_clock::now();
-    while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(10)) {
+    if (VK_config::args["single-draw-call"].as<bool>()) {
         cp_dst_buffer.copy_from_image(cp_src_image_group.random_pick());
+    } else {
+        std::cout << "IMG->BUF: Running for 10 seconds ...\n";
+        auto start_time = std::chrono::steady_clock::now();
+        while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(10)) {
+            cp_dst_buffer.copy_from_image(cp_src_image_group.random_pick());
+        }
     }
 
     cp_dst_buffer.deinit();
