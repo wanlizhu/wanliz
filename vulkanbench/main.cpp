@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
         // 0x00000080 ENTRY_POINT_ANNOTATIONS — include API entrypoint annotations
         // 0x00000100 APP_REGIME_ANNOTATIONS — include app regime annotations
         // 0x00010000 INSTRUMENT_SHADER_OBJECTS — insert NOP(appHash, ucodeHash)
-        std::string filename = "/pushbuffer-dump-%03d.xml";
+        std::string filename = "./pushbuffer-dump-%03d.xml";
         setenv("__GL_ac12fedf", filename.c_str(), 1);
         setenv("__GL_ac12fede", "0x10183", 1);
         printf("__GL_ac12fedf=%s\n", std::getenv("__GL_ac12fedf"));

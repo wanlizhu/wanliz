@@ -190,9 +190,9 @@ def main():
         print(f"Error: Path not found: {input_path}", file=sys.stderr)
         sys.exit(1)
     if os.path.isdir(input_path):
-        files = sorted(glob.glob(os.path.join(input_path, "frame*.xml")))
+        files = sorted(glob.glob(os.path.join(input_path, "*pushbuf*.xml")))
         if not files:
-            print(f"No frame*.xml files found in: {input_path}", file=sys.stderr)
+            print(f"No *pushbuf*.xml files found in: {input_path}", file=sys.stderr)
             sys.exit(1)
         print(f"Found {len(files)} dump file(s) to process\n")
         results = [process_single_file(f, i+1, len(files)) for i, f in enumerate(files)]
