@@ -50,10 +50,14 @@
 #elif defined(__linux__)
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
+
 #include <vulkan/vulkan_core.h>
+
 #ifdef _WIN32
 #include <vulkan/vulkan_win32.h>
+#define setenv(name, val, _) _putenv_s(name, val)
 #endif
+
 #ifdef __linux__
 #include <sys/wait.h>
 #include <unistd.h>

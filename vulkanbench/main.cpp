@@ -7,8 +7,16 @@ int main(int argc, char **argv) {
     options.add_options("global options")
         ("p,profile", "Run for PI profiling (=buf, =img)", cxxopts::value<std::string>())
         ("d,device", "GPU device index to use", cxxopts::value<int>()->default_value("-1"))
-        ("s,single-draw-call", "Make a single draw call (only valid with -p specified), useful for pushbuffer dump", cxxopts::value<bool>()->default_value("false"));
+        ("pushbuffer-dump", "Make a pushbuffer dump (only valid with -p specified)", cxxopts::value<bool>()->default_value("false"));
     VK_config::args = options.parse(argc, argv);
+
+    if (VK_config::args.count("profile") && 
+        VK_config::args["pushbuffer-dump"].as<bool>()) {
+        setenv("__GL_ac12fedf", "./frame-%03d.xml", 1);
+        setenv("__GL_ac12fede", "0x10183", 1);
+        printf("__GL_ac12fedf=%s\n", std::getenv("__GL_ac12fedf"));
+        printf("__GL_ac12fede=%s\n", std::getenv("__GL_ac12fede"));
+    }
 
     VK_device device;
     device.init(VK_config::args["device"].as<int>(), VK_QUEUE_TRANSFER_BIT, 0, 0);

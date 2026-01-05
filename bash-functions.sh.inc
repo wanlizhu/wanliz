@@ -92,3 +92,7 @@ function vulkaninfo-grep-section-memprops() {
     vulkaninfo-grep-section "VkPhysicalDeviceMemoryProperties"
 }
 
+function pushbuffer-dump() {
+    echo '__GL_ac12fedf=./frame-%03d.xml __GL_ac12fede=0x10183'
+}
+

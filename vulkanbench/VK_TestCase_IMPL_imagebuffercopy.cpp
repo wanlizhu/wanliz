@@ -78,7 +78,7 @@ void VK_TestCase_imagebuffercopy::run_for_pi_capture(VK_device& device) {
     VK_createInfo_memType cp_src_memType;
     cp_src_memType.flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     cp_src_image_group.init(
-        VK_TEST_RESOURCE_GROUP_SIZE,
+        VK_config::args["pushbuffer-dump"].as<bool>() ? 1 : VK_TEST_RESOURCE_GROUP_SIZE,
         &device,
         VK_FORMAT_R32G32B32A32_SFLOAT,
         VkExtent2D{ (uint32_t)m_cp_src_image_width_list.back(), (uint32_t)m_cp_src_image_width_list .back() },
@@ -86,7 +86,9 @@ void VK_TestCase_imagebuffercopy::run_for_pi_capture(VK_device& device) {
         cp_src_memType,
         VK_IMAGE_TILING_OPTIMAL
     );
-    cp_src_image_group.write_noise();
+    if (!VK_config::args["pushbuffer-dump"].as<bool>()) {
+        cp_src_image_group.write_noise();
+    }
 
     VK_buffer cp_dst_buffer;
     VK_createInfo_memType memType;
@@ -98,7 +100,7 @@ void VK_TestCase_imagebuffercopy::run_for_pi_capture(VK_device& device) {
         memType
     );
 
-    if (VK_config::args["single-draw-call"].as<bool>()) {
+    if (VK_config::args["pushbuffer-dump"].as<bool>()) {
         cp_dst_buffer.copy_from_image(cp_src_image_group.random_pick());
     } else {
         std::cout << "IMG->BUF: Running for 10 seconds ...\n";
