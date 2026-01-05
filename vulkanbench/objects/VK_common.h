@@ -1,6 +1,8 @@
 #pragma once
 #ifdef _WIN32
 #include <basetsd.h>
+#include <unistd.h>
+#include <pwd.h>
 #endif
 #include <iostream>
 #include <fstream>
@@ -129,6 +131,7 @@ bool str_starts_with(const char* str, const char* substr);
 bool str_ends_with(const char* str, const char* substr);
 bool str_contains(const char* str, const char* substr);
 const char* str_after_rchar(const char* str, char chr);
+const char* str_home_dir();
 
 std::string VkResult_str(VkResult result);
 std::string VkMemoryPropertyFlags_str(VkMemoryPropertyFlags flags, bool short_str);

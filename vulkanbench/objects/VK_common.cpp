@@ -171,6 +171,33 @@ const char* str_after_rchar(const char* str, char chr) {
     return last ? last + 1 : str;
 }
 
+const char* str_home_dir() {
+    static std::string home;
+
+    if (home.empty()) {
+#ifdef _WIN32
+        if (const char* p = std::getenv("USERPROFILE")) {
+            home = p;
+        } else if (const char* d = std::getenv("HOMEDRIVE")) {
+            if (const char* h = std::getenv("HOMEPATH")) {
+                home = std::string(d) + h;
+            }
+        }
+#else
+        if (const char* h = std::getenv("HOME")) {
+            home = h;
+        } else {
+            throw std::runtime_error("$env{HOME} is not defined");
+        }
+#endif
+        if (home.back() == '/') {
+            home.pop_back();
+        }
+    }
+
+    return home.c_str();
+}
+
 std::string VkResult_str(VkResult result) {
     switch (static_cast<int>(result)) {
         case 0:             return "VK_SUCCESS";
