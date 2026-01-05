@@ -101,6 +101,7 @@ void VK_TestCase_imagebuffercopy::run_for_pi_capture(VK_device& device) {
     );
 
     if (VK_config::args["pushbuffer-dump"].as<bool>()) {
+        std::cout << "BUF->BUF: Running for pushbuffer dump ...\n";
         cp_dst_buffer.copy_from_image(cp_src_image_group.random_pick());
     } else {
         std::cout << "IMG->BUF: Running for 10 seconds ...\n";

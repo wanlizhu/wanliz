@@ -35,7 +35,12 @@ static int get_device_score(const VK_physdev& dev) {
 
 void VK_device::init(int index, uint32_t queueFlags, int window_width, int window_height) {
     bool presenting = (window_width > 0 && window_height > 0);
-
+    if (VK_config::args["nodisplay"].as<bool>()) {
+        window_width = 0;
+        window_height = 0;
+        presenting = false;
+    }
+    
     if (index < 0) {
         std::vector<VK_physdev> allDevices = VK_physdev::LIST();
         if (allDevices.empty()) {

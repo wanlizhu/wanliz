@@ -16,8 +16,13 @@ VK_instance& VK_instance::GET() {
     static VK_instance instance;
     static bool inited = false;
     if (!inited) {
-        instance.init();
-        inited = true;
+        try {
+            instance.init();
+            inited = true;
+        } catch (const std::exception& e) {
+            std::printf("%s\n", e.what());
+            exit(1);
+        }
     }
 
     return instance;
@@ -61,17 +66,19 @@ void VK_instance::init() {
     std::vector<const char*> extensions;
     bool enableDebugUtils = false;
 
-    if (hasExt(VK_KHR_SURFACE_EXTENSION_NAME)) {
-        extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+    if (VK_config::args["nodisplay"].as<bool>() == false) {
+        if (hasExt(VK_KHR_SURFACE_EXTENSION_NAME)) {
+            extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 #ifdef _WIN32
-        if (hasExt(VK_KHR_WIN32_SURFACE_EXTENSION_NAME)) {
-            extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-        }
+            if (hasExt(VK_KHR_WIN32_SURFACE_EXTENSION_NAME)) {
+                extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+            }
 #elif defined(__linux__)
-        if (hasExt(VK_KHR_XLIB_SURFACE_EXTENSION_NAME)) {
-            extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
-        }
+            if (hasExt(VK_KHR_XLIB_SURFACE_EXTENSION_NAME)) {
+                extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
+            }
 #endif
+        }
     }
 
     if (hasExt(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)) {
@@ -92,7 +99,7 @@ void VK_instance::init() {
 
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Inspect GPU Perf Info";
+    appInfo.pApplicationName = "vulkanbench";
     appInfo.applicationVersion = 0;
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = 0;
