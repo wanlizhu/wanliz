@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
 Process pushbuffer XML dumps: resolve symbols, simplify callstacks, remove noise, format output.
-Usage: process-pushbuffer-dump.py <file.xml or directory>
+Usage: process-pushbuffer-dump.py [--filter=beginTP:endTP] <file.xml or directory>
 """
 
-import sys, os, re, subprocess, tempfile, glob
+import sys, os, re, subprocess, tempfile, glob, argparse
 import multiprocessing as mp
 from multiprocessing import Pool, Manager
-from xml.etree import ElementTree as ET
 
 VK_ENTRY_POINTS = [
     "vkCreateDevice", "vkDestroyDevice", "vkCreateInstance", "vkDestroyInstance",
@@ -15,10 +14,11 @@ VK_ENTRY_POINTS = [
 ]
 
 class PushbufferProcessor:
-    def __init__(self, filepath):
+    def __init__(self, filepath, time_filter=None):
         self.filepath = filepath
         self.content = ""
         self.resolved_symbols = {}
+        self.time_filter = time_filter
 
     def run(self):
         print(f"  Reading file...")
@@ -31,6 +31,8 @@ class PushbufferProcessor:
         self._remove_dummy_null_blocks()
         self._merge_consecutive_lines()
         self._format_xml_indent()
+        if self.time_filter:
+            self._filter_by_time_range()
         print(f"  Writing output...")
         with open(self.filepath, 'w', encoding='utf-8') as f:
             f.write(self.content)
@@ -137,6 +139,20 @@ class PushbufferProcessor:
                 indent_level += 1
         self.content = '\n'.join(result) + '\n'
 
+    def _filter_by_time_range(self):
+        begin_tp, end_tp = self.time_filter
+        print(f"  Filtering by time range {begin_tp}:{end_tp}...")
+        pattern = re.compile(r'(<GPFIFOENTRY[^>]*>)(.*?)(</GPFIFOENTRY>)', re.DOTALL)
+        def replacer(m):
+            open_tag, body, close_tag = m.group(1), m.group(2), m.group(3)
+            ts_match = re.search(r'<CALLSTACK[^>]*TIMESTAMP_NS="(\d+)"', body)
+            if ts_match:
+                timestamp = int(ts_match.group(1))
+                if timestamp < begin_tp or timestamp > end_tp:
+                    return f'{open_tag}\nFiltered out by time range {begin_tp}:{end_tp}\n{close_tag}'
+            return m.group(0)
+        self.content = pattern.sub(replacer, self.content)
+
 
 def _demangle(symbol):
     if not symbol or symbol == "??" or not symbol.startswith("_Z"):
@@ -167,11 +183,11 @@ def _resolve_single_frame(args):
         counter.value += 1
     return (body, result)
 
-def process_single_file(filepath, file_idx=None, total_files=None):
+def process_single_file(filepath, file_idx=None, total_files=None, time_filter=None):
     prefix = f"[{file_idx}/{total_files}] " if file_idx else ""
     print(f"{prefix}Processing: {filepath}")
     try:
-        PushbufferProcessor(filepath).run()
+        PushbufferProcessor(filepath, time_filter).run()
         print(f"  Done: {filepath}")
         return True
     except Exception as e:
@@ -181,28 +197,44 @@ def process_single_file(filepath, file_idx=None, total_files=None):
         print(f"  Partial output: {tmp}", file=sys.stderr)
         return False
 
+def parse_time_filter(value):
+    if not value:
+        return None
+    parts = value.split(':')
+    if len(parts) != 2:
+        raise argparse.ArgumentTypeError(f"Invalid filter format: {value}. Expected beginTP:endTP")
+    try:
+        return (int(parts[0]), int(parts[1]))
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Invalid filter values: {value}. Expected integers")
+
 def main():
-    if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <pushbuffer_dump.xml or directory>", file=sys.stderr)
-        sys.exit(1)
-    input_path = sys.argv[1]
+    parser = argparse.ArgumentParser(description="Process pushbuffer XML dumps")
+    parser.add_argument("input_path", help="XML file or directory containing *pushbuf*.xml files")
+    parser.add_argument("--filter", dest="time_filter", type=parse_time_filter, default=None,
+                        help="Filter by time range beginTP:endTP (nanoseconds)")
+    args = parser.parse_args()
+    input_path = args.input_path
+    time_filter = args.time_filter
     if not os.path.exists(input_path):
         print(f"Error: Path not found: {input_path}", file=sys.stderr)
         sys.exit(1)
+    if time_filter:
+        print(f"Time filter: {time_filter[0]}:{time_filter[1]}")
     if os.path.isdir(input_path):
         files = sorted(glob.glob(os.path.join(input_path, "*pushbuf*.xml")))
         if not files:
             print(f"No *pushbuf*.xml files found in: {input_path}", file=sys.stderr)
             sys.exit(1)
         print(f"Found {len(files)} dump file(s) to process\n")
-        results = [process_single_file(f, i+1, len(files)) for i, f in enumerate(files)]
+        results = [process_single_file(f, i+1, len(files), time_filter) for i, f in enumerate(files)]
         print()
         success, fail = sum(results), len(results) - sum(results)
         print(f"All done: {success} succeeded, {fail} failed")
         if fail > 0:
             sys.exit(1)
     else:
-        if not process_single_file(input_path):
+        if not process_single_file(input_path, time_filter=time_filter):
             sys.exit(1)
 
 if __name__ == "__main__":

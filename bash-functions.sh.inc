@@ -111,8 +111,19 @@ function env-umd-pushbuffer-dump {
     if [[ $remove_old_dumps =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
         rm -f ./pushbuffer-dump-*.xml
     fi 
+    
     env_vars_umd=$(env-umd-override)
     env_vars_pbd=$(env-pushbuffer-dump)
-    env $env_vars_umd $env_vars_pbd $@
-    process-pushbuffer-dump .
+    env $env_vars_umd $env_vars_pbd $@ | tee /tmp/stdout
+
+    filter_option=
+    if [[ $1 == vulkanbench ]]; then 
+        beginTP=$(cat /tmp/stdout | grep "Begin TP:" | awk '{print $3}')
+        endTP=$(cat /tmp/stdout | grep "End TP:" | awk '{print $3}')
+        if [[ -z $ $beginTP && ! -z $endTP ]]; then 
+            filter_option="--filter=$beginTP:$endTP"
+        fi 
+    fi 
+
+    process-pushbuffer-dump . $filter_option
 }
