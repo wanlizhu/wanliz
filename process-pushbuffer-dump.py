@@ -77,7 +77,7 @@ class PushbufferProcessor:
                 callstack_content = callstack_match.group(1)
                 for vk_func in VK_ENTRY_POINTS:
                     if vk_func in callstack_content:
-                        return f'{open_tag}\nIssued by {vk_func}\n{close_tag}'
+                        return f'{open_tag}\n Ignored calls from {vk_func}\n{close_tag}'
             return m.group(0)
         self.content = pattern.sub(replacer, self.content)
 
@@ -126,7 +126,7 @@ class PushbufferProcessor:
                 continue
             if close_tag.match(stripped):
                 indent_level = max(0, indent_level - 1)
-            result.append("  " * indent_level + stripped)
+            result.append("    " * indent_level + stripped)
             if open_tag.match(stripped) and not self_close.match(stripped) and not full_tag.match(stripped):
                 indent_level += 1
         self.content = '\n'.join(result) + '\n'
