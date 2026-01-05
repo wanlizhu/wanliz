@@ -107,5 +107,7 @@ function env-pushbuffer-dump() {
 }
 
 function env-umd-pushbuffer-dump {
-    env-umd-override env-pushbuffer-dump $@
+    env_vars_umd=$(env-umd-override)
+    env_vars_pbd=$(env-pushbuffer-dump)
+    env $env_vars_umd $env_vars_pbd $@
 }
