@@ -92,7 +92,20 @@ function vulkaninfo-grep-section-memprops() {
     vulkaninfo-grep-section "VkPhysicalDeviceMemoryProperties"
 }
 
-function pushbuffer-dump() {
-    echo '__GL_ac12fedf=./frame-%03d.xml __GL_ac12fede=0x10183'
+function env-umd-override {
+    echo "LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-UMD-override${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} VK_ICD_FILENAMES=$HOME/NVIDIA-Linux-UMD-override/nvidia_icd.json"
+    if [[ ! -z $1 ]]; then 
+        env LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-UMD-override${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} VK_ICD_FILENAMES=$HOME/NVIDIA-Linux-UMD-override/nvidia_icd.json $@
+    fi 
 }
 
+function env-pushbuffer-dump() {
+    echo '__GL_ac12fedf=./pushbuffer-dump-%03d.xml __GL_ac12fede=0x10183'
+    if [[ ! -z $1 ]]; then 
+        env __GL_ac12fedf=./pushbuffer-dump-%03d.xml __GL_ac12fede=0x10183 $@
+    fi 
+}
+
+function env-umd-pushbuffer-dump {
+    env-umd-override env-pushbuffer-dump $@
+}
