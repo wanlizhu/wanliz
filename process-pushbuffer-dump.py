@@ -27,6 +27,7 @@ class PushbufferProcessor:
         self._resolve_symbols_parallel()
         self._apply_resolved_symbols()
         self._simplify_gpfifo_entries()
+        self._simplify_frame_stats()
         self._remove_dummy_null_blocks()
         self._merge_consecutive_lines()
         self._format_xml_indent()
@@ -80,6 +81,11 @@ class PushbufferProcessor:
                         return f'{open_tag}\n Ignored calls from {vk_func}\n{close_tag}'
             return m.group(0)
         self.content = pattern.sub(replacer, self.content)
+
+    def _simplify_frame_stats(self):
+        print(f"  Simplifying FRAME_STATS nodes...")
+        pattern = re.compile(r'(<FRAME_STATS>)(.*?)(</FRAME_STATS>)', re.DOTALL)
+        self.content = pattern.sub(r'\1\nIgnored frame stats\n\3', self.content)
 
     def _remove_dummy_null_blocks(self):
         print(f"  Removing dummy NULL data blocks...")
