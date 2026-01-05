@@ -198,6 +198,44 @@ const char* str_home_dir() {
     return home.c_str();
 }
 
+const char* str_filename_timestamp() {
+    const std::time_t now = std::time(nullptr);
+    std::tm tm{};
+#ifdef _WIN32
+    localtime_s(&tm, &now);
+#else
+    localtime_r(&now, &tm);
+#endif
+
+    std::ostringstream ts;
+    ts << std::put_time(&tm, "%Y-%m%d-%H%M-%S");
+    static std::string suffix;
+    suffix = ts.str();
+
+    return suffix.c_str();
+}
+
+const char* str_format(const char* fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+
+    va_list ap_dup;
+    va_copy(ap_dup, ap);
+    int N = std::vsnprintf(nullptr, 0, fmt, ap_dup);
+    va_end(ap_dup);
+
+    static std::vector<char> buf;
+    if (N < 0) {
+        buf.assign({'\0'});
+    } else {
+        buf.resize(N + 1, '\0');
+        std::vsnprintf(buf.data(), buf.size(), fmt, ap);
+    }
+    va_end(ap);
+
+    return buf.data();
+}
+
 std::string VkResult_str(VkResult result) {
     switch (static_cast<int>(result)) {
         case 0:             return "VK_SUCCESS";
@@ -306,5 +344,16 @@ void print_table(const std::vector<std::vector<std::string>>& rows, std::ostream
             out << std::left << std::setw(widths[i] + 2) << row[i];
         }
         out << "\n";
+    }
+}
+
+void makedirs(const std::string& path) {
+    std::error_code ec;
+    if (std::filesystem::create_directories(std::filesystem::path(path), ec)) {
+        return;
+    }
+
+    if (ec) {
+        throw std::runtime_error("Failed to make dirs: " + path + ": " + ec.message());
     }
 }

@@ -38,6 +38,7 @@
 #include <iomanip>
 #include <stdexcept>
 #include <string>
+#include <cstdarg>
 #include "cxxopts.hpp"
 
 #ifdef ENABLE_RT_SHADER_COMPILE
@@ -132,8 +133,11 @@ bool str_ends_with(const char* str, const char* substr);
 bool str_contains(const char* str, const char* substr);
 const char* str_after_rchar(const char* str, char chr);
 const char* str_home_dir();
+const char* str_filename_timestamp();
+const char* str_format(const char* fmt, ...);
 
 std::string VkResult_str(VkResult result);
 std::string VkMemoryPropertyFlags_str(VkMemoryPropertyFlags flags, bool short_str);
 std::string human_readable_size(size_t bytes);
 void print_table(const std::vector<std::vector<std::string>>& rows, std::ostream& out = std::cout);
+void makedirs(const std::string& path);
