@@ -91,13 +91,13 @@ void VK_TestCase_buffercopy::run_for_pi_capture(VK_device& device) {
     VK_createInfo_memType cp_src_memType;
     cp_src_memType.flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     cp_src_buffer_group.init(
-        VK_config::args["pushbuffer-dump"].as<bool>() ? 1 : VK_TEST_RESOURCE_GROUP_SIZE,
+        VK_config::args["single-drawcall"].as<bool>() ? 1 : VK_TEST_RESOURCE_GROUP_SIZE,
         &device,
         m_cp_dst_buffer_size_list.back(),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         cp_src_memType
     );
-    if (!VK_config::args["pushbuffer-dump"].as<bool>()) {
+    if (!VK_config::args["single-drawcall"].as<bool>()) {
         cp_src_buffer_group.write_noise();
     }
 
@@ -111,8 +111,8 @@ void VK_TestCase_buffercopy::run_for_pi_capture(VK_device& device) {
         cp_dst_memType
     );
 
-    if (VK_config::args["pushbuffer-dump"].as<bool>()) {
-        std::cout << "BUF->BUF: Running for pushbuffer dump ...\n";
+    if (VK_config::args["single-drawcall"].as<bool>()) {
+        std::cout << "BUF->BUF: Running for single draw call ...\n";
         cp_dst_buffer.copy_from_buffer(cp_src_buffer_group.random_pick());
     } else {
         std::cout << "BUF->BUF: Running for 10 seconds ...\n";
