@@ -111,20 +111,20 @@ elif [[ $TARGET == opengl ]]; then
         fi 
     else 
         if [[ $NOSUDO == 1 ]]; then
-            RSYNC_DST=$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-opengl
-            mkdir -p $RSYNC_DST
+            UMD_OVERRIDE_DIR=$HOME/NVIDIA-Linux-UMD-override-${VERSION}
+            mkdir -p $UMD_OVERRIDE_DIR
         else
-            RSYNC_DST=$HOME 
+            UMD_OVERRIDE_DIR=$HOME 
         fi 
-        rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glcore.so $RSYNC_DST/libnvidia-glcore.so.$VERSION
-        rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/OpenGL/win/egl/build/_out/Linux_${ARCH}_${CONFIG}/libnvidia-eglcore.so $RSYNC_DST/libnvidia-eglcore.so.$VERSION 
-        rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/OpenGL/win/egl/glsi/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glsi.so $RSYNC_DST/libnvidia-glsi.so.$VERSION 
-        rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/OpenGL/win/unix/tls/Linux-elf/_out/Linux_${ARCH}_${CONFIG}/libnvidia-tls.so $RSYNC_DST/libnvidia-tls.so.$VERSION 
-        rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/OpenGL/win/glx/lib/_out/Linux_${ARCH}_${CONFIG}/libGLX_nvidia.so $RSYNC_DST/libGLX_nvidia.so.$VERSION  
-        rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/khronos/egl/egl/_out/Linux_${ARCH}_${CONFIG}/libEGL_nvidia.so $RSYNC_DST/libEGL_nvidia.so.$VERSION  
+        rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/OpenGL/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glcore.so $UMD_OVERRIDE_DIR/libnvidia-glcore.so.$VERSION
+        rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/OpenGL/win/egl/build/_out/Linux_${ARCH}_${CONFIG}/libnvidia-eglcore.so $UMD_OVERRIDE_DIR/libnvidia-eglcore.so.$VERSION 
+        rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/OpenGL/win/egl/glsi/_out/Linux_${ARCH}_${CONFIG}/libnvidia-glsi.so $UMD_OVERRIDE_DIR/libnvidia-glsi.so.$VERSION 
+        rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/OpenGL/win/unix/tls/Linux-elf/_out/Linux_${ARCH}_${CONFIG}/libnvidia-tls.so $UMD_OVERRIDE_DIR/libnvidia-tls.so.$VERSION 
+        rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/OpenGL/win/glx/lib/_out/Linux_${ARCH}_${CONFIG}/libGLX_nvidia.so $UMD_OVERRIDE_DIR/libGLX_nvidia.so.$VERSION  
+        rsync -ah --progress $LOGIN_INFO:$P4ROOT/branch/$BRANCH/drivers/khronos/egl/egl/_out/Linux_${ARCH}_${CONFIG}/libEGL_nvidia.so $UMD_OVERRIDE_DIR/libEGL_nvidia.so.$VERSION  
 
         if [[ $NOSUDO == 1 ]]; then
-            pushd $RSYNC_DST >/dev/null || exit 1
+            pushd $UMD_OVERRIDE_DIR >/dev/null || exit 1
             ln -sf libGLX_nvidia.so.$VERSION libGLX_nvidia.so.0
             ln -sf libEGL_nvidia.so.$VERSION libEGL_nvidia.so.0
 
@@ -136,10 +136,14 @@ elif [[ $TARGET == opengl ]]; then
                 exit 1
             fi 
 
-            sed -i "s|libGLX_nvidia\.so\.0|$RSYNC_DST/libGLX_nvidia.so.0|g" nvidia_icd.json
+            sed -i "s|libGLX_nvidia\.so\.0|$UMD_OVERRIDE_DIR/libGLX_nvidia.so.0|g" nvidia_icd.json
             popd >/dev/null 
             echo 
-            echo "LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-opengl${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} VK_ICD_FILENAMES=$RSYNC_DST/nvidia_icd.json ..." | tee $RSYNC_DST/README.md
+            echo "LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-$(uname -m)-${CONFIG}-${VERSION}-opengl${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} VK_ICD_FILENAMES=$UMD_OVERRIDE_DIR/nvidia_icd.json ..." | tee $UMD_OVERRIDE_DIR/README.md
+
+            pushd $HOME >/dev/null 
+            ln -sf $(basename $UMD_OVERRIDE_DIR) NVIDIA-Linux-UMD-override
+            popd >/dev/null 
         else 
             read -p "Press [Enter] to continue: "
             if [[ -f $HOME/libnvidia-glcore.so.$VERSION.backup ]]; then 
