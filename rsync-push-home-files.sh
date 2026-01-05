@@ -14,6 +14,7 @@ for path in $@; do
     if [[ -d $path ]]; then 
         path="${path%/}"
     fi 
+    path=$(realpath $path)
     home_files+=($path)
 done 
 
