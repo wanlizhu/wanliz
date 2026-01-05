@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Process pushbuffer XML dumps: resolve symbols, simplify callstacks, remove noise, format output.
-Usage: process-pushbuffer.py <file.xml or directory>
+Usage: process-pushbuffer-dump.py <file.xml or directory>
 """
 
 import sys, os, re, subprocess, tempfile, glob
