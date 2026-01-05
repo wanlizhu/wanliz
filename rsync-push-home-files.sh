@@ -10,6 +10,13 @@ while IFS= read -r -d '' file; do
     home_files+=("$file")
 done < <(find "$HOME" -maxdepth 1 -type f -not -name '.*' -print0)
 
+for path in $@; do 
+    if [[ -d $path ]]; then 
+        path="${path%/}"
+    fi 
+    home_files+=($path)
+done 
+
 if ((${#home_files[@]})); then 
     [[ -z $(sudo -n true 2>/dev/null && echo 1) ]] && { 
         echo "Load remote IP from ~/.bashrc_wsl2_ip"
