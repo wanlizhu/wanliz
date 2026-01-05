@@ -171,12 +171,6 @@ fi
 if [[ $sudo_access == yes ]]; then 
     read -p "Install profiling packages? [Yes/no]: " install_pkg 
     if [[ $install_pkg =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-        echo "Updating apt sources ..."
-        if [[ $verbose_mode == yes ]]; then 
-            sudo apt update 
-        else 
-            sudo apt update &>/dev/null
-        fi 
         if [[ -z $(which python3) ]]; then 
             echo -n "Installing python3 ..."
             if [[ $verbose_mode == yes ]]; then 
@@ -186,6 +180,7 @@ if [[ $sudo_access == yes ]]; then
             fi 
         fi 
 
+        missing_packages=()
         python_version=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
         for pkg in python${python_version}-dev python${python_version}-venv python3-pip \
             python3-protobuf protobuf-compiler \
@@ -197,14 +192,26 @@ if [[ $sudo_access == yes ]]; then
             libboost-program-options-dev unzip 
         do 
             if ! dpkg -s $pkg &>/dev/null; then
-                if [[ $verbose_mode == yes ]]; then 
-                    sudo apt install -y $pkg
-                else 
-                    echo -n "Installing $pkg ... "
-                    sudo apt install -y $pkg &>/dev/null && echo "[OK]" || echo "[FAILED]"
-                fi 
+                missing_packages+=($pkg)
             fi 
         done 
+
+        if ((${#missing_packages[@]} > 0)); then
+            if [[ $verbose_mode == yes ]]; then 
+                sudo apt update 
+            else
+                echo "Updating apt sources ..."
+                sudo apt update &>/dev/null 
+            fi 
+            for pkg in "${missing_packages[@]}"; do 
+                if [[ $verbose_mode == yes ]]; then 
+                    sudo apt install -y $pkg 
+                else 
+                    echo -n "Installing $pkg ... "
+                    sudo apt install -y $pkg &>/dev/null && echo "[OK]" || echo "[Failed]"
+                fi 
+            done 
+        fi 
 
         if [[ -d $HOME/SinglePassCapture ]]; then 
             if [[ $verbose_mode == yes ]]; then 
@@ -294,5 +301,6 @@ if [[ -d /mnt/c/Users/ && -d $HOME/sw/branch ]]; then
 fi 
 
 echo 
-echo "(optional) Install pic-x: https://gitlab-master.nvidia.com/perf-inspector/gift/-/releases"
 echo "All done!"
+echo "(optional) Install pic-x: https://gitlab-master.nvidia.com/perf-inspector/gift/-/releases"
+
