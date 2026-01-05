@@ -107,6 +107,10 @@ function env-pushbuffer-dump() {
 }
 
 function env-umd-pushbuffer-dump {
+    read -p "Remove old pushbuffer dumps? [Yes/no]: " remove_old_dumps
+    if [[ $remove_old_dumps =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+        rm -f ./pushbuffer-dump-*.xml
+    fi 
     env_vars_umd=$(env-umd-override)
     env_vars_pbd=$(env-pushbuffer-dump)
     env $env_vars_umd $env_vars_pbd $@
