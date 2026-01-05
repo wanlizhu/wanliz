@@ -357,3 +357,11 @@ void makedirs(const std::string& path) {
         throw std::runtime_error("Failed to make dirs: " + path + ": " + ec.message());
     }
 }
+
+uint64_t monotonic_timestamp_ns() {
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+        return (uint64_t)ts.tv_sec * 1000000000ull + (uint64_t)ts.tv_nsec;
+    }
+    return 0;
+}

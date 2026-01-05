@@ -113,7 +113,9 @@ void VK_TestCase_buffercopy::run_for_pi_capture(VK_device& device) {
 
     if (VK_config::args["single-drawcall"].as<bool>()) {
         std::cout << "BUF->BUF: Running for single draw call ...\n";
+        std::cout << "Begin TP: " << monotonic_timestamp_ns() << " ns";
         cp_dst_buffer.copy_from_buffer(cp_src_buffer_group.random_pick());
+        std::cout << "  End TP: " << monotonic_timestamp_ns() << " ns";
     } else {
         std::cout << "BUF->BUF: Running for 10 seconds ...\n";
         auto start_time = std::chrono::steady_clock::now();
