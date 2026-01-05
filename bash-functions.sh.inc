@@ -120,7 +120,7 @@ function env-umd-pushbuffer-dump {
     if [[ $1 == vulkanbench ]]; then 
         beginTP=$(cat /tmp/stdout | grep "Begin TP:" | awk '{print $3}')
         endTP=$(cat /tmp/stdout | grep "End TP:" | awk '{print $3}')
-        if [[ -z $ $beginTP && ! -z $endTP ]]; then 
+        if [[ -z $beginTP && ! -z $endTP ]]; then 
             filter_option="--filter=$beginTP:$endTP"
         fi 
     fi 
