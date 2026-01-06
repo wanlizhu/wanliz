@@ -119,7 +119,7 @@ fi
 if [[ ! -f $HOME/.ssh/id_ed25519 ]]; then 
     read -p "Restore ~/.ssh/id_ed25519 ? [Yes/no]: " restore_sshkey
     if [[ $restore_sshkey =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-        read -r -s -p "Password: " passwd
+        read -r -s -p "Decode Password: " passwd
         mkdir -p $HOME/.ssh 
         echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL' > $HOME/.ssh/id_ed25519.pub
         echo 'U2FsdGVkX194Pw+9XfMd3nfRt4STW9D9T2Cfbfjyf9IOwLQ+LsX9oxjoMif8igzU
