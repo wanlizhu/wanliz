@@ -72,6 +72,16 @@ subcmd_env_pushbuf() {
     export __GL_ac12fede=0x10183
 }
 
+subcmd_encrypt() {
+    read -p "Password: " passwd
+    echo "$1" | openssl enc -aes-256-cbc -salt -pbkdf2 -a -k $passwd
+}
+
+subcmd_decrypt() {
+    read -p "Password: " passwd
+    echo "$1" | openssl enc -d -aes-256-cbc -salt -pbkdf2 -a -k $passwd
+}
+
 case $1 in 
     wsl2backup) subcmd_backup_wsl2_home ;;
     pl)  subcmd_wanliz_git pull ;;
@@ -79,4 +89,6 @@ case $1 in
     env) subcmd_env; shift; $@ ;;
     env-umd)     subcmd_env_umd; shift; $@ ;;
     env-pushbuf) subcmd_env_pushbuf; shift; $@ ;;
+    encrypt) subcmd_encrypt "$2" ;;
+    decrypt) subcmd_decrypt "$2" ;;
 esac 

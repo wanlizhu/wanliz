@@ -115,9 +115,9 @@ if [[ $ssh_config =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
         "nvtest-galaxy-015 10.178.94.106 22 nvidia"
         "nvtest-galaxy-048 10.176.195.179 22 nvidia"
     )
-    for line in ${known_host_names[@]}; do 
+    for line in "${known_host_names[@]}"; do 
         read -r name host port user <<< "$line"
-        if ! grep -qE "^[[:space:]]*Host[[:space:]]+$name([[:space:]]|\$)" $HOME/.ssh/config; then 
+        if ! grep -qE "^[[:space:]]*Host[[:space:]]+$name"'([[:space:]]|$)' $HOME/.ssh/config; then 
             {
                 echo ""
                 echo "Host $name"
@@ -128,6 +128,24 @@ if [[ $ssh_config =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
             } >> $HOME/.ssh/config
         fi 
     done 
+fi 
+
+if [[ ! -f $HOME/.ssh/id_ed25519 ]]; then 
+    read -p "Restore ~/.ssh/id_ed25519 ? [Yes/no]: " restore_sshkey
+    if [[ $restore_sshkey =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+        read -r -s -p "Password: " passwd
+        mkdir -p $HOME/.ssh 
+        echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL' > $HOME/.ssh/id_ed25519.pub
+        echo 'U2FsdGVkX194Pw+9XfMd3nfRt4STW9D9T2Cfbfjyf9IOwLQ+LsX9oxjoMif8igzU
+hWs5GORzVsIwnhVb4W2AktmEWiLNxdCSsOG9Ilztf91kKo0LFtaEIU6H+UF5+mrL
+YByA0uXa+GDRUtLDbZbHgOKxQyWWj9yZ+Pyr/nsMM0HzcJLC3T+9NfJaBoL5416a
+wCtoEJhZk8LqXS79GLACgfclhU8uhAuIQjglmMZfiOLIJY+KttbI0kVDpdnDwMLJ
+UovXaoJ9gcfGlJNwuCENUAyhRuPdWrdvm42GRNwUlJKzaJ8Dvzs6x+EABz5n+x1o
+myN2A0GssInc0y4UMUlNjZysTCU8uba0K7rN2F163gRmLk+8dVOhDSV4zp63j1Dv
+H+0JYROsG3k1svGml1Mmkz2Xkw22KpGJzeElhSmK1UYtEElVM+/9qYIeg0OBi27I
+2egIAOukXs0xiBftt+PJ8fF7QeEn2+p4Tzjjt7qHebfFpoI9WreK5KfYow4TP++l
+nDj6vTRTsVlLb+1WffkxHCMVvvjFS9NzEJoZ1DBKFx1yhCoQ5U98eYFemtRfi+Xe' | openssl enc -d -aes-256-cbc -salt -pbkdf2 -a -k $passwd > $HOME/.ssh/id_ed25519
+    fi 
 fi 
 
 if [[ -z $sudo_access || $inside_container == yes ]]; then 
@@ -168,6 +186,7 @@ if [[ $sudo_access == yes ]]; then
                 fi
             done
             if ((${#missing[@]} > 0)); then
+                sudo apt-get update 
                 sudo apt-get install -y ${missing[@]}
                 case ${missing[@]} in 
                     openssh-server) sudo systemctl enable --now ssh.service ;;
@@ -175,7 +194,6 @@ if [[ $sudo_access == yes ]]; then
             fi
         }
 
-        sudo apt-get update 
         apt-check-or-install libxcb-cursor0 libxcb-dri2-0 libjpeg-dev vim git cmake build-essential ninja-build pkg-config clang rsync curl unzip openssh-server sshpass samba samba-common-bin smbclient python3 python3-dev python3-venv python3-pip jq screen mesa-utils vulkan-tools x11vnc net-tools
     fi 
 fi 
