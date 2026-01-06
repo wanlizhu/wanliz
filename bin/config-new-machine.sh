@@ -26,7 +26,6 @@ fi
 inside_container=
 if [[ -f /.dockerenv || -f /run/.containerenv ]]; then
     inside_container=yes 
-    verbose_mode=yes
     echo "Verbose mode forced to enabled inside container"
 fi 
 
@@ -62,11 +61,7 @@ if [[ $sudo_access == yes ]]; then
         if [[ $time_correct =~ ^[[:space:]]*([nN]|[nN][oO])[[:space:]]*$ ]]; then 
             read -e -i "$(date '+%F %T')" -p "The correct local time: " corrected_time
             sudo date -s "$corrected_time"
-            if [[ $verbose_mode == yes ]]; then 
-                sudo apt update 
-            else
-                sudo apt update &>/dev/null
-            fi 
+            sudo apt update 
         fi 
     fi 
 fi 
@@ -75,11 +70,7 @@ if [[ $sudo_access == yes && $EUID != 0 ]]; then
     if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
         read -p "Enable passwordless sudo for $USER? [Yes/no]: " passwordless_sudo 
         if [[ $passwordless_sudo =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-            if [[ $verbose_mode == yes ]]; then 
-                echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
-            else 
-                echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers &>/dev/null
-            fi 
+            echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
         fi 
     fi
 fi 
@@ -189,7 +180,7 @@ if [[ $sudo_access == yes ]]; then
             fi
         }
 
-        apt-check-or-install libxcb-cursor0 libxcb-dri2-0 libjpeg-dev vim git cmake build-essential ninja-build pkg-config clang rsync curl unzip openssh-server sshpass samba samba-common-bin smbclient python3 python3-dev python3-venv python3-pip jq screen mesa-utils vulkan-tools x11vnc net-tools
+        apt-check-or-install libxcb-cursor0 libxcb-dri2-0 libjpeg-dev vim git cmake build-essential ninja-build pkg-config clang rsync curl unzip openssh-server sshpass samba samba-common-bin smbclient python3 python3-dev python3-venv python3-pip jq screen mesa-utils vulkan-tools x11vnc net-tools mount.nfs mount.cifs
     fi 
 fi 
 
