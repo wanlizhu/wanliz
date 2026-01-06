@@ -26,8 +26,8 @@ find $HOME/.local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' lin
         rm -f "$link" &>/dev/null 
     fi 
 done 
-if [[ -d $HOME/wanliz/.local/bin ]]; then 
-    for file in $HOME/wanliz/.local/bin/*.*; do 
+if [[ -d $HOME/wanliz/bin ]]; then 
+    for file in $HOME/wanliz/bin/*.*; do 
         cmdName=$(basename "$file")
         cmdName=${cmdName%.sh}
         cmdName=${cmdName%.py}
