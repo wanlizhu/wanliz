@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 trap 'exit 130' INT
 
-if [[ -z $(echo "$PATH" | grep "$HOME/bin") ]]; then 
+if [[ -z $(echo "$PATH" | grep "$HOME/.local/bin") ]]; then 
     echo "" >> $HOME/.bashrc
-    echo 'export PATH="$HOME/bin:$PATH"' >> $HOME/.bashrc 
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> $HOME/.bashrc 
 fi 
 
 if [[ -z $(grep "subcmd_env" $HOME/.bashrc) ]]; then 
     {
         echo ""
-        echo "if [[ -e \$HOME/bin/zhu ]]; then" 
-        echo "    source \$HOME/bin/zhu" 
+        echo "if [[ -e \$HOME/.local/bin/zhu ]]; then" 
+        echo "    source \$HOME/.local/bin/zhu" 
         echo "    subcmd_env"
         echo "fi"
     } >> $HOME/.bashrc 
@@ -184,8 +184,8 @@ if [[ $sudo_access == yes ]]; then
     fi 
 fi 
 
-mkdir -p $HOME/bin 
-find $HOME/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
+mkdir -p $HOME/.local/bin 
+find $HOME/.local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
     if real_target=$(readlink -f "$link"); then  
         if [[ $real_target == *"/wanliz/"* ]]; then 
             rm -f "$link" &>/dev/null
@@ -194,12 +194,12 @@ find $HOME/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do
         rm -f "$link" &>/dev/null 
     fi 
 done 
-if [[ -d $HOME/wanliz/bin ]]; then 
-    for file in $HOME/wanliz/bin/*.*; do 
+if [[ -d $HOME/wanliz/.local/bin ]]; then 
+    for file in $HOME/wanliz/.local/bin/*.*; do 
         cmdName=$(basename "$file")
         cmdName=${cmdName%.sh}
         cmdName=${cmdName%.py}
-        ln -sf $file $HOME/bin/$cmdName
+        ln -sf $file $HOME/.local/bin/$cmdName
     done 
 fi 
 
