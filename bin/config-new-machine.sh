@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
 trap 'exit 130' INT
 
-verbose_mode=
-if [[ $1 == -v ]]; then 
-    verbose_mode=yes 
+if [[ -z $(echo "$PATH" | grep "$HOME/bin") ]]; then 
+    echo "" >> $HOME/.bashrc
+    echo 'export PATH="$HOME/bin:$PATH"' >> $HOME/.bashrc 
+fi 
+
+if [[ -z $(grep "subcmd_env" $HOME/.bashrc) ]]; then 
+    {
+        echo ""
+        echo "if [[ -e \$HOME/bin/zhu ]]; then" 
+        echo "    source \$HOME/bin/zhu" 
+        echo "    subcmd_env"
+        echo "fi"
+    } >> $HOME/.bashrc 
 fi 
 
 [[ -z $(sudo -n true 2>/dev/null && echo 1) ]] && { 
@@ -82,178 +92,111 @@ fi
 if [[ -z $sudo_access || $inside_container == yes ]]; then 
     ssh_config=no
 else 
-    if [[ -f $HOME/.ssh/config  ]]; then 
-        read -p "Reconfigure (override) ~/.ssh/config? [Yes/no]: " ssh_config
-    else 
-        read -p "Configure ~/.ssh/config? [Yes/no]: " ssh_config
-    fi 
+    read -p "Check and update ~/.ssh/config? [Yes/no]: " ssh_config
 fi 
 if [[ $ssh_config =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     mkdir -p $HOME/.ssh 
-    tee $HOME/.ssh/config >/dev/null <<'EOF'
-Host *
-    StrictHostKeyChecking accept-new
-    UserKnownHostsFile /dev/null
+    touch $HOME/.ssh/config
+    if ! grep -qE '^[[:space:]]*Host[[:space:]]+\*[[:space:]]*$' $HOME/.ssh/config; then 
+        {
+            echo ""
+            echo "Host *"
+            echo "    StrictHostKeyChecking accept-new"
+            echo "    UserKnownHostsFile /dev/null"
+        } >> $HOME/.ssh/config
+    fi 
 
-Host xterm                             
-    HostName dc2-container-xterm-028.prd.it.nvidia.com   
-    User wanliz                         
-    Port 4483                          
-    IdentityFile ~/.ssh/id_ed25519      
-
-Host office                             
-    HostName 172.16.179.143
-    User wanliz                           
-    IdentityFile ~/.ssh/id_ed25519            
-
-Host gb300-compute-cluster                      
-    HostName cls-pdx-ipp6-bcm-3         
-    User wanliz                     
-    IdentityFile ~/.ssh/id_ed25519      
-
-Host nvtest-spark-proxy
-    HostName 10.176.11.106
-    User nvidia
-    IdentityFile ~/.ssh/id_ed25519 
-
-Host nvtest-spark-172
-    HostName 10.31.86.235
-    User nvidia
-    IdentityFile ~/.ssh/id_ed25519 
-
-Host nvtest-galaxy-015
-    HostName 10.178.94.106  
-    User nvidia
-    IdentityFile ~/.ssh/id_ed25519
-
-Host nvtest-galaxy-048
-    HostName 10.176.195.179
-    User nvidia
-    IdentityFile ~/.ssh/id_ed25519
-EOF
+    known_host_names=(
+        "xterm dc2-container-xterm-028.prd.it.nvidia.com 4483 wanliz" 
+        "office 172.16.179.143 22 wanliz" 
+        "gb300-compute-cluster cls-pdx-ipp6-bcm-3 22 wanliz"
+        "nvtest-spark 10.31.86.235 22 nvidia"
+        "nvtest-spark-proxy 10.176.11.106 22 nvidia"
+        "nvtest-galaxy-015 10.178.94.106 22 nvidia"
+        "nvtest-galaxy-048 10.176.195.179 22 nvidia"
+    )
+    for line in ${known_host_names[@]}; do 
+        read -r name host port user <<< "$line"
+        if ! grep -qE "^[[:space:]]*Host[[:space:]]+$name([[:space:]]|\$)" $HOME/.ssh/config; then 
+            {
+                echo ""
+                echo "Host $name"
+                echo "    HostName $host"
+                echo "    Port $port"
+                echo "    User $user"
+                echo "    IdentityFile ~/.ssh/id_ed25519"
+            } >> $HOME/.ssh/config
+        fi 
+    done 
 fi 
 
 if [[ -z $sudo_access || $inside_container == yes ]]; then 
     config_vimrc=no
 else 
-    if [[ -f $HOME/.vimrc ]]; then 
-        read -p "Reconfigure (override) ~/.vimrc? [Yes/no]: " config_vimrc
-    else 
-        read -p "Configure ~/.vimrc? [Yes/no]: " config_vimrc
-    fi 
+    read -p "Check and override ~/.vimrc? [Yes/no]: " config_vimrc
 fi 
 if [[ $config_vimrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-    cat > $HOME/.vimrc <<'EOF'
-set expandtab        
-set tabstop=4        
-set shiftwidth=4     
-set softtabstop=4    
-EOF
+    {
+        echo "set expandtab"        
+        echo "set tabstop=4"        
+        echo "set shiftwidth=4"     
+        echo "set softtabstop=4"    
+    } > $HOME/.vimrc
 fi 
 
 if [[ -z $sudo_access || $inside_container == yes ]]; then 
     config_screenrc=no
 else 
-    if [[ -f $HOME/.screenrc ]]; then 
-        read -p "Reconfigure (override) ~/.screenrc? [Yes/no]: " config_screenrc
-    else 
-        read -p "Configure ~/.screenrc? [Yes/no]: " config_screenrc
-    fi 
+    read -p "Check and override ~/.screenrc? [Yes/no]: " config_screenrc
 fi 
 if [[ $config_screenrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-    cat > $HOME/.screenrc <<'EOF' 
-startup_message off     
-hardstatus alwaysfirstline 
-hardstatus string '%{= bW} [SCREEN %S]%{= bW} win:%n:%t %=%-Lw%{= kW}%n:%t%{-}%+Lw %=%Y-%m-%d %c:%s '
-EOF
+    {
+        echo "startup_message off"     
+        echo "hardstatus alwaysfirstline" 
+        echo "hardstatus string %{= bW} [SCREEN %S]%{= bW} win:%n:%t %=%-Lw%{= kW}%n:%t%{-}%+Lw %=%Y-%m-%d %c:%s '"
+    } > $HOME/.screenrc
 fi 
 
 if [[ $sudo_access == yes ]]; then 
-    read -p "Install profiling packages? [Yes/no]: " install_pkg 
+    read -p "Install missing apt packages? [Yes/no]: " install_pkg 
     if [[ $install_pkg =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-        if [[ -z $(which python3) ]]; then 
-            echo -n "Installing python3 ..."
-            if [[ $verbose_mode == yes ]]; then 
-                sudo apt install -y python3 
-            else 
-                sudo apt install -y python3 &>/dev/null && echo "[OK]" || echo "[FAILED]"
-            fi 
-        fi 
+        apt-check-or-install() {
+            local missing=()
+            for pkg in "$@"; do
+                if ! dpkg -s $pkg &>/dev/null; then
+                    missing+=($pkg)
+                fi
+            done
+            if ((${#missing[@]} > 0)); then
+                sudo apt-get install -y ${missing[@]}
+                case ${missing[@]} in 
+                    openssh-server) sudo systemctl enable --now ssh.service ;;
+                esac 
+            fi
+        }
 
-        missing_packages=()
-        python_version=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
-        for pkg in python${python_version}-dev python${python_version}-venv python3-pip \
-            python3-protobuf protobuf-compiler \
-            libxcb-dri2-0 nis autofs jq rsync vim curl screen sshpass \
-            lsof x11-xserver-utils x11-utils openbox obconf x11vnc \
-            mesa-utils vulkan-tools xserver-xorg-core \
-            samba samba-common-bin socat cmake build-essential \
-            ninja-build pkg-config libjpeg-dev smbclient \
-            libboost-program-options-dev unzip 
-        do 
-            if ! dpkg -s $pkg &>/dev/null; then
-                missing_packages+=($pkg)
-            fi 
-        done 
-
-        if ((${#missing_packages[@]} > 0)); then
-            if [[ $verbose_mode == yes ]]; then 
-                sudo apt update 
-            else
-                echo "Updating apt sources ..."
-                sudo apt update &>/dev/null 
-            fi 
-            for pkg in "${missing_packages[@]}"; do 
-                if [[ $verbose_mode == yes ]]; then 
-                    sudo apt install -y $pkg 
-                else 
-                    echo -n "Installing $pkg ... "
-                    sudo apt install -y $pkg &>/dev/null && echo "[OK]" || echo "[Failed]"
-                fi 
-            done 
-        fi 
-
-        if [[ -d $HOME/SinglePassCapture ]]; then 
-            if [[ $verbose_mode == yes ]]; then 
-                python3 -m pip install --break-system-packages -r $HOME/SinglePassCapture/Scripts/requirements.txt
-            else 
-                python3 -m pip install --break-system-packages -r $HOME/SinglePassCapture/Scripts/requirements.txt &>/dev/null
-            fi 
-        fi 
+        sudo apt-get update 
+        apt-check-or-install libxcb-cursor0 libxcb-dri2-0 libjpeg-dev vim git cmake build-essential ninja-build pkg-config clang rsync curl unzip openssh-server sshpass samba samba-common-bin smbclient python3 python3-dev python3-venv python3-pip jq screen mesa-utils vulkan-tools x11vnc net-tools
     fi 
 fi 
 
-read -p "Install profiling scripts? [Yes/no]: " install_symlinks 
-if [[ $install_symlinks =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-    mkdir -p $HOME/.local/bin
-    if [[ -d $HOME/wanliz ]]; then 
-        read -e -i $HOME/wanliz -p "Confirm scripts folder: " scripts_dir
+mkdir -p $HOME/bin 
+find $HOME/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
+    if real_target=$(readlink -f "$link"); then  
+        if [[ $real_target == *"/wanliz/"* ]]; then 
+            rm -f "$link" &>/dev/null
+        fi 
     else
-        read -p "Set scripts folder: " scripts_dir
+        rm -f "$link" &>/dev/null 
     fi 
-
-    if [[ -d $scripts_dir ]]; then 
-        find $HOME/.local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
-            if real_target=$(readlink -f "$link"); then  
-                if [[ $real_target == *"/wanliz/"* ]]; then 
-                    rm -f "$link" &>/dev/null
-                fi 
-            else
-                rm -f "$link" &>/dev/null 
-            fi 
-        done 
-        for file in $scripts_dir/*.*; do 
-            [[ -f $file && -x $file ]] || continue 
-            cmdname=$(basename "$file")
-            cmdname=${cmdname%.sh}
-            cmdname=${cmdname%.py}
-            if [[ $verbose_mode == yes ]]; then 
-                ln -vsf $file $HOME/.local/bin/$cmdname
-            else 
-                ln -sf $file $HOME/.local/bin/$cmdname &>/dev/null
-            fi 
-        done 
-    fi 
+done 
+if [[ -d $HOME/wanliz/bin ]]; then 
+    for file in $HOME/wanliz/bin/*.*; do 
+        cmdName=$(basename "$file")
+        cmdName=${cmdName%.sh}
+        cmdName=${cmdName%.py}
+        ln -vsf $file $HOME/bin/$cmdName
+    done 
 fi 
 
 if [[ $sudo_access == yes ]]; then 
@@ -302,5 +245,3 @@ fi
 
 echo 
 echo "All done!"
-echo "(optional) Install pic-x: https://gitlab-master.nvidia.com/perf-inspector/gift/-/releases"
-
