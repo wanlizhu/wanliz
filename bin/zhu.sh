@@ -22,6 +22,10 @@ subcmd_backup_wsl2_home() {
 }
 
 subcmd_wanliz_git() {
+    dst_dir=$HOME/wanliz
+    if [[ ! -z $2 ]]; then 
+        dst_dir=$(realpath $2)
+    fi 
     if [[ -z "$(git config --global --get user.name)" ]]; then
         git config --global user.name "Wanli Zhu"
         git config --global user.email zhu.wanli@icloud.com
@@ -30,10 +34,6 @@ subcmd_wanliz_git() {
         read -r -s -p "Decode Password: " passwd
         token=$(echo 'U2FsdGVkX1/56ViCg37yZ/tFFpvGWW+3fYiKVCMeOiFfFrrQIhyg5ju0VUua8hAH8e7UKHbqYyJzJKvoz1opgg==' | openssl enc -d -aes-256-cbc -salt -pbkdf2 -a -k $passwd)
         sed -i "s#https://github.com#https://wanlizhu:${token}@github.com#g" $HOME/wanliz/.git/config
-    fi 
-    dst_dir=$HOME/wanliz
-    if [[ ! -z $2 ]]; then 
-        dst_dir=$(realpath $2)
     fi 
     if [[ $1 == pull ]]; then 
         if [[ -d $dst_dir ]]; then
