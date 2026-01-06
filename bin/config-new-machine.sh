@@ -55,6 +55,71 @@ if [[ -d /mnt/c/Users/ && -d $HOME/sw/branch ]]; then
     done 
 fi 
 
+if [[ ! -f $HOME/.ssh/id_ed25519 ]]; then 
+    read -p "Restore ~/.ssh/id_ed25519 ? [Yes/no]: " restore_sshkey
+    if [[ $restore_sshkey =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+        read -r -s -p "Decode Password: " passwd
+        mkdir -p $HOME/.ssh 
+        echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL' > $HOME/.ssh/id_ed25519.pub
+        echo 'U2FsdGVkX194Pw+9XfMd3nfRt4STW9D9T2Cfbfjyf9IOwLQ+LsX9oxjoMif8igzU
+hWs5GORzVsIwnhVb4W2AktmEWiLNxdCSsOG9Ilztf91kKo0LFtaEIU6H+UF5+mrL
+YByA0uXa+GDRUtLDbZbHgOKxQyWWj9yZ+Pyr/nsMM0HzcJLC3T+9NfJaBoL5416a
+wCtoEJhZk8LqXS79GLACgfclhU8uhAuIQjglmMZfiOLIJY+KttbI0kVDpdnDwMLJ
+UovXaoJ9gcfGlJNwuCENUAyhRuPdWrdvm42GRNwUlJKzaJ8Dvzs6x+EABz5n+x1o
+myN2A0GssInc0y4UMUlNjZysTCU8uba0K7rN2F163gRmLk+8dVOhDSV4zp63j1Dv
+H+0JYROsG3k1svGml1Mmkz2Xkw22KpGJzeElhSmK1UYtEElVM+/9qYIeg0OBi27I
+2egIAOukXs0xiBftt+PJ8fF7QeEn2+p4Tzjjt7qHebfFpoI9WreK5KfYow4TP++l
+nDj6vTRTsVlLb+1WffkxHCMVvvjFS9NzEJoZ1DBKFx1yhCoQ5U98eYFemtRfi+Xe' | openssl enc -d -aes-256-cbc -salt -pbkdf2 -a -k $passwd > $HOME/.ssh/id_ed25519
+    fi 
+fi 
+
+mkdir -p $HOME/.ssh 
+touch $HOME/.ssh/config
+if ! grep -qE '^[[:space:]]*Host[[:space:]]+\*[[:space:]]*$' $HOME/.ssh/config; then 
+    {
+        echo ""
+        echo "Host *"
+        echo "    StrictHostKeyChecking accept-new"
+        echo "    UserKnownHostsFile /dev/null"
+    } >> $HOME/.ssh/config
+fi 
+
+known_host_names=(
+    "xterm dc2-container-xterm-028.prd.it.nvidia.com 4483 wanliz" 
+    "office 172.16.179.143 22 wanliz" 
+    "gb300-compute-cluster cls-pdx-ipp6-bcm-3 22 wanliz"
+    "nvtest-spark 10.31.86.235 22 nvidia"
+    "nvtest-spark-proxy 10.176.11.106 22 nvidia"
+    "nvtest-galaxy-015 10.178.94.106 22 nvidia"
+    "nvtest-galaxy-048 10.176.195.179 22 nvidia"
+)
+for line in "${known_host_names[@]}"; do 
+    read -r name host port user <<< "$line"
+    if ! grep -qE "^[[:space:]]*Host[[:space:]]+$name"'([[:space:]]|$)' $HOME/.ssh/config; then 
+        {
+            echo ""
+            echo "Host $name"
+            echo "    HostName $host"
+            echo "    Port $port"
+            echo "    User $user"
+            echo "    IdentityFile ~/.ssh/id_ed25519"
+        } >> $HOME/.ssh/config
+    fi 
+done 
+
+{
+    echo "set expandtab"        
+    echo "set tabstop=4"        
+    echo "set shiftwidth=4"     
+    echo "set softtabstop=4"    
+} > $HOME/.vimrc
+
+{
+    echo "startup_message off"     
+    echo "hardstatus alwaysfirstline" 
+    echo "hardstatus string %{= bW} [SCREEN %S]%{= bW} win:%n:%t %=%-Lw%{= kW}%n:%t%{-}%+Lw %=%Y-%m-%d %c:%s '"
+} > $HOME/.screenrc
+
 
 
 
@@ -119,80 +184,6 @@ if [[ $sudo_access == yes && $EUID != 0 ]]; then
     fi
 else
     echo "Passwordless sudo, skipped!"
-fi 
-
-if [[ ! -f $HOME/.ssh/id_ed25519 ]]; then 
-    read -p "Restore ~/.ssh/id_ed25519 ? [Yes/no]: " restore_sshkey
-    if [[ $restore_sshkey =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-        read -r -s -p "Decode Password: " passwd
-        mkdir -p $HOME/.ssh 
-        echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL' > $HOME/.ssh/id_ed25519.pub
-        echo 'U2FsdGVkX194Pw+9XfMd3nfRt4STW9D9T2Cfbfjyf9IOwLQ+LsX9oxjoMif8igzU
-hWs5GORzVsIwnhVb4W2AktmEWiLNxdCSsOG9Ilztf91kKo0LFtaEIU6H+UF5+mrL
-YByA0uXa+GDRUtLDbZbHgOKxQyWWj9yZ+Pyr/nsMM0HzcJLC3T+9NfJaBoL5416a
-wCtoEJhZk8LqXS79GLACgfclhU8uhAuIQjglmMZfiOLIJY+KttbI0kVDpdnDwMLJ
-UovXaoJ9gcfGlJNwuCENUAyhRuPdWrdvm42GRNwUlJKzaJ8Dvzs6x+EABz5n+x1o
-myN2A0GssInc0y4UMUlNjZysTCU8uba0K7rN2F163gRmLk+8dVOhDSV4zp63j1Dv
-H+0JYROsG3k1svGml1Mmkz2Xkw22KpGJzeElhSmK1UYtEElVM+/9qYIeg0OBi27I
-2egIAOukXs0xiBftt+PJ8fF7QeEn2+p4Tzjjt7qHebfFpoI9WreK5KfYow4TP++l
-nDj6vTRTsVlLb+1WffkxHCMVvvjFS9NzEJoZ1DBKFx1yhCoQ5U98eYFemtRfi+Xe' | openssl enc -d -aes-256-cbc -salt -pbkdf2 -a -k $passwd > $HOME/.ssh/id_ed25519
-    fi 
-fi 
-
-read -p "Check and override ~/.ssh/config? [Yes/no]: " ssh_config
-if [[ $ssh_config =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-    mkdir -p $HOME/.ssh 
-    touch $HOME/.ssh/config
-    if ! grep -qE '^[[:space:]]*Host[[:space:]]+\*[[:space:]]*$' $HOME/.ssh/config; then 
-        {
-            echo ""
-            echo "Host *"
-            echo "    StrictHostKeyChecking accept-new"
-            echo "    UserKnownHostsFile /dev/null"
-        } >> $HOME/.ssh/config
-    fi 
-
-    known_host_names=(
-        "xterm dc2-container-xterm-028.prd.it.nvidia.com 4483 wanliz" 
-        "office 172.16.179.143 22 wanliz" 
-        "gb300-compute-cluster cls-pdx-ipp6-bcm-3 22 wanliz"
-        "nvtest-spark 10.31.86.235 22 nvidia"
-        "nvtest-spark-proxy 10.176.11.106 22 nvidia"
-        "nvtest-galaxy-015 10.178.94.106 22 nvidia"
-        "nvtest-galaxy-048 10.176.195.179 22 nvidia"
-    )
-    for line in "${known_host_names[@]}"; do 
-        read -r name host port user <<< "$line"
-        if ! grep -qE "^[[:space:]]*Host[[:space:]]+$name"'([[:space:]]|$)' $HOME/.ssh/config; then 
-            {
-                echo ""
-                echo "Host $name"
-                echo "    HostName $host"
-                echo "    Port $port"
-                echo "    User $user"
-                echo "    IdentityFile ~/.ssh/id_ed25519"
-            } >> $HOME/.ssh/config
-        fi 
-    done 
-fi 
-
-read -p "Check and override ~/.vimrc? [Yes/no]: " config_vimrc
-if [[ $config_vimrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-    {
-        echo "set expandtab"        
-        echo "set tabstop=4"        
-        echo "set shiftwidth=4"     
-        echo "set softtabstop=4"    
-    } > $HOME/.vimrc
-fi 
-
-read -p "Check and override ~/.screenrc? [Yes/no]: " config_screenrc
-if [[ $config_screenrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-    {
-        echo "startup_message off"     
-        echo "hardstatus alwaysfirstline" 
-        echo "hardstatus string %{= bW} [SCREEN %S]%{= bW} win:%n:%t %=%-Lw%{= kW}%n:%t%{-}%+Lw %=%Y-%m-%d %c:%s '"
-    } > $HOME/.screenrc
 fi 
 
 if [[ $sudo_access == yes ]]; then 

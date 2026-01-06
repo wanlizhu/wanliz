@@ -31,26 +31,30 @@ subcmd_wanliz_git() {
         token=$(echo 'U2FsdGVkX1/56ViCg37yZ/tFFpvGWW+3fYiKVCMeOiFfFrrQIhyg5ju0VUua8hAH8e7UKHbqYyJzJKvoz1opgg==' | openssl enc -d -aes-256-cbc -salt -pbkdf2 -a -k $passwd)
         sed -i "s#https://github.com#https://wanlizhu:${token}@github.com#g" $HOME/wanliz/.git/config
     fi 
+    dst_dir=$HOME/wanliz
+    if [[ ! -z $2 ]]; then 
+        dst_dir=$(realpath $2)
+    fi 
     if [[ $1 == pull ]]; then 
-        if [[ -d $HOME/wanliz ]]; then
-            pushd $HOME/wanliz >/dev/null
+        if [[ -d $dst_dir ]]; then
+            pushd $dst_dir >/dev/null
             git add .
             git commit -m "$(date)"
             git pull
             popd >/dev/null
         else
-            echo "$HOME/wanliz doesn't exist"
+            echo "$dst_dir doesn't exist"
         fi
     elif [[ $1 == push ]]; then
-        if [[ -d $HOME/wanliz ]]; then
-            pushd $HOME/wanliz >/dev/null
+        if [[ -d $dst_dir ]]; then
+            pushd $dst_dir >/dev/null
             git add .
             git commit -m "$(date)"
             git pull
             git push
             popd >/dev/null
         else
-            echo "$HOME/wanliz doesn't exist"
+            echo "$dst_dir doesn't exist"
         fi
     fi 
 }
@@ -92,12 +96,12 @@ subcmd_decrypt() {
 }
 
 case $1 in 
-    wsl2backup) subcmd_backup_wsl2_home ;;
-    pl)  subcmd_wanliz_git pull ;;
-    ps)  subcmd_wanliz_git push ;;
-    env) subcmd_env; shift; $@ ;;
-    env-umd)     subcmd_env_umd; shift; $@ ;;
-    env-pushbuf) subcmd_env_pushbuf; shift; $@ ;;
-    encrypt) subcmd_encrypt "$2" ;;
-    decrypt) subcmd_decrypt "$2" ;;
+    wsl2backup) shift; subcmd_backup_wsl2_home ;;
+    pl)  shift; subcmd_wanliz_git pull $@;;
+    ps)  shift; subcmd_wanliz_git push $@;;
+    env) shift; subcmd_env; $@ ;;
+    env-umd)     shift; subcmd_env_umd; $@ ;;
+    env-pushbuf) shift; subcmd_env_pushbuf; $@ ;;
+    encrypt) shift; subcmd_encrypt "$1" ;;
+    decrypt) shift; subcmd_decrypt "$1" ;;
 esac 
