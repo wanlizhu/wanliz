@@ -246,5 +246,4 @@ else
     echo "Mount /mnt/linuxqa, skipped!"
 fi 
 
-echo 
 echo "All done!"
