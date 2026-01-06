@@ -199,7 +199,7 @@ if [[ -d $HOME/wanliz/bin ]]; then
         cmdName=$(basename "$file")
         cmdName=${cmdName%.sh}
         cmdName=${cmdName%.py}
-        ln -vsf $file $HOME/bin/$cmdName
+        ln -sf $file $HOME/bin/$cmdName
     done 
 fi 
 
