@@ -70,6 +70,8 @@ myN2A0GssInc0y4UMUlNjZysTCU8uba0K7rN2F163gRmLk+8dVOhDSV4zp63j1Dv
 H+0JYROsG3k1svGml1Mmkz2Xkw22KpGJzeElhSmK1UYtEElVM+/9qYIeg0OBi27I
 2egIAOukXs0xiBftt+PJ8fF7QeEn2+p4Tzjjt7qHebfFpoI9WreK5KfYow4TP++l
 nDj6vTRTsVlLb+1WffkxHCMVvvjFS9NzEJoZ1DBKFx1yhCoQ5U98eYFemtRfi+Xe' | openssl enc -d -aes-256-cbc -salt -pbkdf2 -a -k $passwd > $HOME/.ssh/id_ed25519
+        chmod 600 $HOME/.ssh/id_ed25519
+        chmod 644 $HOME/.ssh/id_ed25519.pub  
     fi 
 fi 
 
