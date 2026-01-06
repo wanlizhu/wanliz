@@ -244,7 +244,7 @@ subcmd_driver() {
 }
 
 subcmd_docker() {
-    
+    echo 
 }
 
 case $1 in 
