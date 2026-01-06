@@ -16,17 +16,12 @@ if [[ -z $(grep "subcmd_env" $HOME/.bashrc) ]]; then
     } >> $HOME/.bashrc 
 fi 
 
-[[ -z $(sudo -n true 2>/dev/null && echo 1) ]] && { 
-    echo "Running with forced option --nosudo"
+read -p "Do you have sudo access? [Yes/no]: " sudo_access
+if [[ $sudo_access =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then 
+    sudo_access=yes
+else
     sudo_access=
-} || {
-    read -p "Do you have sudo access? [Yes/no]: " sudo_access
-    if [[ $sudo_access =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then 
-        sudo_access=yes
-    else
-        sudo_access=
-    fi 
-}
+fi 
 
 inside_container=
 if [[ -f /.dockerenv || -f /run/.containerenv ]]; then
