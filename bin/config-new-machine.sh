@@ -16,6 +16,48 @@ if [[ -z $(grep "subcmd_env" $HOME/.bashrc) ]]; then
     } >> $HOME/.bashrc 
 fi 
 
+mkdir -p $HOME/.local/bin 
+find $HOME/.local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
+    if real_target=$(readlink -f "$link"); then  
+        if [[ $real_target == *"/wanliz/"* ]]; then 
+            rm -f "$link" &>/dev/null
+        fi 
+    else
+        rm -f "$link" &>/dev/null 
+    fi 
+done 
+if [[ -d $HOME/wanliz/.local/bin ]]; then 
+    for file in $HOME/wanliz/.local/bin/*.*; do 
+        cmdName=$(basename "$file")
+        cmdName=${cmdName%.sh}
+        cmdName=${cmdName%.py}
+        ln -sf $file $HOME/.local/bin/$cmdName
+    done 
+fi 
+
+if [[ -d /mnt/c/Users/ && -d $HOME/sw/branch ]]; then
+    find $HOME/sw/branch -mindepth 1 -maxdepth 1 -type d -path '*/.*' -prune -o -type d -print0 |
+    while IFS= read -r -d '' nvsrc; do 
+        if [[ -d $nvsrc/drivers/OpenGL ]]; then 
+            if [[ ! -f $nvsrc/drivers/OpenGL/.cursorignore ]]; then 
+                ln -sf $HOME/sw/_cursor_workspace/.cursorignore $nvsrc/drivers/OpenGL/.cursorignore &&
+                echo "Added symlink: $nvsrc/drivers/OpenGL/.cursorignore"
+            fi 
+            if [[ ! -d $nvsrc/drivers/OpenGL/.cursor ]]; then 
+                ln -sf $HOME/sw/_cursor_workspace/.cursor $nvsrc/drivers/OpenGL/.cursor &&
+                echo "Added symlink: $nvsrc/drivers/OpenGL/.cursor"
+            fi 
+            if [[ ! -f $nvsrc/drivers/OpenGL/.clangd ]]; then 
+                ln -sf $HOME/sw/_cursor_workspace/.clangd $nvsrc/drivers/OpenGL/.clangd &&
+                echo "Added symlink: $nvsrc/drivers/OpenGL/.clangd"
+            fi 
+        fi 
+    done 
+fi 
+
+
+
+
 read -p "Do you have sudo access? [Yes/no]: " sudo_access
 if [[ $sudo_access =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then 
     sudo_access=yes
@@ -64,6 +106,8 @@ if [[ $sudo_access == yes ]]; then
             sudo apt update 
         fi 
     fi 
+else
+    echo "Time zone check, skipped!"
 fi 
 
 if [[ $sudo_access == yes && $EUID != 0 ]]; then 
@@ -73,13 +117,29 @@ if [[ $sudo_access == yes && $EUID != 0 ]]; then
             echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
         fi 
     fi
+else
+    echo "Passwordless sudo, skipped!"
 fi 
 
-if [[ -z $sudo_access || $inside_container == yes ]]; then 
-    ssh_config=no
-else 
-    read -p "Check and update ~/.ssh/config? [Yes/no]: " ssh_config
+if [[ ! -f $HOME/.ssh/id_ed25519 ]]; then 
+    read -p "Restore ~/.ssh/id_ed25519 ? [Yes/no]: " restore_sshkey
+    if [[ $restore_sshkey =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
+        read -r -s -p "Decode Password: " passwd
+        mkdir -p $HOME/.ssh 
+        echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL' > $HOME/.ssh/id_ed25519.pub
+        echo 'U2FsdGVkX194Pw+9XfMd3nfRt4STW9D9T2Cfbfjyf9IOwLQ+LsX9oxjoMif8igzU
+hWs5GORzVsIwnhVb4W2AktmEWiLNxdCSsOG9Ilztf91kKo0LFtaEIU6H+UF5+mrL
+YByA0uXa+GDRUtLDbZbHgOKxQyWWj9yZ+Pyr/nsMM0HzcJLC3T+9NfJaBoL5416a
+wCtoEJhZk8LqXS79GLACgfclhU8uhAuIQjglmMZfiOLIJY+KttbI0kVDpdnDwMLJ
+UovXaoJ9gcfGlJNwuCENUAyhRuPdWrdvm42GRNwUlJKzaJ8Dvzs6x+EABz5n+x1o
+myN2A0GssInc0y4UMUlNjZysTCU8uba0K7rN2F163gRmLk+8dVOhDSV4zp63j1Dv
+H+0JYROsG3k1svGml1Mmkz2Xkw22KpGJzeElhSmK1UYtEElVM+/9qYIeg0OBi27I
+2egIAOukXs0xiBftt+PJ8fF7QeEn2+p4Tzjjt7qHebfFpoI9WreK5KfYow4TP++l
+nDj6vTRTsVlLb+1WffkxHCMVvvjFS9NzEJoZ1DBKFx1yhCoQ5U98eYFemtRfi+Xe' | openssl enc -d -aes-256-cbc -salt -pbkdf2 -a -k $passwd > $HOME/.ssh/id_ed25519
+    fi 
 fi 
+
+read -p "Check and override ~/.ssh/config? [Yes/no]: " ssh_config
 if [[ $ssh_config =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     mkdir -p $HOME/.ssh 
     touch $HOME/.ssh/config
@@ -116,29 +176,7 @@ if [[ $ssh_config =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     done 
 fi 
 
-if [[ ! -f $HOME/.ssh/id_ed25519 ]]; then 
-    read -p "Restore ~/.ssh/id_ed25519 ? [Yes/no]: " restore_sshkey
-    if [[ $restore_sshkey =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-        read -r -s -p "Decode Password: " passwd
-        mkdir -p $HOME/.ssh 
-        echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL' > $HOME/.ssh/id_ed25519.pub
-        echo 'U2FsdGVkX194Pw+9XfMd3nfRt4STW9D9T2Cfbfjyf9IOwLQ+LsX9oxjoMif8igzU
-hWs5GORzVsIwnhVb4W2AktmEWiLNxdCSsOG9Ilztf91kKo0LFtaEIU6H+UF5+mrL
-YByA0uXa+GDRUtLDbZbHgOKxQyWWj9yZ+Pyr/nsMM0HzcJLC3T+9NfJaBoL5416a
-wCtoEJhZk8LqXS79GLACgfclhU8uhAuIQjglmMZfiOLIJY+KttbI0kVDpdnDwMLJ
-UovXaoJ9gcfGlJNwuCENUAyhRuPdWrdvm42GRNwUlJKzaJ8Dvzs6x+EABz5n+x1o
-myN2A0GssInc0y4UMUlNjZysTCU8uba0K7rN2F163gRmLk+8dVOhDSV4zp63j1Dv
-H+0JYROsG3k1svGml1Mmkz2Xkw22KpGJzeElhSmK1UYtEElVM+/9qYIeg0OBi27I
-2egIAOukXs0xiBftt+PJ8fF7QeEn2+p4Tzjjt7qHebfFpoI9WreK5KfYow4TP++l
-nDj6vTRTsVlLb+1WffkxHCMVvvjFS9NzEJoZ1DBKFx1yhCoQ5U98eYFemtRfi+Xe' | openssl enc -d -aes-256-cbc -salt -pbkdf2 -a -k $passwd > $HOME/.ssh/id_ed25519
-    fi 
-fi 
-
-if [[ -z $sudo_access || $inside_container == yes ]]; then 
-    config_vimrc=no
-else 
-    read -p "Check and override ~/.vimrc? [Yes/no]: " config_vimrc
-fi 
+read -p "Check and override ~/.vimrc? [Yes/no]: " config_vimrc
 if [[ $config_vimrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     {
         echo "set expandtab"        
@@ -148,11 +186,7 @@ if [[ $config_vimrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     } > $HOME/.vimrc
 fi 
 
-if [[ -z $sudo_access || $inside_container == yes ]]; then 
-    config_screenrc=no
-else 
-    read -p "Check and override ~/.screenrc? [Yes/no]: " config_screenrc
-fi 
+read -p "Check and override ~/.screenrc? [Yes/no]: " config_screenrc
 if [[ $config_screenrc =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
     {
         echo "startup_message off"     
@@ -182,28 +216,12 @@ if [[ $sudo_access == yes ]]; then
 
         apt-check-or-install libxcb-cursor0 libxcb-dri2-0 libjpeg-dev vim git cmake build-essential ninja-build pkg-config clang rsync curl unzip openssh-server sshpass samba samba-common-bin smbclient python3 python3-dev python3-venv python3-pip jq screen mesa-utils vulkan-tools x11vnc net-tools nfs-common cifs-utils
     fi 
-fi 
-
-mkdir -p $HOME/.local/bin 
-find $HOME/.local/bin -maxdepth 1 -type l -print0 | while IFS= read -r -d '' link; do 
-    if real_target=$(readlink -f "$link"); then  
-        if [[ $real_target == *"/wanliz/"* ]]; then 
-            rm -f "$link" &>/dev/null
-        fi 
-    else
-        rm -f "$link" &>/dev/null 
-    fi 
-done 
-if [[ -d $HOME/wanliz/.local/bin ]]; then 
-    for file in $HOME/wanliz/.local/bin/*.*; do 
-        cmdName=$(basename "$file")
-        cmdName=${cmdName%.sh}
-        cmdName=${cmdName%.py}
-        ln -sf $file $HOME/.local/bin/$cmdName
-    done 
+else
+    echo "Install apt packages, skipped!"
 fi 
 
 if [[ $sudo_access == yes ]]; then 
+    # findmnt -o TARGET,SOURCE,FSTYPE,OPTIONS
     if [[ ! -d /mnt/linuxqa/wanliz ]]; then 
         # mounting corporate NFS directly from WSL is not supported reliably. 
         # It works on a real Linux host on the same network, 
@@ -224,27 +242,8 @@ if [[ $sudo_access == yes ]]; then
             fi 
         fi 
     fi 
-    # findmnt -o TARGET,SOURCE,FSTYPE,OPTIONS
-fi 
-
-if [[ -d /mnt/c/Users/ && -d $HOME/sw/branch ]]; then
-    find $HOME/sw/branch -mindepth 1 -maxdepth 1 -type d -path '*/.*' -prune -o -type d -print0 |
-    while IFS= read -r -d '' nvsrc; do 
-        if [[ -d $nvsrc/drivers/OpenGL ]]; then 
-            if [[ ! -f $nvsrc/drivers/OpenGL/.cursorignore ]]; then 
-                ln -sf $HOME/sw/_cursor_workspace/.cursorignore $nvsrc/drivers/OpenGL/.cursorignore &&
-                echo "Added symlink: $nvsrc/drivers/OpenGL/.cursorignore"
-            fi 
-            if [[ ! -d $nvsrc/drivers/OpenGL/.cursor ]]; then 
-                ln -sf $HOME/sw/_cursor_workspace/.cursor $nvsrc/drivers/OpenGL/.cursor &&
-                echo "Added symlink: $nvsrc/drivers/OpenGL/.cursor"
-            fi 
-            if [[ ! -f $nvsrc/drivers/OpenGL/.clangd ]]; then 
-                ln -sf $HOME/sw/_cursor_workspace/.clangd $nvsrc/drivers/OpenGL/.clangd &&
-                echo "Added symlink: $nvsrc/drivers/OpenGL/.clangd"
-            fi 
-        fi 
-    done 
+else
+    echo "Mount /mnt/linuxqa, skipped!"
 fi 
 
 echo 
