@@ -95,8 +95,6 @@ subcmd_decrypt() {
     echo "$1" | openssl enc -d -aes-256-cbc -salt -pbkdf2 -a -k $passwd
 }
 
-
-
 subcmd_send() {
     if [[ -f $HOME/.rsync_host ]]; then 
         read -e -i $(cat $HOME/.rsync_host) -p "Rsync Host: " rsync_host
@@ -104,7 +102,14 @@ subcmd_send() {
         read -p "Rsync Host: " rsync_host
     fi 
     echo $rsync_host > $HOME/.rsync_host
+}
 
+rsync_recv_umds() {
+    echo 
+}
+
+rsync_recv_drvpkg() {
+    echo 
 }
 
 subcmd_recv() {
@@ -116,15 +121,32 @@ subcmd_recv() {
     echo $rsync_host > $HOME/.rsync_host
 
     case $1 in 
-        vulkanbench)
+        vulkanbench) shift 
             if [[ $(uname -m) == aarch64 ]]; then 
                 rsync -Pah wanliz@$rsync_host:/home/wanliz/wanliz/build-linux-aarch64/vulkanbench . 
             elif [[ $(uname -m) == x86_64 ]]; then 
                 rsync -Pah wanliz@$rsync_host:/home/wanliz/wanliz/build-linux/vulkanbench . 
             fi 
         ;;
+        umd|umds) shift; rsync_recv_umds $@ ;;
+        drv|drvpkg) shift; rsync_recv_drvpkg $@ ;;
         ~/*) rsync -Pah wanliz@$rsync_host:${1/#\~//home/wanliz} . ;;
         *) rsync -Pah wanliz@$rsync_host:$1 . ;;
+    esac
+}
+
+remove_nvidia_modules() {
+    echo 
+}
+
+install_nvidia_driver() {
+    echo 
+}
+
+subcmd_driver() {
+    case $1 in 
+        remod) shift; remove_nvidia_modules $@ ;;
+        install) shift; install_nvidia_driver $@ ;;
     esac
 }
 
@@ -133,10 +155,11 @@ case $1 in
     pl)  shift; subcmd_wanliz_git pull $@;;
     ps)  shift; subcmd_wanliz_git push $@;;
     env) shift; subcmd_env; $@ ;;
-    env-umd)     shift; subcmd_env_umd; $@ ;;
+    env-umd|env-umds)     shift; subcmd_env_umd; $@ ;;
     env-pushbuf) shift; subcmd_env_pushbuf; $@ ;;
     encrypt) shift; subcmd_encrypt "$1" ;;
     decrypt) shift; subcmd_decrypt "$1" ;;
     send) shift; subcmd_send $@ ;;
     recv) shift; subcmd_recv $@ ;;
+    driver) shift; subcmd_driver $@ ;;
 esac 
