@@ -294,16 +294,34 @@ subcmd_driver() {
 }
 
 subcmd_docker() {
+    nvidia_device_nodes() {
+        for device_node in \
+            /dev/nvidiactl \
+            /dev/nvidia-modeset \
+            /dev/nvidia-uvm \
+            /dev/nvidia-uvm-tools \
+            /dev/nvidia[0-9]* \
+            /dev/nvidia-caps/nvidia-cap* \
+            /dev/nvidia-caps-imex-channels/channel* \
+            /dev/dri/renderD* \
+            /dev/dri/card*; do
+            if [[ -e $device_node ]]; then 
+                echo "--device=$device_node "
+            fi 
+        done
+    }
+
     if ! docker image inspect ubuntu:24.04 &>/dev/null; then 
         docker pull ubuntu:24.04
     fi 
     docker rm -f ubuntu-24.04-wanliz &>/dev/null || true 
+
     if [[ $1 == nvl ]]; then 
-        docker run -it --name="ubuntu-24.04-nvl" --cpuset-cpus=0-71 --cpuset-mems=0 --gpus all -e TZ=America/Los_Angeles ubuntu:24.04 bash
+        docker run -it --name="ubuntu-24.04-nvl" --cpuset-cpus=0-71 --cpuset-mems=0 --runtime=runc -v /proc/driver/nvidia:/proc/driver/nvidia:ro $(nvidia_device_nodes) -e TZ=America/Los_Angeles ubuntu:24.04 bash
     elif [[ $1 == galaxy ]]; then 
-        docker run -it --name="ubuntu-24.04-galaxy" --cpuset-cpus=0-71 --cpuset-mems=0 --gpus all -e TZ=America/Los_Angeles -e __GL_DeviceModalityPreference=1 ubuntu:24.04 bash 
+        docker run -it --name="ubuntu-24.04-galaxy" --cpuset-cpus=0-71 --cpuset-mems=0 --runtime=runc -v /proc/driver/nvidia:/proc/driver/nvidia:ro $(nvidia_device_nodes) -e TZ=America/Los_Angeles -e __GL_DeviceModalityPreference=1 ubuntu:24.04 bash 
     else
-        docker run -it --name="ubuntu-24.04-wanliz" --gpus all -e TZ=America/Los_Angeles ubuntu:24.04 bash
+        docker run -it --name="ubuntu-24.04-wanliz" --runtime=runc -v /proc/driver/nvidia:/proc/driver/nvidia:ro $(nvidia_device_nodes) -e TZ=America/Los_Angeles ubuntu:24.04 bash
     fi 
 }
 
