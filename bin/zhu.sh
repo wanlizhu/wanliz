@@ -251,8 +251,13 @@ download_nvidia_driver_version() {
 install_nvidia_driver() {
     if [[ -e $1 ]]; then 
         nvpkg=$1; shift 
+        forced_args=
+        if [[ -f /.dockerenv || -f /run/.containerenv ]]; then
+            forced_args+=" --no-kernel-modules"
+        fi 
+
         no_kernel_modules=
-        for arg in $@; do 
+        for arg in $@ $forced_args; do 
             if [[ $arg == "--no-kernel-modules" ]]; then 
                 no_kernel_modules=1
             fi 
