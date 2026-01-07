@@ -260,7 +260,7 @@ install_nvidia_driver() {
         if [[ -z $no_kernel_modules ]]; then 
             remove_nvidia_module || return 1
         fi 
-        chmod +x $1 2>/dev/null 
+        chmod +x $nvpkg 2>/dev/null 
         sudo $nvpkg $@ || return 1
         echo "Driver installed!"
         tests_tarball=${nvpkg/NVIDIA/tests}
@@ -276,11 +276,11 @@ install_nvidia_driver() {
             popd >/dev/null 
         fi 
     else
-        if download_nvidia_driver_version $1; then 
-            version=$1; shift 
+        version=$1; shift 
+        if download_nvidia_driver_version $version; then 
             install_nvidia_driver $HOME/NVIDIA-Linux-$(uname -m)-$version-release.run $@
         else 
-            sudo /mnt/linuxqa/nvt.sh drivers $@ || return 1
+            sudo /mnt/linuxqa/nvt.sh drivers $version $@ || return 1
         fi 
     fi 
 }
