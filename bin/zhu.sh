@@ -31,7 +31,7 @@ subcmd_wanliz_git() {
         git config --global user.email zhu.wanli@icloud.com
     fi
     if [[ -z $(cat $HOME/wanliz/.git/config | grep "wanlizhu/wanliz" | grep "@") ]]; then 
-        read -r -s -p "Decode Password: " passwd
+        read -r -s -p "Decode Password: " passwd && echo 
         token=$(echo 'U2FsdGVkX1/56ViCg37yZ/tFFpvGWW+3fYiKVCMeOiFfFrrQIhyg5ju0VUua8hAH8e7UKHbqYyJzJKvoz1opgg==' | openssl enc -d -aes-256-cbc -salt -pbkdf2 -a -k $passwd)
         sed -i "s#https://github.com#https://wanlizhu:${token}@github.com#g" $HOME/wanliz/.git/config
     fi 
