@@ -316,6 +316,9 @@ subcmd_docker() {
         done
     }
 
+    read -r -s -p "Decode Password: " passwd && echo 
+    ehco "$passwd" > /tmp/decode_password 
+
     if ! docker image inspect ubuntu:24.04 &>/dev/null; then 
         docker pull ubuntu:24.04
     fi 
@@ -328,6 +331,7 @@ subcmd_docker() {
             --cpuset-mems=0 \
             --runtime=runc $(nvidia_device_nodes) \
             -v $HOME/wanliz/bin/config-new-machine.sh:/tmp/config.sh:ro \
+            -v /tmp/decode_password:/tmp/decode_password:ro \
             -e TZ=America/Los_Angeles \
             ubuntu:24.04 bash -lic '/tmp/config.sh; exec bash -li'
     elif [[ $1 == galaxy ]]; then 
@@ -338,6 +342,7 @@ subcmd_docker() {
             --cpuset-mems=0 \
             --runtime=runc $(nvidia_device_nodes) \
             -v $HOME/wanliz/bin/config-new-machine.sh:/tmp/config.sh:ro \
+            -v /tmp/decode_password:/tmp/decode_password:ro \
             -e TZ=America/Los_Angeles \
             -e __GL_DeviceModalityPreference=1 \
             ubuntu:24.04 bash -lic '/tmp/config.sh; exec bash -li' 
@@ -347,6 +352,7 @@ subcmd_docker() {
             --name="ubuntu-24.04-wanliz" \
             --runtime=runc $(nvidia_device_nodes) \
             -v $HOME/wanliz/bin/config-new-machine.sh:/tmp/config.sh:ro \
+            -v /tmp/decode_password:/tmp/decode_password:ro \
             -e TZ=America/Los_Angeles \
             ubuntu:24.04 bash -lic '/tmp/config.sh; exec bash -li'
     fi 
