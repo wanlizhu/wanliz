@@ -80,5 +80,5 @@ echo "Wait for 3 seconds ..."
 sleep 3
 
 if [[ -z $(lsmod | grep -E '^nvidia') ]]; then 
-    echo "All done!"
+    echo "All nvidia modules removed!"
 fi 

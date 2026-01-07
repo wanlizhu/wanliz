@@ -218,6 +218,9 @@ subcmd_recv() {
 }
 
 remove_nvidia_module() {
+    if [[ -z $(lsmod | grep -E '^nvidia') ]]; then 
+        return 0
+    fi 
     if [[ ! -z $(which remove-nvidia-module) ]]; then 
         remove-nvidia-module 
     else
