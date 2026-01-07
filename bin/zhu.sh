@@ -263,7 +263,8 @@ install_nvidia_driver() {
         fi 
     else
         if download_nvidia_driver_version $1; then 
-            install_nvidia_driver $HOME/NVIDIA-Linux-$(uname -m)-$1-release.run
+            version=$1; shift 
+            install_nvidia_driver $HOME/NVIDIA-Linux-$(uname -m)-$version-release.run $@
         else 
             sudo /mnt/linuxqa/nvt.sh drivers $@ || return 1
         fi 
