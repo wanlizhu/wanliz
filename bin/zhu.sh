@@ -221,9 +221,6 @@ subcmd_recv() {
 }
 
 remove_nvidia_module() {
-    if [[ -z $(which lsmod) ]]; then 
-        sudo apt install -y kmod
-    fi 
     if [[ -z $(lsmod | grep -E '^nvidia') ]]; then 
         return 0
     fi 
@@ -254,7 +251,15 @@ download_nvidia_driver_version() {
 install_nvidia_driver() {
     if [[ -e $1 ]]; then 
         nvpkg=$1; shift 
-        remove_nvidia_module || return 1
+        no_kernel_modules=
+        for arg in $@; do 
+            if [[ $arg == "--no-kernel-modules" ]]; then 
+                no_kernel_modules=1
+            fi 
+        done 
+        if [[ -z $no_kernel_modules ]]; then 
+            remove_nvidia_module || return 1
+        fi 
         chmod +x $1 2>/dev/null 
         sudo $nvpkg $@ || return 1
         echo "Driver installed!"
