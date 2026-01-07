@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 trap 'exit 130' INT
 
+if [[ $EUID == 0 ]]; then 
+    sudo() { "$@"; }
+fi 
+
 if [[ -z $(echo "$PATH" | grep "$HOME/.local/bin") ]]; then 
     echo "" >> $HOME/.bashrc
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> $HOME/.bashrc 
