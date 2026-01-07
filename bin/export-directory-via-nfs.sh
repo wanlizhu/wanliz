@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 trap 'exit 130' INT
+if [[ $EUID == 0 || -z $(which sudo) ]]; then 
+    sudo() { "$@"; }
+fi 
 
 if [[ ! -z $(sudo exportfs -v | grep "$1") ]]; then 
     echo "$1 is already exported via NFS"

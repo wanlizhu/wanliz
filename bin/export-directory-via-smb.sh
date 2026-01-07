@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 trap 'exit 130' INT
+if [[ $EUID == 0 || -z $(which sudo) ]]; then 
+    sudo() { "$@"; }
+fi 
 
 if testparm -s 2>/dev/null | grep -q "^[[:space:]]*path[[:space:]]*=[[:space:]]*$1[[:space:]]*$"; then
     echo "$1 is already exported via SMB"

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 trap 'exit 130' INT
 
+if [[ $EUID == 0 || -z $(which sudo) ]]; then 
+    sudo() { "$@"; }
+fi 
+
 sudo rm -f /tmp/rmmod.restore 
 sudo lsof -w -n /dev/nvidia* | awk 'NR>1{{print $2}}' | sort -un | while read -r pid; do
     printf "%-7s;%s\n" "$pid" "$(tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null || ps -o args= -p "$pid")"
