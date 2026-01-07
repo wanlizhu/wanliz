@@ -317,7 +317,7 @@ subcmd_docker() {
     }
 
     read -r -s -p "Decode Password: " passwd && echo 
-    ehco "$passwd" > /tmp/decode_password 
+    echo "$passwd" > /tmp/decode_password 
 
     if ! docker image inspect ubuntu:24.04 &>/dev/null; then 
         docker pull ubuntu:24.04
