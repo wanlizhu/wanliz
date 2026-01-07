@@ -81,9 +81,17 @@ if [[ -d /mnt/c/Users/ && -d $HOME/sw/branch ]]; then
 fi 
 
 if [[ ! -f $HOME/.ssh/id_ed25519 ]]; then 
-    read -p "Restore ~/.ssh/id_ed25519 ? [Yes/no]: " restore_sshkey
+    if [[ $inside_container == yes ]]; then 
+        restore_sshkey=yes
+    else 
+        read -p "Restore ~/.ssh/id_ed25519 ? [Yes/no]: " restore_sshkey
+    fi 
     if [[ $restore_sshkey =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-        read -r -s -p "Decode Password: " passwd
+        if [[ -f /tmp/decode_password ]]; then 
+            passwd=$(cat /tmp/decode_passwd)
+        else 
+            read -r -s -p "Decode Password: " passwd
+        fi 
         mkdir -p $HOME/.ssh 
         echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx7hz8+bJjBioa3Rlvmaib8pMSd0XTmRwXwaxrT3hFL' > $HOME/.ssh/id_ed25519.pub
         echo 'U2FsdGVkX194Pw+9XfMd3nfRt4STW9D9T2Cfbfjyf9IOwLQ+LsX9oxjoMif8igzU
@@ -197,7 +205,12 @@ fi
 
 if [[ $sudo_access == yes && $EUID != 0 ]]; then 
     if ! sudo grep -qxF "$USER ALL=(ALL) NOPASSWD:ALL" /etc/sudoers; then 
-        read -p "Enable passwordless sudo for $USER? [Yes/no]: " passwordless_sudo 
+        if [[ $inside_container == yes ]]; then 
+            passwordless_sudo=yes 
+        else 
+            read -p "Enable passwordless sudo for $USER? [Yes/no]: " passwordless_sudo 
+        fi 
+
         if [[ $passwordless_sudo =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
             echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
         fi 
@@ -207,7 +220,11 @@ else
 fi 
 
 if [[ $sudo_access == yes ]]; then 
-    read -p "Install missing apt packages? [Yes/no]: " install_pkg 
+    if [[ $inside_container == yes ]]; then 
+        install_pkg=yes 
+    else 
+        read -p "Install missing apt packages? [Yes/no]: " install_pkg 
+    fi 
     if [[ $install_pkg =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
         apt-check-or-install() {
             local missing=()
