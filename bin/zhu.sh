@@ -274,6 +274,7 @@ subcmd_driver() {
     case $1 in 
         remod) shift; remove_nvidia_module $@ ;;
         install) shift; install_nvidia_driver $@ ;;
+        download) shift; download_nvidia_driver_version $@ ;;
     esac
 }
 
