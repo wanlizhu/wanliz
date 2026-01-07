@@ -324,7 +324,7 @@ subcmd_docker() {
             --runtime=runc $(nvidia_device_nodes) \
             -v $HOME/wanliz/bin/config-new-machine.sh:/tmp/config.sh:ro \
             -e TZ=America/Los_Angeles \
-            ubuntu:24.04 bash -lic '/tmp/config.sh; exec bash'
+            ubuntu:24.04 bash -lic '/tmp/config.sh; exec bash -li'
     elif [[ $1 == galaxy ]]; then 
         docker rm -f ubuntu-24.04-galaxy &>/dev/null || true 
         docker run -it \
@@ -335,7 +335,7 @@ subcmd_docker() {
             -v $HOME/wanliz/bin/config-new-machine.sh:/tmp/config.sh:ro \
             -e TZ=America/Los_Angeles \
             -e __GL_DeviceModalityPreference=1 \
-            ubuntu:24.04 bash -lic '/tmp/config.sh; exec bash' 
+            ubuntu:24.04 bash -lic '/tmp/config.sh; exec bash -li' 
     else
         docker rm -f ubuntu-24.04-wanliz &>/dev/null || true 
         docker run -it \
@@ -343,7 +343,7 @@ subcmd_docker() {
             --runtime=runc $(nvidia_device_nodes) \
             -v $HOME/wanliz/bin/config-new-machine.sh:/tmp/config.sh:ro \
             -e TZ=America/Los_Angeles \
-            ubuntu:24.04 bash -lic '/tmp/config.sh; exec bash'
+            ubuntu:24.04 bash -lic '/tmp/config.sh; exec bash -li'
     fi 
 }
 
