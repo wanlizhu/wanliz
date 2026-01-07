@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 trap 'exit 130' INT
 
-if [[ $EUID == 0 ]]; then 
+if [[ $EUID == 0 || -z $(which sudo) ]]; then 
     sudo() { "$@"; }
 fi 
 
