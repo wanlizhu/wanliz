@@ -218,6 +218,9 @@ subcmd_recv() {
 }
 
 remove_nvidia_module() {
+    if [[ -z $(which lsmod) ]]; then 
+        sudo apt install -y kmod
+    fi 
     if [[ -z $(lsmod | grep -E '^nvidia') ]]; then 
         return 0
     fi 

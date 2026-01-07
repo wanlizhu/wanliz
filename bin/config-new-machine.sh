@@ -217,7 +217,7 @@ if [[ $sudo_access == yes ]]; then
             fi
         }
 
-        apt-check-or-install libxcb-cursor0 libxcb-dri2-0 libjpeg-dev vim git cmake build-essential ninja-build pkg-config clang rsync curl unzip openssh-server sshpass samba samba-common-bin smbclient python3 python3-dev python3-venv python3-pip jq screen mesa-utils vulkan-tools x11vnc net-tools nfs-common cifs-utils
+        apt-check-or-install libxcb-cursor0 libxcb-dri2-0 libjpeg-dev vim git cmake build-essential ninja-build pkg-config clang rsync curl unzip openssh-server sshpass samba samba-common-bin smbclient python3 python3-dev python3-venv python3-pip jq screen mesa-utils vulkan-tools x11vnc net-tools nfs-common cifs-utils kmod
     fi 
 else
     echo "Install apt packages, skipped!"
