@@ -132,14 +132,14 @@ done
 
 
 if [[ $EUID == 0 ]]; then 
+    sudo_access=yes
+else 
     read -p "Do you have sudo access? [Yes/no]: " sudo_access
     if [[ $sudo_access =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then 
         sudo_access=yes
     else
         sudo_access=
     fi 
-else
-    sudo_access=yes
 fi 
 
 inside_container=
