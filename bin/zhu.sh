@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 trap 'exit 130' INT
+if [[ $EUID == 0 || -z $(which sudo) ]]; then 
+    sudo() { "$@"; }
+fi 
 
 subcmd_backup_wsl2_home() {
     if [[ -d /mnt/d/wsl2_home.backup ]]; then
