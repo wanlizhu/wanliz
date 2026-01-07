@@ -4,6 +4,7 @@ trap 'exit 130' INT
 if [[ -z $(echo "$PATH" | grep "$HOME/.local/bin") ]]; then 
     echo "" >> $HOME/.bashrc
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> $HOME/.bashrc 
+    echo "Updated ~/.bashrc to add \$HOME/.local/bin into \$PATH"
 fi 
 
 if [[ -z $(grep "subcmd_env" $HOME/.bashrc) ]]; then 
@@ -14,6 +15,7 @@ if [[ -z $(grep "subcmd_env" $HOME/.bashrc) ]]; then
         echo "    subcmd_env"
         echo "fi"
     } >> $HOME/.bashrc 
+    echo "Updated ~/.bashrc to auto-load subcmd_env"
 fi 
 
 mkdir -p $HOME/.local/bin 
