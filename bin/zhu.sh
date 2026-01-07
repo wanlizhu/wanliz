@@ -314,13 +314,15 @@ subcmd_docker() {
     if ! docker image inspect ubuntu:24.04 &>/dev/null; then 
         docker pull ubuntu:24.04
     fi 
-    docker rm -f ubuntu-24.04-wanliz &>/dev/null || true 
 
     if [[ $1 == nvl ]]; then 
+        docker rm -f ubuntu-24.04-nvl &>/dev/null || true 
         docker run -it --name="ubuntu-24.04-nvl" --cpuset-cpus=0-71 --cpuset-mems=0 --runtime=runc $(nvidia_device_nodes) -e TZ=America/Los_Angeles ubuntu:24.04 bash
     elif [[ $1 == galaxy ]]; then 
+        docker rm -f ubuntu-24.04-galaxy &>/dev/null || true 
         docker run -it --name="ubuntu-24.04-galaxy" --cpuset-cpus=0-71 --cpuset-mems=0 --runtime=runc $(nvidia_device_nodes) -e TZ=America/Los_Angeles -e __GL_DeviceModalityPreference=1 ubuntu:24.04 bash 
     else
+        docker rm -f ubuntu-24.04-wanliz &>/dev/null || true 
         docker run -it --name="ubuntu-24.04-wanliz" --runtime=runc $(nvidia_device_nodes) -e TZ=America/Los_Angeles ubuntu:24.04 bash
     fi 
 }
