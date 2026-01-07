@@ -317,11 +317,11 @@ subcmd_docker() {
     docker rm -f ubuntu-24.04-wanliz &>/dev/null || true 
 
     if [[ $1 == nvl ]]; then 
-        docker run -it --name="ubuntu-24.04-nvl" --cpuset-cpus=0-71 --cpuset-mems=0 --runtime=runc -v /proc/driver/nvidia:/proc/driver/nvidia:ro $(nvidia_device_nodes) -e TZ=America/Los_Angeles ubuntu:24.04 bash
+        docker run -it --name="ubuntu-24.04-nvl" --cpuset-cpus=0-71 --cpuset-mems=0 --runtime=runc $(nvidia_device_nodes) -e TZ=America/Los_Angeles ubuntu:24.04 bash
     elif [[ $1 == galaxy ]]; then 
-        docker run -it --name="ubuntu-24.04-galaxy" --cpuset-cpus=0-71 --cpuset-mems=0 --runtime=runc -v /proc/driver/nvidia:/proc/driver/nvidia:ro $(nvidia_device_nodes) -e TZ=America/Los_Angeles -e __GL_DeviceModalityPreference=1 ubuntu:24.04 bash 
+        docker run -it --name="ubuntu-24.04-galaxy" --cpuset-cpus=0-71 --cpuset-mems=0 --runtime=runc $(nvidia_device_nodes) -e TZ=America/Los_Angeles -e __GL_DeviceModalityPreference=1 ubuntu:24.04 bash 
     else
-        docker run -it --name="ubuntu-24.04-wanliz" --runtime=runc -v /proc/driver/nvidia:/proc/driver/nvidia:ro $(nvidia_device_nodes) -e TZ=America/Los_Angeles ubuntu:24.04 bash
+        docker run -it --name="ubuntu-24.04-wanliz" --runtime=runc $(nvidia_device_nodes) -e TZ=America/Los_Angeles ubuntu:24.04 bash
     fi 
 }
 
