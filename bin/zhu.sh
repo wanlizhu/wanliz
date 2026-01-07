@@ -317,13 +317,33 @@ subcmd_docker() {
 
     if [[ $1 == nvl ]]; then 
         docker rm -f ubuntu-24.04-nvl &>/dev/null || true 
-        docker run -it --name="ubuntu-24.04-nvl" --cpuset-cpus=0-71 --cpuset-mems=0 --runtime=runc $(nvidia_device_nodes) -e TZ=America/Los_Angeles ubuntu:24.04 bash
+        docker run -it \
+            --name="ubuntu-24.04-nvl" \
+            --cpuset-cpus=0-71 \
+            --cpuset-mems=0 \
+            --runtime=runc $(nvidia_device_nodes) \
+            -v $HOME/wanliz/bin/config-new-machine.sh:/tmp/config.sh:ro \
+            -e TZ=America/Los_Angeles \
+            ubuntu:24.04 bash -lic '/tmp/config.sh; exec bash'
     elif [[ $1 == galaxy ]]; then 
         docker rm -f ubuntu-24.04-galaxy &>/dev/null || true 
-        docker run -it --name="ubuntu-24.04-galaxy" --cpuset-cpus=0-71 --cpuset-mems=0 --runtime=runc $(nvidia_device_nodes) -e TZ=America/Los_Angeles -e __GL_DeviceModalityPreference=1 ubuntu:24.04 bash 
+        docker run -it \
+            --name="ubuntu-24.04-galaxy" \
+            --cpuset-cpus=0-71 \
+            --cpuset-mems=0 \
+            --runtime=runc $(nvidia_device_nodes) \
+            -v $HOME/wanliz/bin/config-new-machine.sh:/tmp/config.sh:ro \
+            -e TZ=America/Los_Angeles \
+            -e __GL_DeviceModalityPreference=1 \
+            ubuntu:24.04 bash -lic '/tmp/config.sh; exec bash' 
     else
         docker rm -f ubuntu-24.04-wanliz &>/dev/null || true 
-        docker run -it --name="ubuntu-24.04-wanliz" --runtime=runc $(nvidia_device_nodes) -e TZ=America/Los_Angeles ubuntu:24.04 bash
+        docker run -it \
+            --name="ubuntu-24.04-wanliz" \
+            --runtime=runc $(nvidia_device_nodes) \
+            -v $HOME/wanliz/bin/config-new-machine.sh:/tmp/config.sh:ro \
+            -e TZ=America/Los_Angeles \
+            ubuntu:24.04 bash -lic '/tmp/config.sh; exec bash'
     fi 
 }
 
