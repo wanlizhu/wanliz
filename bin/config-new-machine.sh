@@ -5,6 +5,25 @@ if [[ $EUID == 0 || -z $(which sudo) ]]; then
     sudo() { "$@"; }
 fi 
 
+cd $HOME 
+
+inside_container=
+if [[ -f /.dockerenv || -f /run/.containerenv ]]; then
+    inside_container=yes 
+    if [[ ! -d $HOME/wanliz ]]; then 
+        sudo apt update 
+        sudo apt install -y git 
+        git clone https://github.com/wanlizhu/wanliz $HOME/wanliz 
+        ./wanliz/bin/config-new-machine.sh 
+        exit 0
+    fi 
+fi 
+
+booted_with_systemd=
+if [[ "$(ps -p 1 -o comm= 2>/dev/null)" == systemd ]]; then
+    booted_with_systemd=yes 
+fi 
+
 if [[ -z $(echo "$PATH" | grep "$HOME/.local/bin") ]]; then 
     echo "" >> $HOME/.bashrc
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> $HOME/.bashrc 
@@ -140,17 +159,6 @@ else
     else
         sudo_access=
     fi 
-fi 
-
-inside_container=
-if [[ -f /.dockerenv || -f /run/.containerenv ]]; then
-    inside_container=yes 
-    echo "Verbose mode forced to enabled inside container"
-fi 
-
-booted_with_systemd=
-if [[ "$(ps -p 1 -o comm= 2>/dev/null)" == systemd ]]; then
-    booted_with_systemd=yes 
 fi 
 
 if [[ $sudo_access == yes ]]; then 
