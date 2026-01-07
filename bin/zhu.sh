@@ -225,14 +225,48 @@ remove_nvidia_module() {
     fi 
 }
 
+download_nvidia_driver_version() {
+    [[ -z $(which wget) ]] && sudo apt install -y wget
+    rm -f  $HOME/NVIDIA-Linux-$(uname -m)-$1-release.run
+    rm -f  $HOME/tests-Linux-$(uname -m)-$1-release.tar
+    rm -rf $HOME/tests-Linux-$(uname -m)-$1-release 
+    echo "Downloading ~/NVIDIA-Linux-$(uname -m)-$1-release.run ..."
+
+    version_folder=http://linuxqa/builds/release/display/$(uname -m)/$1
+    if wget -S --spider $version_folder; then 
+        wget -O $HOME/NVIDIA-Linux-$(uname -m)-$1-release.run http://linuxqa/builds/release/display/$(uname -m)/$1/NVIDIA-Linux-$(uname -m)-$1.run || return 1 
+        wget -O $HOME/tests-Linux-$(uname -m)-$1-release.tar http://linuxqa/builds/release/display/$(uname -m)/$1/tests-Linux-$(uname -m).tar || true 
+    else
+        echo "http://linuxqa/builds/release/display/$(uname -m)/$1 is not reachable"
+        return 1
+    fi 
+}
+
 install_nvidia_driver() {
     if [[ -e $1 ]]; then 
         nvpkg=$1; shift 
         remove_nvidia_module $@ || return 1
         chmod +x $1 2>/dev/null 
         sudo $nvpkg $@ || return 1
+        echo "Driver installed!"
+        tests_tarball=${nvpkg/NVIDIA/tests}
+        tests_tarball=${tests_tarball/%.run/.tar}
+        if [[ -e $tests_tarball ]]; then 
+            pushd $(dirname $tests_tarball) >/dev/null 
+            tarball_name_stem=${tests_tarball##*/}
+            tarball_name_stem=${tarball_name_stem%.tar}
+            rm -rf tests-Linux-$(uname -m)
+            tar -xf $tests_tarball 
+            mv tests-Linux-$(uname -m) $tarball_name_stem
+            echo "Driver tests dir: $tarball_name_stem"
+            popd >/dev/null 
+        fi 
     else
-        sudo /mnt/linuxqa/nvt.sh drivers $@ || return 1
+        if download_nvidia_driver_version $1; then 
+            install_nvidia_driver $HOME/NVIDIA-Linux-$(uname -m)-$1-release.run
+        else 
+            sudo /mnt/linuxqa/nvt.sh drivers $@ || return 1
+        fi 
     fi 
 }
 
@@ -244,7 +278,17 @@ subcmd_driver() {
 }
 
 subcmd_docker() {
-    echo 
+    if ! docker image inspect ubuntu:24.04 &>/dev/null; then 
+        docker pull ubuntu:24.04
+    fi 
+    docker rm -f ubuntu-24.04-wanliz &>/dev/null || true 
+    if [[ $1 == nvl ]]; then 
+        docker run -it --name="ubuntu-24.04-nvl" --cpuset-cpus=0-71 --cpuset-mems=0 --gpus all ubuntu:24.04 bash
+    elif [[ $1 == galaxy ]]; then 
+        docker run -it --name="ubuntu-24.04-galaxy" --cpuset-cpus=0-71 --cpuset-mems=0 --gpus all -e __GL_DeviceModalityPreference=1 ubuntu:24.04 bash 
+    else
+        docker run -it --name="ubuntu-24.04-wanliz" --gpus all ubuntu:24.04 bash
+    fi 
 }
 
 case $1 in 
@@ -252,7 +296,7 @@ case $1 in
     pl)  shift; subcmd_wanliz_git pull $@;;
     ps)  shift; subcmd_wanliz_git push $@;;
     env) shift; subcmd_env; $@ ;;
-    env-umd|env-umds)     shift; subcmd_env_umd; $@ ;;
+    env-umd|env-umds)  shift; subcmd_env_umd; $@ ;;
     env-pushbuf) shift; subcmd_env_pushbuf; $@ ;;
     encrypt) shift; subcmd_encrypt "$1" ;;
     decrypt) shift; subcmd_decrypt "$1" ;;
