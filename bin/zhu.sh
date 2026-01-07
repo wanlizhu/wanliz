@@ -245,9 +245,10 @@ download_nvidia_driver_version() {
 install_nvidia_driver() {
     if [[ -e $1 ]]; then 
         nvpkg=$1; shift 
-        remove_nvidia_module $@ || return 1
+        remove_nvidia_module || return 1
         chmod +x $1 2>/dev/null 
-        sudo $nvpkg $@ || return 1
+        #sudo $nvpkg $@ || return 1
+        echo "xx Instal $nvpkg $@ zz"
         echo "Driver installed!"
         tests_tarball=${nvpkg/NVIDIA/tests}
         tests_tarball=${tests_tarball/%.run/.tar}
