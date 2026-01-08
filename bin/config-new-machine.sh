@@ -88,7 +88,7 @@ if [[ ! -f $HOME/.ssh/id_ed25519 ]]; then
     fi 
     if [[ $restore_sshkey =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
         if [[ -f /tmp/decode_password ]]; then 
-            passwd=$(cat /tmp/decode_passwd)
+            passwd=$(cat /tmp/decode_password)
         else 
             read -r -s -p "Decode Password: " passwd
         fi 
