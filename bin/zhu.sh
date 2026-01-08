@@ -119,15 +119,15 @@ rsync_host_io() {
     if [[ -z $rsync_host ]]; then 
         return 1
     fi 
+    if [[ $rsync_host != *@* ]]; then 
+        rsync_host="wanliz@$rsync_host"
+        echo "Replacement: $rsync_host"
+    fi 
     if [[ ! -f $HOME/.rsync_host_paired && -f $HOME/.ssh/id_ed25519 ]]; then 
         read -p "Enable passwordless login? [Yes/no]: " ssh_nopasswd
         if [[ $ssh_nopasswd =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
             ssh-copy-id $rsync_host && echo 1 > $HOME/.rsync_host_paired
         fi 
-    fi 
-    if [[ $rsync_host != *@* ]]; then 
-        rsync_host="wanliz@$rsync_host"
-        echo "Replacement: $rsync_host"
     fi 
     echo $rsync_host > $HOME/.rsync_host
 }
