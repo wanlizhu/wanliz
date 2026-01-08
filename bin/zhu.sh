@@ -121,6 +121,7 @@ rsync_host_io() {
     fi 
     if [[ $rsync_host != *@* ]]; then 
         rsync_host="wanliz@$rsync_host"
+        echo "Replacement: $rsync_host"
     fi 
     echo $rsync_host > $HOME/.rsync_host
 }
@@ -219,7 +220,6 @@ subcmd_recv() {
         vulkanbench) shift; rsync_recv_vulkanbench $@ ;;
         umd) shift; rsync_recv_umd $@ ;;
         drvpkg) shift; rsync_recv_drvpkg $@ ;;
-        ~/*) rsync -Pah $rsync_host:${1/#\~//home/wanliz} . ;;
         *) rsync -Pah $rsync_host:$1 . ;;
     esac
 }
