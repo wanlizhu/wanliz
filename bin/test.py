@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-def find_non_utf8_txt(root_dir: str | Path) -> list[Path]:
+def find_non_utf8_txt(root_dir: str | Path):
     root = Path(root_dir)
     for path in root.rglob("*.txt"):
         if not path.is_file():
@@ -13,4 +13,4 @@ def find_non_utf8_txt(root_dir: str | Path) -> list[Path]:
             print(path)
 
 if __name__ == "__main__":
-    find_non_utf8_txt
+    find_non_utf8_txt("/root/SinglePassCapture")
