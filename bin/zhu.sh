@@ -72,24 +72,28 @@ subcmd_env() {
     export P4CLIENT=wanliz_sw_linux
     export P4ROOT=/home/wanliz/sw
     export P4IGNORE=$HOME/.p4ignore
-    export NVM_GTLAPI_TOKEN='eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlMGZkYWU4LWM5YmUtNDgwOS1iMTQ3LTJiN2UxNDAwOTAwMyIsInNlY3JldCI6IndEUU1uMUdyT1RaY0Z0aHFXUThQT2RiS3lGZ0t5NUpaalU3QWFweUxGSmM9In0.Iad8z1fcSjA6P7SHIluppA_tYzOGxGv4koMyNawvERQ'                                      export GDK_SCALE=1                                                                         
+    export NVM_GTLAPI_TOKEN='eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlMGZkYWU4LWM5YmUtNDgwOS1iMTQ3LTJiN2UxNDAwOTAwMyIsInNlY3JldCI6IndEUU1uMUdyT1RaY0Z0aHFXUThQT2RiS3lGZ0t5NUpaalU3QWFweUxGSmM9In0.Iad8z1fcSjA6P7SHIluppA_tYzOGxGv4koMyNawvERQ'          
+    
     if [[ -d /mnt/c/Users ]]; then 
         export P4CLIENT=wanliz_sw_windows_wsl2
-        export GDK_SCALE=1                                                                      
-        export GDK_DPI_SCALE=1.25                                                               
+        export GDK_SCALE=1
+        export GDK_DPI_SCALE=1.25
         export QT_SCALE_FACTOR=1.25   
-    fi 
-}
+    fi
 
-subcmd_env_umd() {
-    export LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-UMD-override${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} 
-    export VK_ICD_FILENAMES=$HOME/NVIDIA-Linux-UMD-override/nvidia_icd.json
-}
-
-subcmd_env_pushbuf() {
-    subcmd_env_umd
-    export __GL_ac12fedf=./pushbuffer-dump-%03d.xml 
-    export __GL_ac12fede=0x10183
+    for arg in "$@"; do 
+        case $arg in 
+            umd|umd-override) 
+                export LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-UMD-override${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} 
+                export VK_ICD_FILENAMES=$HOME/NVIDIA-Linux-UMD-override/nvidia_icd.json
+            ;;
+            pushbuf|pushbuffer-dump)
+                export __GL_ac12fedf=./pushbuffer-dump-%03d.xml 
+                export __GL_ac12fede=0x10183
+            ;;
+            *) echo "Unknown arg \"$arg\" for \"zhu env\"" ;;
+        esac 
+    done  
 }
 
 subcmd_encrypt() {
@@ -379,8 +383,6 @@ case $1 in
     pl)  shift; subcmd_wanliz_git pull $@;;
     ps)  shift; subcmd_wanliz_git push $@;;
     env) shift; subcmd_env; $@ ;;
-    env-umd|env-umds)  shift; subcmd_env_umd; $@ ;;
-    env-pushbuf) shift; subcmd_env_pushbuf; $@ ;;
     encrypt) shift; subcmd_encrypt "$1" ;;
     decrypt) shift; subcmd_decrypt "$1" ;;
     send) shift; subcmd_send $@ ;;
