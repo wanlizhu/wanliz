@@ -72,13 +72,16 @@ subcmd_env() {
     export P4CLIENT=wanliz_sw_linux
     export P4ROOT=/home/wanliz/sw
     export P4IGNORE=$HOME/.p4ignore
-    export NVM_GTLAPI_TOKEN='eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlMGZkYWU4LWM5YmUtNDgwOS1iMTQ3LTJiN2UxNDAwOTAwMyIsInNlY3JldCI6IndEUU1uMUdyT1RaY0Z0aHFXUThQT2RiS3lGZ0t5NUpaalU3QWFweUxGSmM9In0.Iad8z1fcSjA6P7SHIluppA_tYzOGxGv4koMyNawvERQ'          
+    export NVM_GTLAPI_TOKEN='eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlMGZkYWU4LWM5YmUtNDgwOS1iMTQ3LTJiN2UxNDAwOTAwMyIsInNlY3JldCI6IndEUU1uMUdyT1RaY0Z0aHFXUThQT2RiS3lGZ0t5NUpaalU3QWFweUxGSmM9In0.Iad8z1fcSjA6P7SHIluppA_tYzOGxGv4koMyNawvERQ' 
+    echo -e "Export env vars for P4 client: $P4CLIENT \t-- [OK]"
+    echo -e "Export env var: NVM_GTLAPI_TOKEN \t-- [OK]"         
     
     if [[ -d /mnt/c/Users ]]; then 
         export P4CLIENT=wanliz_sw_windows_wsl2
         export GDK_SCALE=1
         export GDK_DPI_SCALE=1.25
         export QT_SCALE_FACTOR=1.25   
+        echo -e "Export env vars for WSL2 \t-- [OK]"
     fi
 
     for arg in "$@"; do 
@@ -86,12 +89,14 @@ subcmd_env() {
             umd|umd-override) 
                 export LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-UMD-override${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} 
                 export VK_ICD_FILENAMES=$HOME/NVIDIA-Linux-UMD-override/nvidia_icd.json
+                echo -e "Export env vars for umd-override \t-- [OK]"
             ;;
-            pushbuf|pushbuffer-dump)
+            pbd|pushbuf|pushbuffer-dump)
                 export __GL_ac12fedf=./pushbuffer-dump-%03d.xml 
                 export __GL_ac12fede=0x10183
+                echo -e "Export env vars for pushbuffer-dump \t-- [OK]"
             ;;
-            *) echo "Unknown arg \"$arg\" for \"zhu env\"" ;;
+            *) echo "Error: unknown arg \"$arg\" for \"zhu env\"" ;;
         esac 
     done  
 }
