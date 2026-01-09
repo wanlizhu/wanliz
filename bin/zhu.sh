@@ -254,7 +254,13 @@ download_nvidia_driver_version() {
         wget -O $HOME/tests-Linux-$(uname -m)-$1-release.tar http://linuxqa/builds/release/display/$(uname -m)/$1/tests-Linux-$(uname -m).tar || true 
     else
         echo "http://linuxqa/builds/release/display/$(uname -m)/$1 is not reachable"
-        return 1
+        if [[ -d /mnt/builds/release ]]; then 
+            echo "Retry with /mnt/builds"
+            rsync -Pah /mnt/builds/release/display/$(uname -m)/$1/NVIDIA-Linux-$(uname -m)-$1.run $HOME/NVIDIA-Linux-$(uname -m)-$1-release.run || return 1
+            rsync -Pah /mnt/builds/release/display/$(uname -m)/$1/tests-Linux-$(uname -m).tar $HOME/tests-Linux-$(uname -m)-$1-release.tar || return 1
+        else
+            return 1
+        fi 
     fi 
 }
 

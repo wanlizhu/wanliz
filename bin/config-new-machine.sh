@@ -264,9 +264,13 @@ if [[ $sudo_access == yes ]]; then
         else 
             read -p "Mount /mnt/linuxqa? [Yes/no]: " mount_linuxqa 
             if [[ $mount_linuxqa =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-                echo "Mounting /mnt/linuxqa ... "
+                echo "Mounting /mnt/linuxqa ... " 
                 sudo mkdir -p /mnt/linuxqa &&
                 sudo mount -t nfs linuxqa.nvidia.com:/storage/people /mnt/linuxqa || echo "Failed to mount /mnt/linuxqa"
+                
+                echo "Mounting /mnt/builds"
+                sudo mkdir -p /mnt/builds &&
+                sudo mount -t nfs linuxqa.nvidia.com:/qa/builds /mnt/builds || echo "Failed to mount /mnt/builds"
             fi 
         fi 
     fi 
