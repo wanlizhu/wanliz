@@ -14,7 +14,11 @@ rm -rf $build_dir
 mkdir -p $build_dir
 cd $build_dir 
 
-cmake ..  -DCMAKE_BUILD_TYPE=Release || exit 1
+if [[ $1 == debug ]]; then 
+    cmake ..  -DCMAKE_BUILD_TYPE=Debug || exit 1
+else 
+    cmake ..  -DCMAKE_BUILD_TYPE=Release || exit 1
+fi 
 cmake --build . || exit 1
 
 if [[ $1 == "--regen-clangd-db" ]]; then 

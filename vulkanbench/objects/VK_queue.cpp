@@ -205,17 +205,21 @@ void VK_queue::submit_and_wait_command_buffer(VkCommandBuffer cmdbuf) {
 }
 
 void VK_queue::free_semaphores_bound_for(VkCommandBuffer cmdbuf) {
-    if (std::find(semaphores.begin(), semaphores.end(), cmdbuf) != semaphores.end()) {
-        for (auto& semaphore : semaphores[cmdbuf]) {
-            vkDestroySemaphore(device_ptr->handle, semaphore, NULL);
-        }
-        semaphores[cmdbuf].clear();
-    }
-
     if (cmdbuf == NULL) {
-        for (auto& [cmdbuf, _] : semaphores) {
-            free_semaphores_bound_for(cmdbuf);
+        for (auto& [_, sems] : semaphores) {
+            for (auto& semaphore : sems) {
+                vkDestroySemaphore(device_ptr->handle, semaphore, NULL);
+            }
         }
         semaphores.clear();
+        return;
+    }
+
+    auto it = semaphores.find(cmdbuf);
+    if (it != semaphores.end()) {
+        for (auto& semaphore : it->second) {
+            vkDestroySemaphore(device_ptr->handle, semaphore, NULL);
+        }
+        semaphores.erase(it);
     }
 }

@@ -88,10 +88,13 @@ enum class VK_color {
 
 struct VK_config {
     static cxxopts::ParseResult args;
-    static bool arg_starts_with(const char* name, const char* prefix);
-    static bool arg_starts_with(const char* name, const std::vector<const char*>& prefixList);
-    static std::string arg_substr_before(const char* name, const char* separator);
-    static std::string arg_substr_after(const char* name, const char* separator);
+    static bool opt_starts_with(const char* name, const char* prefix);
+    static bool opt_starts_with(const char* name, const std::vector<const char*>& prefixList);
+    static std::string opt_substr_before(const char* name, const char* separator);
+    static std::string opt_substr_after(const char* name, const char* separator);
+    static int  opt_as_int(const char* name);
+    static bool opt_as_bool(const char* name);
+    static std::string opt_as_string(const char* name);
 };
 
 struct VK_gpu_timer {

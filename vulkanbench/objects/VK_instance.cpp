@@ -66,7 +66,7 @@ void VK_instance::init() {
     std::vector<const char*> extensions;
     bool enableDebugUtils = false;
 
-    if (VK_config::args["nodisplay"].as<bool>() == false) {
+    if (VK_config::opt_as_bool("nodisplay") == false) {
         if (hasExt(VK_KHR_SURFACE_EXTENSION_NAME)) {
             extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 #ifdef _WIN32

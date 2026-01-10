@@ -7,21 +7,21 @@ VK_gpu_timer::VK_gpu_timer(VK_device* device_ptr) {
     m_device_ptr = device_ptr;
 }
 
-bool VK_config::arg_starts_with(const char* name, const char* prefix) {
+bool VK_config::opt_starts_with(const char* name, const char* prefix) {
     std::string value = args[std::string(name)].as<std::string>();
     return str_starts_with(value.c_str(), prefix);
 }
 
-bool VK_config::arg_starts_with(const char* name, const std::vector<const char*>& prefixList) {
+bool VK_config::opt_starts_with(const char* name, const std::vector<const char*>& prefixList) {
     for (const auto& prefix : prefixList) {
-        if (VK_config::arg_starts_with(name, prefix)) {
+        if (VK_config::opt_starts_with(name, prefix)) {
             return true;
         }
     }
     return false;
 }
 
-std::string VK_config::arg_substr_before(const char* name, const char* separator) {
+std::string VK_config::opt_substr_before(const char* name, const char* separator) {
     std::string value = args[std::string(name)].as<std::string>();
     size_t pos = value.find(separator);
     if (pos == std::string::npos) {
@@ -30,13 +30,25 @@ std::string VK_config::arg_substr_before(const char* name, const char* separator
     return value.substr(0, pos);
 }
 
-std::string VK_config::arg_substr_after(const char*name, const char* separator) {
+std::string VK_config::opt_substr_after(const char*name, const char* separator) {
     std::string value = args[std::string(name)].as<std::string>();
     size_t pos = value.find(separator);
     if (pos == std::string::npos) {
         return "";
     }
     return value.substr(pos + strlen(separator));
+}
+
+int VK_config::opt_as_int(const char* name) {
+    return args[name].as<int>();
+}
+
+bool VK_config::opt_as_bool(const char* name) {
+    return args[name].as<bool>();
+}
+
+std::string VK_config::opt_as_string(const char* name) {
+    return args[name].as<std::string>();
 }
 
 void VK_gpu_timer::reset() {
