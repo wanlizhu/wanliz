@@ -88,6 +88,9 @@ enum class VK_color {
 
 struct VK_config {
     static cxxopts::ParseResult args;
+    static bool arg_starts_with(const std::string& name, const std::string& prefix);
+    static std::string arg_substr_before(const std::string& name, const std::string& separator);
+    static std::string arg_substr_after(const std::string& name, const std::string& separator);
 };
 
 struct VK_gpu_timer {
@@ -96,15 +99,17 @@ struct VK_gpu_timer {
 
     VK_gpu_timer() = default;
     VK_gpu_timer(VK_device* device_ptr);
+    void reset();
     void cpu_begin();
     void cpu_end();
     void gpu_begin(VkCommandBuffer cmdbuf);
     void gpu_end(VkCommandBuffer cmdbuf);
-    bool validate() const;
+    void readback_gpu_timestamps();
+    bool is_valid() const;
 
 private:
     VK_device* m_device_ptr = nullptr;
-    std::chrono::high_resolution_clock::time_point m_cpu_begin_tp;
+    std::optional<std::chrono::high_resolution_clock::time_point> m_cpu_begin_tp;
     uint32_t m_gpu_begin_id = UINT32_MAX;
     uint32_t m_gpu_end_id = UINT32_MAX;
     bool m_gpu_time_acquired = false;
@@ -126,6 +131,9 @@ private:
 struct VK_createInfo_memType {
     VkMemoryPropertyFlags flags = 0; // Use flags only if index is invalid
     uint32_t index = UINT32_MAX; // Try to use index first
+
+    static VK_createInfo_memType init_with_flags(VkMemoryPropertyFlags _flags);
+    static VK_createInfo_memType init_with_index(uint32_t _index);
 };
 
 bool str_starts_with(const char* str, const char* substr);

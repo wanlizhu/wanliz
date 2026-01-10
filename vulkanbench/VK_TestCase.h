@@ -4,9 +4,6 @@
 #include "objects/VK_image.h"
 #include "objects/VK_buffer.h"
 
-#define VK_TEST_RESOURCE_GROUP_SIZE 10
-#define VK_TEST_AVERAGE_OF_LOOPS 30
-
 struct VK_TestCase_buffercopy {
     void run(VK_device& device, const std::string& title);
 
@@ -58,4 +55,19 @@ private:
     std::map<size_t, std::map<uint32_t, VK_GB_per_second>> m_results_tiling_linear;
     std::vector<size_t> m_cp_src_image_width_list;
     std::vector<uint32_t> m_cp_dst_mem_index_list;
+};
+
+struct VK_TestCase_memcopy {
+    VK_TestCase_memcopy(VK_device& device);
+    void run_subtest(const std::string& name);
+
+private:
+    void subtest_buffer_to_buffer();
+    void subtest_buffer_to_image();
+
+private:
+    VK_device& m_device;
+    size_t m_sizeInBytes = 256 * 1024 * 1024;
+    VkExtent2D m_imageExtent = {4096, 4096};
+    std::vector<std::vector<std::string>> m_resultsTable;
 };

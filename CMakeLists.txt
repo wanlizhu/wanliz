@@ -79,8 +79,7 @@ add_executable(vulkanbench
     vulkanbench/main.cpp
     vulkanbench/cxxopts.hpp
     vulkanbench/VK_TestCase.h 
-    vulkanbench/VK_TestCase_IMPL_buffercopy.cpp 
-    vulkanbench/VK_TestCase_IMPL_imagebuffercopy.cpp 
+    vulkanbench/VK_TestCase_IMPL_memcopy.cpp 
     vulkanbench/objects/VK_common.h              vulkanbench/objects/VK_common.cpp 
     vulkanbench/objects/VK_instance.cpp          vulkanbench/objects/VK_instance.h
     vulkanbench/objects/VK_queue.cpp             vulkanbench/objects/VK_queue.h

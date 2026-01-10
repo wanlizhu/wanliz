@@ -107,6 +107,20 @@ VkCommandBuffer VK_queue::alloc_and_begin_command_buffer(const std::string& name
     return commandBuffer;
 }
 
+VkSemaphore VK_queue::allocate_semaphore_bound_for(VkCommandBuffer cmdbuf) {
+    VkSemaphoreCreateInfo semaphoreInfo = {};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkSemaphore semaphore = VK_NULL_HANDLE;
+    VkResult result = vkCreateSemaphore(device_ptr->handle, &semaphoreInfo, nullptr, &semaphore);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create semaphore");
+    }
+    semaphores[cmdbuf].push_back(semaphore);
+
+    return semaphore;
+}
+
 void VK_queue::cmdbuf_debug_range_begin(VkCommandBuffer cmdbuf, const std::string& label, VK_color color) {
     auto pfnCmdBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(
         vkGetInstanceProcAddr(VK_instance::GET().handle, "vkCmdBeginDebugUtilsLabelEXT")
@@ -188,6 +202,10 @@ void VK_queue::submit_and_wait_command_buffer(VkCommandBuffer cmdbuf) {
 
     vkQueueWaitIdle(handle);
     
+    for (auto& semaphore : semaphores[cmdbuf]) {
+        vkDestroySemaphore(device_ptr->handle, semaphore, NULL);
+    }
+    semaphores[cmdbuf].clear();
     vkFreeCommandBuffers(device_ptr->handle, commandPool, 1, &cmdbuf);
 }
 

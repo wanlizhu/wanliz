@@ -9,6 +9,7 @@ struct VK_queue {
     VkQueueFamilyProperties properties = {};
     bool supportPresenting = false;
     VkCommandPool commandPool = NULL;
+    std::map<VkCommandBuffer, std::vector<VkSemaphore>> semaphores;
 
     inline operator VkQueue() const { return handle; }
     void init(VK_device* device_ptr, uint32_t family, bool presenting);
@@ -16,6 +17,7 @@ struct VK_queue {
 
     void create_command_pool();
     VkCommandBuffer alloc_and_begin_command_buffer(const std::string& name);
+    VkSemaphore allocate_semaphore_bound_for(VkCommandBuffer cmdbuf);
     void cmdbuf_debug_range_begin(VkCommandBuffer cmdbuf, const std::string& label, VK_color color);
     void cmdbuf_debug_range_end(VkCommandBuffer cmdbuf);
     void submit_and_wait_command_buffer(VkCommandBuffer cmdbuf);

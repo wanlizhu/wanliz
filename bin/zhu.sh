@@ -349,9 +349,9 @@ subcmd_docker() {
     fi 
 
     if [[ $1 == nvl ]]; then 
-        docker rm -f ubuntu-24.04-nvl &>/dev/null || true 
+        docker rm -f wanliz-ubuntu-24.04-nvl &>/dev/null || true 
         docker run -it \
-            --name="ubuntu-24.04-nvl" \
+            --name="wanliz-ubuntu-24.04-nvl" \
             --cpuset-cpus=0-71 \
             --cpuset-mems=0 \
             --runtime=runc $(nvidia_device_nodes) \
@@ -360,9 +360,9 @@ subcmd_docker() {
             -e TZ=America/Los_Angeles \
             ubuntu:24.04 bash -lic '/tmp/config.sh; exec bash -li'
     elif [[ $1 == galaxy ]]; then 
-        docker rm -f ubuntu-24.04-galaxy &>/dev/null || true 
+        docker rm -f wanliz-ubuntu-24.04-galaxy &>/dev/null || true 
         docker run -it \
-            --name="ubuntu-24.04-galaxy" \
+            --name="wanliz-ubuntu-24.04-galaxy" \
             --cpuset-cpus=0-71 \
             --cpuset-mems=0 \
             --runtime=runc $(nvidia_device_nodes) \
@@ -371,10 +371,12 @@ subcmd_docker() {
             -e TZ=America/Los_Angeles \
             -e __GL_DeviceModalityPreference=1 \
             ubuntu:24.04 bash -lic '/tmp/config.sh; exec bash -li' 
+    elif [[ $1 == ? ]]; then 
+        docker ps -a --filter "name=^wanliz-" --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}\t{{.CreatedAt}}'
     else
-        docker rm -f ubuntu-24.04-wanliz &>/dev/null || true 
+        docker rm -f wanliz-ubuntu-24.04 &>/dev/null || true 
         docker run -it \
-            --name="ubuntu-24.04-wanliz" \
+            --name="wanliz-ubuntu-24.04" \
             --runtime=runc $(nvidia_device_nodes) \
             -v $HOME/wanliz/bin/config-new-machine.sh:/tmp/config.sh:ro \
             -v /tmp/decode_password:/tmp/decode_password:ro \

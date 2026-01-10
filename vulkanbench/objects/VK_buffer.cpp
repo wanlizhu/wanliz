@@ -167,7 +167,7 @@ void VK_buffer::write_noise() {
     write(randomData.data(), static_cast<uint32_t>(sizeInBytes));
 }
 
-VK_gpu_timer VK_buffer::copy_from_buffer(VK_buffer& src) {
+VK_gpu_timer VK_buffer::copy_from_buffer(VK_buffer& src, VkCommandBuffer* cmdbuf) {
     VK_gpu_timer timer(device_ptr);
     timer.cpu_begin();
 
@@ -188,24 +188,33 @@ VK_gpu_timer VK_buffer::copy_from_buffer(VK_buffer& src) {
         return timer;
     }
 
-    VkCommandBuffer internal = device_ptr->cmdqueue.alloc_and_begin_command_buffer("VK_buffer::copy_from_buffer");
+    bool submitNow = false;
+    if (cmdbuf == nullptr) {
+        *cmdbuf = device_ptr->cmdqueue.alloc_and_begin_command_buffer("VK_buffer::copy_from_buffer");
+        submitNow = true;
+    }
 
     VkBufferCopy copyRegion = {};
     copyRegion.srcOffset = 0;
     copyRegion.dstOffset = 0;
     copyRegion.size = copySize;
 
-    timer.gpu_begin(internal);
-    vkCmdCopyBuffer(internal, src.handle, handle, 1, &copyRegion);
-    timer.gpu_end(internal);
+    timer.gpu_begin(*cmdbuf);
+    vkCmdCopyBuffer(*cmdbuf, src.handle, handle, 1, &copyRegion);
+    timer.gpu_end(*cmdbuf);
 
-    device_ptr->cmdqueue.submit_and_wait_command_buffer(internal);
+    if (submitNow) {
+        device_ptr->cmdqueue.submit_and_wait_command_buffer(*cmdbuf);
+        timer.cpu_end();
+        timer.readback_gpu_timestamps();
+    } else {
+        timer.cpu_end();
+    }
 
-    timer.cpu_end();
     return timer;
 }
 
-VK_gpu_timer VK_buffer::copy_from_image(VK_image& src) {
+VK_gpu_timer VK_buffer::copy_from_image(VK_image& src, VkCommandBuffer* cmdbuf) {
     VK_gpu_timer timer(device_ptr);
     timer.cpu_begin();
 
@@ -226,10 +235,14 @@ VK_gpu_timer VK_buffer::copy_from_image(VK_image& src) {
         return timer;
     }
 
-    VkCommandBuffer internal = device_ptr->cmdqueue.alloc_and_begin_command_buffer("VK_buffer::copy_from_image");
+    bool submitNow = false;
+    if (cmdbuf == nullptr) {
+        *cmdbuf = device_ptr->cmdqueue.alloc_and_begin_command_buffer("VK_buffer::copy_from_image");
+        submitNow = true;
+    }
 
     VkImageLayout oldLayout = src.currentImageLayout;
-    src.image_layout_transition(internal, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    src.image_layout_transition(*cmdbuf, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     size_t srcPixelCount = (size_t)src.extent.width * src.extent.height;
     size_t pixelSize = (srcPixelCount > 0) ? (src.sizeInBytes / srcPixelCount) : 1;
@@ -253,24 +266,29 @@ VK_gpu_timer VK_buffer::copy_from_image(VK_image& src) {
     region.imageOffset = {0, 0, 0};
     region.imageExtent = {copyWidth, copyHeight, 1};
 
-    timer.gpu_begin(internal);
+    timer.gpu_begin(*cmdbuf);
     vkCmdCopyImageToBuffer(
-        internal,
+        *cmdbuf,
         src.handle,
         src.currentImageLayout,
         handle,
         1,
         &region
     );
-    timer.gpu_end(internal);
+    timer.gpu_end(*cmdbuf);
 
     if (oldLayout != VK_IMAGE_LAYOUT_UNDEFINED && oldLayout != src.currentImageLayout) {
-        src.image_layout_transition(internal, oldLayout);
+        src.image_layout_transition(*cmdbuf, oldLayout);
     }
 
-    device_ptr->cmdqueue.submit_and_wait_command_buffer(internal);
+    if (submitNow) {
+        device_ptr->cmdqueue.submit_and_wait_command_buffer(*cmdbuf);
+        timer.cpu_end();
+        timer.readback_gpu_timestamps();
+    } else {
+        timer.cpu_end();
+    }
 
-    timer.cpu_end();
     return timer;
 }
 
@@ -380,6 +398,10 @@ void VK_buffer_group::write_noise() {
 }
 
 VK_buffer& VK_buffer_group::random_pick() {
+    if (buffers.size() == 1) {
+        return buffers[0];
+    }
+
     static std::random_device rd;
     static std::mt19937 gen(rd());
     static uint32_t previous_index = UINT32_MAX;
@@ -392,4 +414,9 @@ VK_buffer& VK_buffer_group::random_pick() {
     previous_index = index;
 
     return buffers[index];
+}
+
+VK_buffer& VK_buffer_group::operator[](int i) {
+    assert(i >= 0 && i < buffers.size());
+    return buffers[i];
 }

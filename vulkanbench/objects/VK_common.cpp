@@ -7,20 +7,55 @@ VK_gpu_timer::VK_gpu_timer(VK_device* device_ptr) {
     m_device_ptr = device_ptr;
 }
 
+bool VK_config::arg_starts_with(const std::string& name, const std::string& prefix) {
+    std::string value = args[name].as<std::string>();
+    return str_starts_with(value.c_str(), prefix.c_str());
+}
+
+bool arg_starts_with(const std::string& name, const std::vector<std::string>& prefixList) {
+    for (const auto& prefix : prefixList) {
+        if (VK_config::arg_starts_with(name, prefix)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::string VK_config::arg_substr_before(const std::string& name, const std::string& separator) {
+    std::string value = args[name].as<std::string>();
+    size_t pos = value.find(separator);
+    if (pos == std::string::npos) {
+        return value;
+    }
+    return value.substr(0, pos);
+}
+
+std::string VK_config::arg_substr_after(const std::string& name, const std::string& separator) {
+    std::string value = args[name].as<std::string>();
+    size_t pos = value.find(separator);
+    if (pos == std::string::npos) {
+        return "";
+    }
+    return value.substr(pos + separator.length());
+}
+
+void VK_gpu_timer::reset() {
+    cpu_ns = 0;
+    gpu_ns = 0;
+    m_cpu_begin_tp = std::nullopt;
+    m_gpu_begin_id = UINT32_MAX;
+    m_gpu_end_id = UINT32_MAX;
+    m_gpu_time_acquired = false;
+}
+
 void VK_gpu_timer::cpu_begin() {
     m_cpu_begin_tp = std::chrono::high_resolution_clock::now();
 }
 
 void VK_gpu_timer::cpu_end() {
+    assert(m_cpu_begin_tp.has_value());
     auto cpu_end_tp = std::chrono::high_resolution_clock::now();
-    cpu_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(cpu_end_tp - m_cpu_begin_tp).count();
-
-    if (m_gpu_begin_id != UINT32_MAX && !m_gpu_time_acquired) {
-        uint64_t gpu_begin_tp = m_device_ptr->querypool.read_timestamp(m_gpu_begin_id);
-        uint64_t gpu_end_tp = m_device_ptr->querypool.read_timestamp(m_gpu_end_id);
-        gpu_ns = gpu_end_tp - gpu_begin_tp;
-        m_gpu_time_acquired = true;
-    }
+    cpu_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(cpu_end_tp - m_cpu_begin_tp.value()).count();
 }
 
 void VK_gpu_timer::gpu_begin(VkCommandBuffer cmdbuf) {
@@ -34,7 +69,16 @@ void VK_gpu_timer::gpu_end(VkCommandBuffer cmdbuf) {
     m_gpu_end_id = m_device_ptr->querypool.write_timestamp(cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 }
 
-bool VK_gpu_timer::validate() const {
+void VK_gpu_timer::readback_gpu_timestamps() {
+    if (m_gpu_begin_id != UINT32_MAX && !m_gpu_time_acquired) {
+        uint64_t gpu_begin_tp = m_device_ptr->querypool.read_timestamp(m_gpu_begin_id);
+        uint64_t gpu_end_tp = m_device_ptr->querypool.read_timestamp(m_gpu_end_id);
+        gpu_ns = gpu_end_tp - gpu_begin_tp;
+        m_gpu_time_acquired = true;
+    }
+}
+
+bool VK_gpu_timer::is_valid() const {
     if (cpu_ns == 0 || gpu_ns == 0) {
         return false;
     }
@@ -124,6 +168,18 @@ double VK_GB_per_second::robust_CoV(const std::vector<double>& samples) {
     double robust_sigma = k * mad;
 
     return robust_sigma / med;
+}
+
+VK_createInfo_memType VK_createInfo_memType::init_with_flags(VkMemoryPropertyFlags _flags) {
+    VK_createInfo_memType inst;
+    inst.flags = _flags;
+    return inst;
+}
+
+VK_createInfo_memType VK_createInfo_memType::init_with_index(uint32_t _index) {
+    VK_createInfo_memType inst;
+    inst.index = _index;
+    return inst;
 }
 
 bool str_starts_with(const char* str, const char* substr) {
@@ -330,7 +386,9 @@ std::string human_readable_size(size_t bytes) {
 }
 
 void print_table(const std::vector<std::vector<std::string>>& rows, std::ostream& out) {
-    if (rows.empty()) return;
+    if (rows.empty()) {
+        return;
+    }
     
     std::vector<size_t> widths(rows[0].size(), 0);
     for (const auto& row : rows) {
