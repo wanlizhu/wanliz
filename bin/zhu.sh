@@ -257,7 +257,7 @@ rsync_recv_umd() {
         if [[ -f $sys_icd_file ]]; then  
             cp -f $sys_icd_file .
             sed -i "s|libGLX_nvidia\.so\.0|$rsync_dst/libGLX_nvidia.so.0|g" nvidia_icd.json
-            echo "LD_LIBRARY_PATH=$rsync_dst{LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} VK_ICD_FILENAMES=$rsync_dst/nvidia_icd.json" > README.md
+            echo "LD_LIBRARY_PATH=$rsync_dst VK_ICD_FILENAMES=$rsync_dst/nvidia_icd.json" > README.md
         else 
             return 1
         fi 
