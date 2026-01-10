@@ -24,7 +24,7 @@ void VK_TestCase_memcopy::run_subtest(const std::string& name) {
 void VK_TestCase_memcopy::subtest_buffer_to_buffer() {
     VK_buffer_group src_buffers;
     src_buffers.init(
-        VK_config::args["group_size"].as<int>(), 
+        VK_config::args["group-size"].as<int>(), 
         &m_device, 
         m_sizeInBytes, 
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
@@ -34,7 +34,7 @@ void VK_TestCase_memcopy::subtest_buffer_to_buffer() {
     if (VK_config::args["profile"].as<bool>()) {
         VK_buffer_group dst_buffers;
         dst_buffers.init(
-            VK_config::args["group_size"].as<int>(), 
+            VK_config::args["group-size"].as<int>(), 
             &m_device, 
             m_sizeInBytes,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
@@ -65,7 +65,7 @@ void VK_TestCase_memcopy::subtest_buffer_to_buffer() {
         }) {
             VK_buffer_group dst_buffers;
             dst_buffers.init(
-                VK_config::args["group_size"].as<int>(), 
+                VK_config::args["group-size"].as<int>(), 
                 &m_device, 
                 m_sizeInBytes,
                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
@@ -95,7 +95,7 @@ void VK_TestCase_memcopy::subtest_buffer_to_buffer() {
 void VK_TestCase_memcopy::subtest_buffer_to_image() {
     VK_buffer_group src_buffers;
     src_buffers.init(
-        VK_config::args["group_size"].as<int>(), 
+        VK_config::args["group-size"].as<int>(), 
         &m_device, 
         m_sizeInBytes, 
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 

@@ -89,6 +89,7 @@ enum class VK_color {
 struct VK_config {
     static cxxopts::ParseResult args;
     static bool arg_starts_with(const std::string& name, const std::string& prefix);
+    static bool arg_starts_with(const std::string& name, const std::vector<std::string>& prefixList);
     static std::string arg_substr_before(const std::string& name, const std::string& separator);
     static std::string arg_substr_after(const std::string& name, const std::string& separator);
 };
