@@ -64,6 +64,7 @@ struct VK_TestCase_memcopy {
 private:
     void subtest_buffer_to_buffer();
     void subtest_buffer_to_image();
+    void subtest_image_to_image();
 
 private:
     VK_device& m_device;
