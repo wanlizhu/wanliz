@@ -70,6 +70,19 @@ subcmd_ip() {
     ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p'
 }
 
+subcmd_sw() {
+    case $1 in 
+        version) 
+            find $HOME/sw/branch -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | 
+            while IFS= read -r name; do 
+                filename=$HOME/sw/branch/$name/drivers/common/inc/nvUnixVersion.h
+                version=$(cat $filename | grep '#define NV_VERSION_STRING' | awk -F'"' '{print $2}')
+                echo "~/sw/branch/$name -> $version"
+            done  
+        ;;
+    esac 
+}
+
 subcmd_env() {
     if [[ -z $1 ]]; then 
         export P4PORT=p4proxy-sc.nvidia.com:2006
@@ -418,6 +431,7 @@ case $1 in
     pl)  shift; subcmd_wanliz_git pull $@ ;;
     ps)  shift; subcmd_wanliz_git push $@ ;;
     ip)  shift; subcmd_ip $@ ;;
+    sw)  shift; subcmd_sw $2 ;;
     env) shift; subcmd_env; $@ ;;
     encrypt) shift; subcmd_encrypt "$1" ;;
     decrypt) shift; subcmd_decrypt "$1" ;;
