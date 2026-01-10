@@ -10,7 +10,7 @@ for pkg in "${pkgs[@]}"; do
     dpkg -s "$pkg" &>/dev/null || sudo apt install -y $pkg  
 done 
 
-rm -rf $build_dir 
+#rm -rf $build_dir 
 mkdir -p $build_dir
 cd $build_dir 
 

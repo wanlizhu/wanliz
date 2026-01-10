@@ -43,7 +43,7 @@ EOF
     done 
 fi 
 
-rm -rf $build_dir 
+#rm -rf $build_dir 
 mkdir -p $build_dir
 cd $build_dir 
 
@@ -67,9 +67,10 @@ if [[ $1 == "--regen-clangd-db" ]]; then
 fi 
 
 
-if [[ "$(pwd)" != "/tmp/wanliz" ]]; then 
+if [[ $2 == tmp ]]; then 
     rm -rf /tmp/wanliz 
-    rsync -Pah $HOME/wanliz /tmp/
+    cp -r $HOME/wanliz /tmp/
     cd /tmp/wanliz || exit 1
+    rm -rf build-linux-aarch64
     ./vulkanbench/build-linux-aarch64.sh debug || exit 1
 fi 
