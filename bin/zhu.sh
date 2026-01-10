@@ -66,6 +66,10 @@ subcmd_wanliz_git() {
     fi 
 }
 
+subcmd_ip() {
+    ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p'
+}
+
 subcmd_env() {
     export P4PORT=p4proxy-sc.nvidia.com:2006
     export P4USER=wanliz
@@ -387,8 +391,9 @@ subcmd_docker() {
 
 case $1 in 
     wsl2backup) shift; subcmd_backup_wsl2_home ;;
-    pl)  shift; subcmd_wanliz_git pull $@;;
-    ps)  shift; subcmd_wanliz_git push $@;;
+    pl)  shift; subcmd_wanliz_git pull $@ ;;
+    ps)  shift; subcmd_wanliz_git push $@ ;;
+    ip)  shift; subcmd_ip $@ ;;
     env) shift; subcmd_env; $@ ;;
     encrypt) shift; subcmd_encrypt "$1" ;;
     decrypt) shift; subcmd_decrypt "$1" ;;
