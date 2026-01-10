@@ -80,6 +80,7 @@ subcmd_sw() {
                 echo "~/sw/branch/$name -> $version"
             done  
         ;;
+        *) echo "Error: unknown arg \"$1\" for zhu sw"; return 1 ;;
     esac 
 }
 
@@ -431,7 +432,7 @@ case $1 in
     pl)  shift; subcmd_wanliz_git pull $@ ;;
     ps)  shift; subcmd_wanliz_git push $@ ;;
     ip)  shift; subcmd_ip $@ ;;
-    sw)  shift; subcmd_sw $2 ;;
+    sw)  shift; subcmd_sw $@ ;;
     env) shift; subcmd_env; $@ ;;
     encrypt) shift; subcmd_encrypt "$1" ;;
     decrypt) shift; subcmd_decrypt "$1" ;;
