@@ -27,8 +27,8 @@ struct VK_image {
     void deinit();
     void write(const void* src, size_t sizeMax);
     void write_noise();
-    VK_gpu_timer copy_from_buffer(VK_buffer& src, VkCommandBuffer* cmdbuf=NULL);
-    VK_gpu_timer copy_from_image(VK_image& src, VkCommandBuffer* cmdbuf=NULL);
+    VK_gpu_timer copy_from_buffer(VK_buffer& src, VkCommandBuffer cmdbuf=NULL);
+    VK_gpu_timer copy_from_image(VK_image& src, VkCommandBuffer cmdbuf=NULL);
     std::shared_ptr<std::vector<uint8_t>> readback();
     void image_layout_transition(VkCommandBuffer cmdbuf, VkImageLayout dstLayout);
 };

@@ -5,7 +5,7 @@
 int main(int argc, char **argv) {
     cxxopts::Options options("vulkanbench", "Vulkan benchmark app for Linux and Windows platforms");
     options.add_options("global options")
-        ("testcase", "Test case name to run", cxxopts::value<std::string>()->default_value("memcopy"))
+        ("t,testcase", "Test case name to run", cxxopts::value<std::string>()->default_value("memcopy"))
         ("n,nodisplay", "Run in offscreen mode", cxxopts::value<bool>()->default_value("false"))
         ("p,profile", "Run for PI profiling", cxxopts::value<bool>()->default_value("false"))
         ("d,device", "GPU device index to use", cxxopts::value<int>()->default_value("-1"))

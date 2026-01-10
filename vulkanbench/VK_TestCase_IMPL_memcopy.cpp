@@ -44,12 +44,12 @@ void VK_TestCase_memcopy::subtest_buffer_to_buffer() {
         if (VK_config::args["group-size"].as<int>() == 1) {
             dst_buffers[0].copy_from_buffer(src_buffers.random_pick());
         } else {
-            std::cout << "Running for 10 seconds ...\n";
+            std::cout << "Running buffer->buffer for 10 seconds ...\n";
             auto start_time = std::chrono::steady_clock::now();
             while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(10)) {
                 VkCommandBuffer cmdbuf = m_device.cmdqueue.alloc_and_begin_command_buffer("buf2buf:profile");
-                for (int i = 0; i < 1000; i++) {
-                    dst_buffers.random_pick().copy_from_buffer(src_buffers.random_pick(), &cmdbuf);
+                for (int i = 0; i < 100; i++) {
+                    dst_buffers.random_pick().copy_from_buffer(src_buffers.random_pick(), cmdbuf);
                 }
                 m_device.cmdqueue.submit_and_wait_command_buffer(cmdbuf);
             }
@@ -117,12 +117,12 @@ void VK_TestCase_memcopy::subtest_buffer_to_image() {
         if (VK_config::args["group-size"].as<int>() == 1) {
             dst_images[0].copy_from_buffer(src_buffers.random_pick());
         } else {
-            std::cout << "Running for 10 seconds ...\n";
+            std::cout << "Running buffer->image for 10 seconds ...\n";
             auto start_time = std::chrono::steady_clock::now();
             while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(10)) {
                 VkCommandBuffer cmdbuf = m_device.cmdqueue.alloc_and_begin_command_buffer("buf2buf:profile");
-                for (int i = 0; i < 1000; i++) {
-                    dst_images.random_pick().copy_from_buffer(src_buffers.random_pick(), &cmdbuf);
+                for (int i = 0; i < 100; i++) {
+                    dst_images.random_pick().copy_from_buffer(src_buffers.random_pick(), cmdbuf);
                 }
                 m_device.cmdqueue.submit_and_wait_command_buffer(cmdbuf);
             }
@@ -156,7 +156,7 @@ void VK_TestCase_memcopy::subtest_buffer_to_image() {
             VK_GB_per_second speed(m_sizeInBytes, timers);
             m_resultsTable.push_back({
                 "buffer -> image", 
-                std::to_string(m_imageExtent.width) + "x" + std::to_string(m_imageExtent.height) + " (" + human_readable_size(m_sizeInBytes) + ")", 
+                std::to_string(m_imageExtent.width) + "x" + std::to_string(m_imageExtent.height), 
                 std::to_string(src_buffers[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(src_buffers[0].memoryFlags, true) + ")",
                 std::to_string(dst_images[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(dst_images[0].memoryFlags, true) + ")",
                 str_format("%.3f", speed.cpu_speed), 

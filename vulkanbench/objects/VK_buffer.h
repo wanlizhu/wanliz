@@ -20,8 +20,8 @@ struct VK_buffer {
     void deinit();
     void write(const void* src, uint32_t sizeMax);  
     void write_noise();  
-    VK_gpu_timer copy_from_buffer(VK_buffer& src, VkCommandBuffer* cmdbuf=NULL);
-    VK_gpu_timer copy_from_image(VK_image& src, VkCommandBuffer* cmdbuf=NULL);
+    VK_gpu_timer copy_from_buffer(VK_buffer& src, VkCommandBuffer cmdbuf=NULL);
+    VK_gpu_timer copy_from_image(VK_image& src, VkCommandBuffer cmdbuf=NULL);
     std::shared_ptr<std::vector<uint8_t>> readback();  
 };
 
