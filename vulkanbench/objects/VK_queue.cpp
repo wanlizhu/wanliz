@@ -201,11 +201,21 @@ void VK_queue::submit_and_wait_command_buffer(VkCommandBuffer cmdbuf) {
     }
 
     vkQueueWaitIdle(handle);
-    
-    for (auto& semaphore : semaphores[cmdbuf]) {
-        vkDestroySemaphore(device_ptr->handle, semaphore, NULL);
-    }
-    semaphores[cmdbuf].clear();
     vkFreeCommandBuffers(device_ptr->handle, commandPool, 1, &cmdbuf);
 }
 
+void VK_queue::free_semaphores_bound_for(VkCommandBuffer cmdbuf) {
+    if (std::find(semaphores.begin(), semaphores.end(), cmdbuf) != semaphores.end()) {
+        for (auto& semaphore : semaphores[cmdbuf]) {
+            vkDestroySemaphore(device_ptr->handle, semaphore, NULL);
+        }
+        semaphores[cmdbuf].clear();
+    }
+
+    if (cmdbuf == NULL) {
+        for (auto& [cmdbuf, _] : semaphores) {
+            free_semaphores_bound_for(cmdbuf);
+        }
+        semaphores.clear();
+    }
+}

@@ -106,7 +106,6 @@ struct VK_gpu_timer {
     void gpu_begin(VkCommandBuffer cmdbuf);
     void gpu_end(VkCommandBuffer cmdbuf);
     void readback_gpu_timestamps();
-    bool is_valid() const;
 
 private:
     VK_device* m_device_ptr = nullptr;
@@ -123,7 +122,7 @@ struct VK_GB_per_second {
     double gpu_robust_CoV = 0.0;
 
     VK_GB_per_second() = default;
-    VK_GB_per_second(size_t bytes, const std::vector<VK_gpu_timer>& timers);
+    VK_GB_per_second(size_t bytes, std::vector<VK_gpu_timer>& timers);
 
 private:
     double robust_CoV(const std::vector<double>& samples);

@@ -17,8 +17,10 @@ struct VK_queue {
 
     void create_command_pool();
     VkCommandBuffer alloc_and_begin_command_buffer(const std::string& name);
-    VkSemaphore allocate_semaphore_bound_for(VkCommandBuffer cmdbuf);
     void cmdbuf_debug_range_begin(VkCommandBuffer cmdbuf, const std::string& label, VK_color color);
     void cmdbuf_debug_range_end(VkCommandBuffer cmdbuf);
     void submit_and_wait_command_buffer(VkCommandBuffer cmdbuf);
+    
+    VkSemaphore allocate_semaphore_bound_for(VkCommandBuffer cmdbuf);
+    void free_semaphores_bound_for(VkCommandBuffer cmdbuf);
 };

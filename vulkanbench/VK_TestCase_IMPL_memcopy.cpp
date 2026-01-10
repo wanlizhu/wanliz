@@ -48,14 +48,27 @@ void VK_TestCase_memcopy::subtest_buffer_to_buffer() {
             dst_buffers[0].copy_from_buffer(src_buffers.random_pick());
         } else {
             std::cout << "Running buffer->buffer for 10 seconds ...\n";
+            std::vector<VK_gpu_timer> timers;
+
             auto start_time = std::chrono::steady_clock::now();
             while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(10)) {
                 VkCommandBuffer cmdbuf = m_device.cmdqueue.alloc_and_begin_command_buffer("buf2buf:profile");
                 for (int i = 0; i < 100; i++) {
-                    dst_buffers.random_pick().copy_from_buffer(src_buffers.random_pick(), cmdbuf);
+                    auto timer = dst_buffers.random_pick().copy_from_buffer(src_buffers.random_pick(), cmdbuf);
+                    timers.push_back(timer);
                 }
                 m_device.cmdqueue.submit_and_wait_command_buffer(cmdbuf);
             }
+
+            VK_GB_per_second speed(m_sizeInBytes, timers);
+            printf("buffer -> buffer | %s (MB) | Src = %s | Dst = %s | CPU = %7.3f (GB/s) | GPU = %7.3f (GB/s)\n", 
+                human_readable_size(m_sizeInBytes).c_str(), 
+                (std::to_string(src_buffers[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(src_buffers[0].memoryFlags, true) + ")").c_str(),
+                (std::to_string(dst_buffers[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(dst_buffers[0].memoryFlags, true) + ")").c_str(),
+                speed.cpu_speed, 
+                speed.gpu_speed
+            );
+            m_device.cmdqueue.free_semaphores_bound_for(NULL);
         }
 
         m_resultsTable.clear();
@@ -123,14 +136,28 @@ void VK_TestCase_memcopy::subtest_buffer_to_image() {
             dst_images[0].copy_from_buffer(src_buffers.random_pick());
         } else {
             std::cout << "Running buffer->image for 10 seconds ...\n";
+            std::vector<VK_gpu_timer> timers;
+
             auto start_time = std::chrono::steady_clock::now();
             while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(10)) {
                 VkCommandBuffer cmdbuf = m_device.cmdqueue.alloc_and_begin_command_buffer("buf2buf:profile");
                 for (int i = 0; i < 100; i++) {
-                    dst_images.random_pick().copy_from_buffer(src_buffers.random_pick(), cmdbuf);
+                    auto timer = dst_images.random_pick().copy_from_buffer(src_buffers.random_pick(), cmdbuf);
+                    timers.push_back(timer);
                 }
                 m_device.cmdqueue.submit_and_wait_command_buffer(cmdbuf);
             }
+
+            VK_GB_per_second speed(m_sizeInBytes, timers);
+            m_resultsTable.push_back({
+                "buffer -> image", 
+                human_readable_size(m_sizeInBytes), 
+                std::to_string(src_buffers[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(src_buffers[0].memoryFlags, true) + ")",
+                std::to_string(dst_images[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(dst_images[0].memoryFlags, true) + ")",
+                str_format("%.3f", speed.cpu_speed), 
+                str_format("%.3f", speed.gpu_speed)
+            });
+            m_device.cmdqueue.free_semaphores_bound_for(NULL);
         }
 
         m_resultsTable.clear();
@@ -202,15 +229,29 @@ void VK_TestCase_memcopy::subtest_image_to_image() {
         if (VK_config::args["group-size"].as<int>() == 1) {
             dst_images[0].copy_from_image(src_images.random_pick());
         } else {
-            std::cout << "Running buffer->image for 10 seconds ...\n";
+            std::cout << "Running image->image for 10 seconds ...\n";
+            std::vector<VK_gpu_timer> timers;
+
             auto start_time = std::chrono::steady_clock::now();
             while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(10)) {
                 VkCommandBuffer cmdbuf = m_device.cmdqueue.alloc_and_begin_command_buffer("buf2buf:profile");
                 for (int i = 0; i < 100; i++) {
-                    dst_images.random_pick().copy_from_image(src_images.random_pick(), cmdbuf);
+                    auto timer = dst_images.random_pick().copy_from_image(src_images.random_pick(), cmdbuf);
+                    timers.push_back(timer);
                 }
                 m_device.cmdqueue.submit_and_wait_command_buffer(cmdbuf);
             }
+
+            VK_GB_per_second speed(m_sizeInBytes, timers);
+            m_resultsTable.push_back({
+                "image -> image", 
+                human_readable_size(m_sizeInBytes), 
+                std::to_string(src_images[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(src_images[0].memoryFlags, true) + ")",
+                std::to_string(dst_images[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(dst_images[0].memoryFlags, true) + ")",
+                str_format("%.3f", speed.cpu_speed), 
+                str_format("%.3f", speed.gpu_speed)
+            });
+            m_device.cmdqueue.free_semaphores_bound_for(NULL);
         }
 
         m_resultsTable.clear();

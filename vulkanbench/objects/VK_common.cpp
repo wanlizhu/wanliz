@@ -78,17 +78,7 @@ void VK_gpu_timer::readback_gpu_timestamps() {
     }
 }
 
-bool VK_gpu_timer::is_valid() const {
-    if (cpu_ns == 0 || gpu_ns == 0) {
-        return false;
-    }
-    if (m_gpu_begin_id != UINT32_MAX) {
-        return m_gpu_time_acquired;
-    }
-    return true;
-}
-
-VK_GB_per_second::VK_GB_per_second(size_t bytes, const std::vector<VK_gpu_timer>& timers) {
+VK_GB_per_second::VK_GB_per_second(size_t bytes, std::vector<VK_gpu_timer>& timers) {
     constexpr double GB = 1024.0 * 1024.0 * 1024.0;
 
     auto median_of = [](std::vector<double>& a) -> double {
@@ -113,7 +103,8 @@ VK_GB_per_second::VK_GB_per_second(size_t bytes, const std::vector<VK_gpu_timer>
     cpu_speed = median_of(cpu_speed_list);
 
     std::vector<double> gpu_speed_list;
-    for (const auto& timer : timers) {
+    for (auto& timer : timers) {
+        timer.readback_gpu_timestamps();
         gpu_speed_list.push_back((double)bytes / timer.gpu_ns * (1e9 / GB));
     }
     gpu_robust_CoV = robust_CoV(gpu_speed_list);
