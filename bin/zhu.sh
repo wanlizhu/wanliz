@@ -171,6 +171,9 @@ rsync_host_io() {
 
 subcmd_send() {
     rsync_host_io $@ || return 1
+    if [[ -z $USER && $UID == 0 ]]; then 
+        USER=root
+    fi 
     ssh $rsync_host "mkdir -p /mnt/d/$USER@$HOSTNAME"
     rsync -Pah "$@" $rsync_host:/mnt/d/$USER@$HOSTNAME/
 }
