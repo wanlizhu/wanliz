@@ -7,12 +7,12 @@ VK_gpu_timer::VK_gpu_timer(VK_device* device_ptr) {
     m_device_ptr = device_ptr;
 }
 
-bool VK_config::arg_starts_with(const std::string& name, const std::string& prefix) {
-    std::string value = args[name].as<std::string>();
-    return str_starts_with(value.c_str(), prefix.c_str());
+bool VK_config::arg_starts_with(const char* name, const char* prefix) {
+    std::string value = args[std::string(name)].as<std::string>();
+    return str_starts_with(value.c_str(), prefix);
 }
 
-bool arg_starts_with(const std::string& name, const std::vector<std::string>& prefixList) {
+bool VK_config::arg_starts_with(const char* name, const std::vector<const char*>& prefixList) {
     for (const auto& prefix : prefixList) {
         if (VK_config::arg_starts_with(name, prefix)) {
             return true;
@@ -21,8 +21,8 @@ bool arg_starts_with(const std::string& name, const std::vector<std::string>& pr
     return false;
 }
 
-std::string VK_config::arg_substr_before(const std::string& name, const std::string& separator) {
-    std::string value = args[name].as<std::string>();
+std::string VK_config::arg_substr_before(const char* name, const char* separator) {
+    std::string value = args[std::string(name)].as<std::string>();
     size_t pos = value.find(separator);
     if (pos == std::string::npos) {
         return value;
@@ -30,13 +30,13 @@ std::string VK_config::arg_substr_before(const std::string& name, const std::str
     return value.substr(0, pos);
 }
 
-std::string VK_config::arg_substr_after(const std::string& name, const std::string& separator) {
-    std::string value = args[name].as<std::string>();
+std::string VK_config::arg_substr_after(const char*name, const char* separator) {
+    std::string value = args[std::string(name)].as<std::string>();
     size_t pos = value.find(separator);
     if (pos == std::string::npos) {
         return "";
     }
-    return value.substr(pos + separator.length());
+    return value.substr(pos + strlen(separator));
 }
 
 void VK_gpu_timer::reset() {
@@ -389,7 +389,7 @@ void print_table(const std::vector<std::vector<std::string>>& rows, std::ostream
     if (rows.empty()) {
         return;
     }
-    
+
     std::vector<size_t> widths(rows[0].size(), 0);
     for (const auto& row : rows) {
         for (size_t i = 0; i < row.size() && i < widths.size(); i++) {
