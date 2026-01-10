@@ -103,44 +103,29 @@ subcmd_env() {
         fi
     fi 
 
-    for arg in "$@"; do 
-        case $arg in 
-            # UMD overrides
+    while [[ ! -z $1 ]]; do 
+        case $1 in 
             umd) 
                 export LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-UMD-override${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} 
                 export VK_ICD_FILENAMES=$HOME/NVIDIA-Linux-UMD-override/nvidia_icd.json
                 echo "Export env vars to enable umd overrides -- [OK]"
             ;;
-            -umd)
-                unset LD_LIBRARY_PATH
-                unset VK_ICD_FILENAMES
-                echo "Unset env vars to disable umd overrides -- [OK]"
-            ;;
-            # Enable pushbuffer dump
             pbd) 
                 export __GL_ac12fedf=./pushbuffer-dump-%03d.xml 
                 export __GL_ac12fede=0x10183
                 echo "Export env vars to enable pushbuffer dump -- [OK]"
             ;;
-            -pbd|-pushbuf|-pushbuffer-dump)
-                unset __GL_ac12fedf
-                unset __GL_ac12fede
-                echo "Unset env vars to disable pushbuffer dump -- [OK]"
-            ;;
-            # Logs of RM calls
             rmlog) 
                 export __GL_DEBUG_LEVEL=30 
                 export __GL_DEBUG_MASK=RM
                 echo "Export env vars to enable RM call logs -- [OK]"
             ;;
-            -rmlog)
-                unset __GL_DEBUG_LEVEL
-                unset __GL_DEBUG_MASK
-                echo "Unset env vars to disable RM call logs -- [OK]"
-            ;;
-            *) echo "Error: unknown arg \"$arg\" for \"zhu env\"" ;;
+            *) break ;;
         esac 
+        shift 
     done  
+
+    "$@"
 }
 
 subcmd_encrypt() {
