@@ -130,7 +130,8 @@ void VK_instance::init() {
 
     VkResult res = vkCreateInstance(&createInfo, nullptr, &handle);
     if (res != VK_SUCCESS || handle == VK_NULL_HANDLE) {
-        throw std::runtime_error("VkResult: " + VkResult_str(res));
+        fprintf(stderr, "%s\n", VkResult_str(res));
+        throw std::runtime_error("vkCreateInstance failed");
     }
 
     if (enableDebugUtils) {
@@ -138,7 +139,8 @@ void VK_instance::init() {
         if (_vkCreateDebugUtilsMessengerEXT) {
             res = _vkCreateDebugUtilsMessengerEXT(handle, &debugCreateInfo, NULL, &debugMessenger);
             if (res != VK_SUCCESS || debugMessenger == VK_NULL_HANDLE) {
-                throw std::runtime_error("VkResult: " + VkResult_str(res));
+                fprintf(stderr, "%s\n", VkResult_str(res));
+                throw std::runtime_error("_vkCreateDebugUtilsMessengerEXT failed");
             }
         }
     }

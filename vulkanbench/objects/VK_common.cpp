@@ -295,7 +295,7 @@ const char* str_format(const char* fmt, ...) {
     return buf.data();
 }
 
-std::string VkResult_str(VkResult result) {
+const char* VkResult_str(VkResult result) {
     switch (static_cast<int>(result)) {
         case 0:             return "VK_SUCCESS";
         case 1:             return "VK_NOT_READY";

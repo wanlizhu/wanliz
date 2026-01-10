@@ -147,7 +147,7 @@ const char* str_home_dir();
 const char* str_filename_timestamp();
 const char* str_format(const char* fmt, ...);
 
-std::string VkResult_str(VkResult result);
+const char* VkResult_str(VkResult result);
 std::string VkMemoryPropertyFlags_str(VkMemoryPropertyFlags flags, bool short_str);
 std::string human_readable_size(size_t bytes);
 void print_table(const std::vector<std::vector<std::string>>& rows, std::ostream& out = std::cout);

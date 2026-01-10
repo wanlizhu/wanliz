@@ -15,8 +15,10 @@ mkdir -p $build_dir
 cd $build_dir 
 
 if [[ $1 == debug ]]; then 
+    echo "Configuring debug build in $(pwd)"
     cmake ..  -DCMAKE_BUILD_TYPE=Debug || exit 1
 else 
+    echo "Configuring release build in $(pwd)"
     cmake ..  -DCMAKE_BUILD_TYPE=Release || exit 1
 fi 
 cmake --build . || exit 1

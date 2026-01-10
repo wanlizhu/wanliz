@@ -53,6 +53,7 @@ void VK_buffer::init(
 
     result = vkAllocateMemory(device->handle, &allocInfo, nullptr, &memory);
     if (result != VK_SUCCESS) {
+        fprintf(stderr, "%s\n", VkResult_str(result));
         throw std::runtime_error("Failed to allocate memory");
     }
 

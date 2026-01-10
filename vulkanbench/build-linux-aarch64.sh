@@ -48,11 +48,14 @@ mkdir -p $build_dir
 cd $build_dir 
 
 if [[ $1 == debug ]]; then 
+    echo "Configuring debug build in $(pwd)"
     cmake .. -DCMAKE_TARGET_ARCH=aarch64 -DCMAKE_BUILD_TYPE=Debug || exit 1
 else 
+    echo "Configuring release build in $(pwd)"
     cmake .. -DCMAKE_TARGET_ARCH=aarch64 -DCMAKE_BUILD_TYPE=Release || exit 1
 fi 
 cmake --build . || exit 1
+echo "Build finished in $(pwd)"
 
 if [[ $1 == "--regen-clangd-db" ]]; then 
     cp -vf compile_commands.json .. || exit 1
@@ -61,4 +64,12 @@ if [[ $1 == "--regen-clangd-db" ]]; then
     if [[ -e .clangd ]]; then 
         touch $(readlink -f .clangd)
     fi 
+fi 
+
+
+if [[ "$(pwd)" != "/tmp/wanliz" ]]; then 
+    rm -rf /tmp/wanliz 
+    rsync -Pah $HOME/wanliz /tmp/
+    cd /tmp/wanliz || exit 1
+    ./vulkanbench/build-linux-aarch64.sh debug || exit 1
 fi 
