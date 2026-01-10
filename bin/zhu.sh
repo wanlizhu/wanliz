@@ -120,6 +120,7 @@ subcmd_env() {
                 export __GL_DEBUG_MASK=RM
                 echo "Export env vars to enable RM call logs -- [OK]"
             ;;
+            --) shift; break ;; 
             *) break ;;
         esac 
         shift 
