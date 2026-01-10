@@ -232,7 +232,7 @@ rsync_recv_drvpkg() {
 subcmd_recv() {
     rsync_host_io $@ || return 1 
     case $1 in 
-        vulkanbench) shift; rsync_recv_vulkanbench $@ ;;
+        vb|vulkanbench) shift; rsync_recv_vulkanbench $@ ;;
         umd) shift; rsync_recv_umd $@ ;;
         drvpkg) shift; rsync_recv_drvpkg $@ ;;
         *) rsync -Pah $rsync_host:$1 . ;;
