@@ -210,7 +210,6 @@ void VK_TestCase_memcopy::subtest_buf2img_regular(VK_buffer_group& src_buffers) 
             timers.push_back(dst_images.random_pick().copy_from_buffer(src_buffers.random_pick()));
         }
 
-        assert(m_sizeInBytes == (sizeof(float) * 4 * m_imageExtent.width * m_imageExtent.height));
         VK_GB_per_second speed(m_sizeInBytes, timers);
         m_resultsTable.push_back({
             "buffer->image", 
@@ -282,10 +281,9 @@ void VK_TestCase_memcopy::subtest_img2img_profile(VK_image_group& src_images) {
             m_device.cmdqueue.submit_and_wait_command_buffer(cmdbuf);
         }
 
-        assert(m_sizeInBytes == (sizeof(float) * 4 * m_imageExtent.width * m_imageExtent.height));
-        VK_GB_per_second speed(m_sizeInBytes, timers);
+        VK_GB_per_second speed(src_images[0].sizeInBytes, timers);
         printf("image->image   | %s | Src = %s | Dst = %s | GPU = %7.3f (GB/s)\n", 
-            human_readable_size(m_sizeInBytes).c_str(), 
+            human_readable_size(src_images[0].sizeInBytes).c_str(), 
             (std::to_string(src_images[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(src_images[0].memoryFlags, true) + ")").c_str(),
             (std::to_string(dst_images[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(dst_images[0].memoryFlags, true) + ")").c_str(),
             speed.gpu_speed
@@ -320,8 +318,7 @@ void VK_TestCase_memcopy::subtest_img2img_regular(VK_image_group& src_images) {
             timers.push_back(dst_images.random_pick().copy_from_image(src_images.random_pick()));
         }
 
-        assert(m_sizeInBytes == (sizeof(float) * 4 * m_imageExtent.width * m_imageExtent.height));
-        VK_GB_per_second speed(m_sizeInBytes, timers);
+        VK_GB_per_second speed(src_images[0].sizeInBytes, timers);
         m_resultsTable.push_back({
             "image->image", 
             std::to_string(m_imageExtent.width) + "x" + std::to_string(m_imageExtent.height), 

@@ -1,10 +1,5 @@
 #!/bin/bash 
 
-build_dir="build-linux-aarch64"
-if [[ $1 == "--regen-clangd-db" ]]; then 
-    build_dir="build-linux-aarch64-temp"
-fi 
-
 if [[ $(uname -m) == x86_64 ]]; then 
     if ! dpkg --print-foreign-architectures | grep -q "arm64"; then 
         sudo dpkg --add-architecture arm64
@@ -43,6 +38,7 @@ EOF
     done 
 fi 
 
+build_dir="build-linux-aarch64"
 #rm -rf $build_dir 
 mkdir -p $build_dir
 cd $build_dir 
@@ -57,16 +53,7 @@ fi
 cmake --build . || exit 1
 echo "Build finished in $(pwd)"
 
-if [[ $1 == "--regen-clangd-db" ]]; then 
-    cp -vf compile_commands.json .. || exit 1
-    cd ..
-    rm -rf $build_dir
-    if [[ -e .clangd ]]; then 
-        touch $(readlink -f .clangd)
-    fi 
-fi 
-
-
+# (optional) for debugging on remote machine
 if [[ $2 == tmp ]]; then 
     rm -rf /tmp/wanliz 
     cp -r $HOME/wanliz /tmp/

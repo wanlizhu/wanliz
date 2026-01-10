@@ -171,6 +171,8 @@ rsync_host_io() {
 
 subcmd_send() {
     rsync_host_io $@ || return 1
+    ssh $rsync_host "mkdir -p /mnt/d/$USER@$HOSTNAME"
+    rsync -Pah "$@" $rsync_host:/mnt/d/$USER@$HOSTNAME/
 }
 
 rsync_recv_vulkanbench() {
