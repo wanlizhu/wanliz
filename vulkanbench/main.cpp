@@ -7,7 +7,7 @@ int main(int argc, char **argv) {
     options.add_options("global options")
         ("t,testcase", "Test case name to run", cxxopts::value<std::string>()->default_value("memcopy"))
         ("n,nodisplay", "Run in offscreen mode", cxxopts::value<bool>()->default_value("false"))
-        ("p,profile", "Run for PI profiling", cxxopts::value<bool>()->default_value("false"))
+        ("p,profile", "Run N seconds for PI profiling", cxxopts::value<int>()->default_value("0"))
         ("d,device", "GPU device index to use", cxxopts::value<int>()->default_value("-1"))
         ("g,group-size", "Size of src/dst buffer/image group", cxxopts::value<int>()->default_value("100"))
         ("s,size", "Size in MB of src/dst buffer/image group", cxxopts::value<int>()->default_value("512"))

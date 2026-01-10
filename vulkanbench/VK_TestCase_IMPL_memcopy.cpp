@@ -34,7 +34,7 @@ void VK_TestCase_memcopy::subtest_buf2buf() {
         VK_createInfo_memType::init_with_flags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
     );
 
-    if (VK_config::opt_as_bool("profile")) {
+    if (VK_config::opt_as_int("profile") > 0) {
         subtest_buf2buf_profile(src_buffers);
     } else {
         subtest_buf2buf_regular(src_buffers);
@@ -53,31 +53,27 @@ void VK_TestCase_memcopy::subtest_buf2buf_profile(VK_buffer_group& src_buffers) 
         VK_createInfo_memType::init_with_flags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
     );
 
-    if (VK_config::opt_as_int("group-size") == 1) {
-        dst_buffers[0].copy_from_buffer(src_buffers.random_pick());
-    } else {
-        std::cout << "Running buffer->buffer for 10 seconds ...\n";
-        std::vector<VK_gpu_timer> timers;
+    std::cout << "Running buffer->buffer for " << VK_config::opt_as_int("profile") << " seconds ...\n";
+    std::vector<VK_gpu_timer> timers;
 
-        auto start_time = std::chrono::steady_clock::now();
-        while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(10)) {
-            VkCommandBuffer cmdbuf = m_device.cmdqueue.alloc_and_begin_command_buffer("buf2buf:profile");
-            for (int i = 0; i < MAX_CMDBUF_SIZE; i++) {
-                auto timer = dst_buffers.random_pick().copy_from_buffer(src_buffers.random_pick(), cmdbuf);
-                timers.push_back(timer);
-            }
-            m_device.cmdqueue.submit_and_wait_command_buffer(cmdbuf);
+    auto start_time = std::chrono::steady_clock::now();
+    while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(VK_config::opt_as_int("profile"))) {
+        VkCommandBuffer cmdbuf = m_device.cmdqueue.alloc_and_begin_command_buffer("buf2buf:profile");
+        for (int i = 0; i < MAX_CMDBUF_SIZE; i++) {
+            auto timer = dst_buffers.random_pick().copy_from_buffer(src_buffers.random_pick(), cmdbuf);
+            timers.push_back(timer);
         }
-
-        VK_GB_per_second speed(m_sizeInBytes, timers);
-        printf("buffer->buffer | %s | Src = %s | Dst = %s | GPU = %7.3f (GB/s)\n", 
-            human_readable_size(m_sizeInBytes).c_str(), 
-            (std::to_string(src_buffers[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(src_buffers[0].memoryFlags, true) + ")").c_str(),
-            (std::to_string(dst_buffers[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(dst_buffers[0].memoryFlags, true) + ")").c_str(),
-            speed.gpu_speed
-        );
-        m_device.cmdqueue.free_semaphores_bound_for(NULL);
+        m_device.cmdqueue.submit_and_wait_command_buffer(cmdbuf);
     }
+
+    VK_GB_per_second speed(m_sizeInBytes, timers);
+    printf("buffer->buffer | %s | Src = %s | Dst = %s | GPU = %7.3f (GB/s)\n", 
+        human_readable_size(m_sizeInBytes).c_str(), 
+        (std::to_string(src_buffers[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(src_buffers[0].memoryFlags, true) + ")").c_str(),
+        (std::to_string(dst_buffers[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(dst_buffers[0].memoryFlags, true) + ")").c_str(),
+        speed.gpu_speed
+    );
+    m_device.cmdqueue.free_semaphores_bound_for(NULL);
 
     m_resultsTable.clear();
     dst_buffers.deinit();
@@ -136,7 +132,7 @@ void VK_TestCase_memcopy::subtest_buf2img() {
         m_imageExtent.height = width;
     }
 
-    if (VK_config::opt_as_bool("profile")) {
+    if (VK_config::opt_as_int("profile") > 0) {
         subtest_buf2img_profile(src_buffers);
     } else {
         subtest_buf2img_regular(src_buffers);
@@ -157,31 +153,27 @@ void VK_TestCase_memcopy::subtest_buf2img_profile(VK_buffer_group& src_buffers) 
         VK_IMAGE_TILING_LINEAR
     );
 
-    if (VK_config::opt_as_int("group-size") == 1) {
-        dst_images[0].copy_from_buffer(src_buffers.random_pick());
-    } else {
-        std::cout << "Running buffer->image  for 10 seconds ...\n";
-        std::vector<VK_gpu_timer> timers;
+    std::cout << "Running buffer->image  for " << VK_config::opt_as_int("profile") << " seconds ...\n";
+    std::vector<VK_gpu_timer> timers;
 
-        auto start_time = std::chrono::steady_clock::now();
-        while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(10)) {
-            VkCommandBuffer cmdbuf = m_device.cmdqueue.alloc_and_begin_command_buffer("buf2img:profile");
-            for (int i = 0; i < MAX_CMDBUF_SIZE; i++) {
-                auto timer = dst_images.random_pick().copy_from_buffer(src_buffers.random_pick(), cmdbuf);
-                timers.push_back(timer);
-            }
-            m_device.cmdqueue.submit_and_wait_command_buffer(cmdbuf);
+    auto start_time = std::chrono::steady_clock::now();
+    while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(VK_config::opt_as_int("profile"))) {
+        VkCommandBuffer cmdbuf = m_device.cmdqueue.alloc_and_begin_command_buffer("buf2img:profile");
+        for (int i = 0; i < MAX_CMDBUF_SIZE; i++) {
+            auto timer = dst_images.random_pick().copy_from_buffer(src_buffers.random_pick(), cmdbuf);
+            timers.push_back(timer);
         }
-
-        VK_GB_per_second speed(m_sizeInBytes, timers);
-        printf("buffer->image  | %s | Src = %s | Dst = %s | GPU = %7.3f (GB/s)\n", 
-            human_readable_size(m_sizeInBytes).c_str(), 
-            (std::to_string(src_buffers[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(src_buffers[0].memoryFlags, true) + ")").c_str(),
-            (std::to_string(dst_images[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(dst_images[0].memoryFlags, true) + ")").c_str(),
-            speed.gpu_speed
-        );
-        m_device.cmdqueue.free_semaphores_bound_for(NULL);
+        m_device.cmdqueue.submit_and_wait_command_buffer(cmdbuf);
     }
+
+    VK_GB_per_second speed(m_sizeInBytes, timers);
+    printf("buffer->image  | %s | Src = %s | Dst = %s | GPU = %7.3f (GB/s)\n", 
+        human_readable_size(m_sizeInBytes).c_str(), 
+        (std::to_string(src_buffers[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(src_buffers[0].memoryFlags, true) + ")").c_str(),
+        (std::to_string(dst_images[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(dst_images[0].memoryFlags, true) + ")").c_str(),
+        speed.gpu_speed
+    );
+    m_device.cmdqueue.free_semaphores_bound_for(NULL);
 
     m_resultsTable.clear();
     dst_images.deinit();
@@ -244,7 +236,7 @@ void VK_TestCase_memcopy::subtest_img2img() {
         m_imageExtent.height = width;
     }
 
-    if (VK_config::opt_as_bool("profile")) {
+    if (VK_config::opt_as_int("profile") > 0) {
         subtest_img2img_profile(src_images);
     } else {
         subtest_img2img_regular(src_images);
@@ -265,31 +257,27 @@ void VK_TestCase_memcopy::subtest_img2img_profile(VK_image_group& src_images) {
         VK_IMAGE_TILING_LINEAR
     );
 
-    if (VK_config::opt_as_int("group-size") == 1) {
-        dst_images[0].copy_from_image(src_images.random_pick());
-    } else {
-        std::cout << "Running image->image   for 10 seconds ...\n";
-        std::vector<VK_gpu_timer> timers;
+    std::cout << "Running image->image   for " << VK_config::opt_as_int("profile") << " seconds ...\n";
+    std::vector<VK_gpu_timer> timers;
 
-        auto start_time = std::chrono::steady_clock::now();
-        while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(10)) {
-            VkCommandBuffer cmdbuf = m_device.cmdqueue.alloc_and_begin_command_buffer("img2img:profile");
-            for (int i = 0; i < MAX_CMDBUF_SIZE; i++) {
-                auto timer = dst_images.random_pick().copy_from_image(src_images.random_pick(), cmdbuf);
-                timers.push_back(timer);
-            }
-            m_device.cmdqueue.submit_and_wait_command_buffer(cmdbuf);
+    auto start_time = std::chrono::steady_clock::now();
+    while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(VK_config::opt_as_int("profile"))) {
+        VkCommandBuffer cmdbuf = m_device.cmdqueue.alloc_and_begin_command_buffer("img2img:profile");
+        for (int i = 0; i < MAX_CMDBUF_SIZE; i++) {
+            auto timer = dst_images.random_pick().copy_from_image(src_images.random_pick(), cmdbuf);
+            timers.push_back(timer);
         }
-
-        VK_GB_per_second speed(src_images[0].sizeInBytes, timers);
-        printf("image->image   | %s | Src = %s | Dst = %s | GPU = %7.3f (GB/s)\n", 
-            human_readable_size(src_images[0].sizeInBytes).c_str(), 
-            (std::to_string(src_images[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(src_images[0].memoryFlags, true) + ")").c_str(),
-            (std::to_string(dst_images[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(dst_images[0].memoryFlags, true) + ")").c_str(),
-            speed.gpu_speed
-        );
-        m_device.cmdqueue.free_semaphores_bound_for(NULL);
+        m_device.cmdqueue.submit_and_wait_command_buffer(cmdbuf);
     }
+
+    VK_GB_per_second speed(src_images[0].sizeInBytes, timers);
+    printf("image->image   | %s | Src = %s | Dst = %s | GPU = %7.3f (GB/s)\n", 
+        human_readable_size(src_images[0].sizeInBytes).c_str(), 
+        (std::to_string(src_images[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(src_images[0].memoryFlags, true) + ")").c_str(),
+        (std::to_string(dst_images[0].memoryTypeIndex) + " (" + VkMemoryPropertyFlags_str(dst_images[0].memoryFlags, true) + ")").c_str(),
+        speed.gpu_speed
+    );
+    m_device.cmdqueue.free_semaphores_bound_for(NULL);
 
     m_resultsTable.clear();
     dst_images.deinit();
