@@ -433,7 +433,7 @@ case $1 in
     ps)  shift; subcmd_wanliz_git push $@ ;;
     ip)  shift; subcmd_ip $@ ;;
     sw)  shift; subcmd_sw $@ ;;
-    env) shift; subcmd_env; $@ ;;
+    env) shift; subcmd_env $@ ;;
     encrypt) shift; subcmd_encrypt "$1" ;;
     decrypt) shift; subcmd_decrypt "$1" ;;
     send) shift; subcmd_send $@ ;;
