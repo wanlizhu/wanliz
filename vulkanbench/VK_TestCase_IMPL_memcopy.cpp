@@ -75,7 +75,7 @@ void VK_TestCase_memcopy::subtest_buf2buf_profile(VK_buffer_group& src_buffers) 
         );
         m_device.cmdqueue.free_semaphores_bound_for(NULL);
         printf("\n");
-    } while (VK_config::opt_as_bool("endless"));
+    } while (VK_config::opt_as_bool("endless") && !VK_config::shutdown_requested);
 
     m_resultsTable.clear();
     dst_buffers.deinit();
@@ -176,7 +176,7 @@ void VK_TestCase_memcopy::subtest_buf2img_profile(VK_buffer_group& src_buffers) 
         );
         m_device.cmdqueue.free_semaphores_bound_for(NULL);
         printf("\n");
-    } while (VK_config::opt_as_bool("endless"));
+    } while (VK_config::opt_as_bool("endless") && !VK_config::shutdown_requested);
 
     m_resultsTable.clear();
     dst_images.deinit();
@@ -281,7 +281,7 @@ void VK_TestCase_memcopy::subtest_img2img_profile(VK_image_group& src_images) {
         );
         m_device.cmdqueue.free_semaphores_bound_for(NULL);
         printf("\n");
-    } while (VK_config::opt_as_bool("endless"));
+    } while (VK_config::opt_as_bool("endless") && !VK_config::shutdown_requested);
 
     m_resultsTable.clear();
     dst_images.deinit();
