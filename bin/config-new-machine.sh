@@ -24,6 +24,18 @@ if [[ "$(ps -p 1 -o comm= 2>/dev/null)" == systemd ]]; then
     booted_with_systemd=yes 
 fi 
 
+if [[ -z $sudo_access || -z $booted_with_systemd ]]; then 
+    export DEBIAN_FRONTEND=noninteractive
+    export TZ=America/Los_Angeles
+    if [[ $(cat /etc/timezone) != "$TZ" ]]; then 
+        sudo apt-get update
+        sudo apt-get install -y tzdata  
+        sudo ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
+        echo "$TZ" | sudo tee /etc/timezone >/dev/null
+        sudo dpkg-reconfigure -f noninteractive tzdata
+    fi 
+fi 
+
 if [[ -z $(echo "$PATH" | grep "$HOME/.local/bin") ]]; then 
     echo "" >> $HOME/.bashrc
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> $HOME/.bashrc 
@@ -167,40 +179,6 @@ else
     else
         sudo_access=
     fi 
-fi 
-
-if [[ $sudo_access == yes ]]; then 
-    if [[ $booted_with_systemd == yes ]]; then 
-        if [[ -e /etc/timezone ]]; then 
-            etc_timezone=$(tr -d ' \t\r\n' </etc/timezone 2>/dev/null || true)
-            localtime=$(readlink -f /etc/localtime 2>/dev/null || true)
-            tz_localtime=""
-            if [[ "$localtime" == /usr/share/zoneinfo/* ]]; then  
-                tz_localtime="${localtime#/usr/share/zoneinfo/}"
-            fi 
-            if [[ ! -z "$tz_localtime" && ( -z "$etc_timezone" || "$etc_timezone" != "$tz_localtime" ) ]]; then
-                echo "Local timezone: $tz_localtime"
-                echo " /etc/timezone: $etc_timezone"
-                read -p "Update /etc/timezone? [Yes/no]: " adjust_tz
-                if [[ $adjust_tz =~ ^[[:space:]]*([yY]([eE][sS])?)?[[:space:]]*$ ]]; then
-                    sudo timedatectl set-timezone "$tz_localtime" 
-                    sudo ln -sf "/usr/share/zoneinfo/$tz_localtime" /etc/localtime
-                    echo "$tz_localtime" | sudo tee /etc/timezone >/dev/null
-                fi 
-            fi
-        fi 
-
-        timedatectl
-        echo "If machine clock is behind, apt refuses to use some repos."
-        read -p "Is the local time correct? [Yes/no]: " time_correct
-        if [[ $time_correct =~ ^[[:space:]]*([nN]|[nN][oO])[[:space:]]*$ ]]; then 
-            read -e -i "$(date '+%F %T')" -p "The correct local time: " corrected_time
-            sudo date -s "$corrected_time"
-            sudo apt update 
-        fi 
-    fi 
-else
-    echo "Time zone check, skipped!"
 fi 
 
 if [[ $sudo_access == yes && $EUID != 0 ]]; then 
