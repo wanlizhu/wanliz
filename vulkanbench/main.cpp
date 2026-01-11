@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
         ("n,nodisplay", "Run in offscreen mode", cxxopts::value<bool>()->default_value("false"))
         ("p,profile", "Submit N times for PI profiling", cxxopts::value<int>()->default_value("0"))
         ("d,device", "GPU device index to use", cxxopts::value<int>()->default_value("-1"))
-        ("g,group-size", "Size of src/dst buffer/image group", cxxopts::value<int>()->default_value("100"))
+        ("g,group-size", "Size of src/dst buffer/image group", cxxopts::value<int>()->default_value("10"))
         ("s,size", "Size in MB of src/dst buffer/image group", cxxopts::value<int>()->default_value("512"))
         ("l,loops", "The number of loops to run for average value", cxxopts::value<int>()->default_value("10"));
     VK_config::args = options.parse(argc, argv);

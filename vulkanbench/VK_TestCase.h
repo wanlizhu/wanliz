@@ -4,7 +4,7 @@
 #include "objects/VK_image.h"
 #include "objects/VK_buffer.h"
 
-#define MAX_CMDBUF_SIZE 1000
+#define MAX_CMDBUF_SIZE 100
 
 struct VK_TestCase_memcopy {
     VK_TestCase_memcopy(VK_device& device);
