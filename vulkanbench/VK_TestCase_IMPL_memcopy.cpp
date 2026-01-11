@@ -175,7 +175,7 @@ void VK_TestCase_memcopy::subtest_buf2img_profile(VK_buffer_group& src_buffers) 
             speed.gpu_speed
         );
         m_device.cmdqueue.free_semaphores_bound_for(NULL);
-        std::vector<VK_gpu_timer> timers;
+        printf("\n");
     } while (VK_config::opt_as_bool("endless"));
 
     m_resultsTable.clear();
