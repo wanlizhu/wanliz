@@ -65,6 +65,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <X11/Xlib.h>
 #include <vulkan/vulkan_xlib.h>
 #undef Bool
@@ -88,6 +89,8 @@ enum class VK_color {
 
 struct VK_config {
     static cxxopts::ParseResult args;
+    static volatile sig_atomic_t shutdown_requested;
+    static void install_signal_handlers();
     static bool opt_starts_with(const char* name, const char* prefix);
     static bool opt_starts_with(const char* name, const std::vector<const char*>& prefixList);
     static std::string opt_substr_before(const char* name, const char* separator);

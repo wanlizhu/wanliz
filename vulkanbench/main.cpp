@@ -3,6 +3,8 @@
 
 
 int main(int argc, char **argv) {
+    VK_config::install_signal_handlers();
+
     cxxopts::Options options("vulkanbench", "Vulkan benchmark app for Linux and Windows platforms");
     options.add_options("global options")
         ("t,testcase", "Test case name to run", cxxopts::value<std::string>()->default_value("memcopy"))

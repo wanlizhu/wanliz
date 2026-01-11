@@ -2,6 +2,23 @@
 #include "VK_device.h"
 
 cxxopts::ParseResult VK_config::args;
+volatile sig_atomic_t VK_config::shutdown_requested = 0;
+
+static void signal_handler(int signum) {
+    if (signum == SIGINT || signum == SIGTERM) {
+        VK_config::shutdown_requested = 1;
+        printf("\nShutdown requested, finishing current operation...\n");
+    }
+}
+
+void VK_config::install_signal_handlers() {
+    struct sigaction sa;
+    sa.sa_handler = signal_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, nullptr);
+    sigaction(SIGTERM, &sa, nullptr);
+}
 
 VK_gpu_timer::VK_gpu_timer(VK_device* device_ptr) {
     m_device_ptr = device_ptr;
