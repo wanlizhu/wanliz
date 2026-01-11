@@ -284,22 +284,35 @@ remove_nvidia_module() {
 }
 
 download_nvidia_driver_version() {
-    [[ -z $(which wget) ]] && sudo apt install -y wget
-    rm -f  $HOME/NVIDIA-Linux-$(uname -m)-$1-release.run
-    rm -f  $HOME/tests-Linux-$(uname -m)-$1-release.tar
-    rm -rf $HOME/tests-Linux-$(uname -m)-$1-release 
-    echo "Downloading ~/NVIDIA-Linux-$(uname -m)-$1-release.run ..."
+    version=$1
+    config=$2
+    if [[ -z $1 || -z $config ]]; then 
+        echo "No version or config specified!"
+        return 1
+    fi 
 
-    version_folder=http://linuxqa/builds/release/display/$(uname -m)/$1
-    if wget -S --spider $version_folder; then 
-        wget -O $HOME/NVIDIA-Linux-$(uname -m)-$1-release.run http://linuxqa/builds/release/display/$(uname -m)/$1/NVIDIA-Linux-$(uname -m)-$1.run || return 1 
-        wget -O $HOME/tests-Linux-$(uname -m)-$1-release.tar http://linuxqa/builds/release/display/$(uname -m)/$1/tests-Linux-$(uname -m).tar || true 
+    [[ -z $(which wget) ]] && sudo apt install -y wget
+    rm -f  $HOME/NVIDIA-Linux-$(uname -m)-$version-$config.run
+    rm -f  $HOME/tests-Linux-$(uname -m)-$version-$config.tar
+    rm -rf $HOME/tests-Linux-$(uname -m)-$version-$config 
+    echo "Downloading ~/NVIDIA-Linux-$(uname -m)-$version-$config.run ..."
+
+    if [[ $config == release ]]; then 
+        config_version=$version 
     else
-        echo "http://linuxqa/builds/release/display/$(uname -m)/$1 is not reachable"
+        config_version=$config/$version 
+    fi 
+
+    version_folder=http://linuxqa/builds/release/display/$(uname -m)/$config_version
+    if wget -S --spider $version_folder; then 
+        wget -O $HOME/NVIDIA-Linux-$(uname -m)-$version-$config.run http://linuxqa/builds/release/display/$(uname -m)/$config_version/NVIDIA-Linux-$(uname -m)-$version.run || return 1 
+        wget -O $HOME/tests-Linux-$(uname -m)-$version-$config.tar http://linuxqa/builds/release/display/$(uname -m)/$config_version/tests-Linux-$(uname -m).tar || true 
+    else
+        echo "http://linuxqa/builds/release/display/$(uname -m)/$config_version is not reachable"
         if [[ -d /mnt/builds/release ]]; then 
             echo "Retry with /mnt/builds"
-            rsync -Pah /mnt/builds/release/display/$(uname -m)/$1/NVIDIA-Linux-$(uname -m)-$1.run $HOME/NVIDIA-Linux-$(uname -m)-$1-release.run || return 1
-            rsync -Pah /mnt/builds/release/display/$(uname -m)/$1/tests-Linux-$(uname -m).tar $HOME/tests-Linux-$(uname -m)-$1-release.tar || return 1
+            rsync -Pah /mnt/builds/release/display/$(uname -m)/$config_version/NVIDIA-Linux-$(uname -m)-$version.run $HOME/NVIDIA-Linux-$(uname -m)-$version-$config.run || return 1
+            rsync -Pah /mnt/builds/release/display/$(uname -m)/$config_version/tests-Linux-$(uname -m).tar $HOME/tests-Linux-$(uname -m)-$version-$config.tar || return 1
         else
             return 1
         fi 
@@ -323,9 +336,11 @@ install_nvidia_driver() {
         if [[ -z $no_kernel_modules ]]; then 
             remove_nvidia_module || return 1
         fi 
+
         chmod +x $nvpkg 2>/dev/null 
         sudo $nvpkg $@ $forced_args || return 1
         echo "Driver installed!"
+
         tests_tarball=${nvpkg/NVIDIA/tests}
         tests_tarball=${tests_tarball/%.run/.tar}
         if [[ -e $tests_tarball ]]; then 
@@ -339,11 +354,25 @@ install_nvidia_driver() {
             popd >/dev/null 
         fi 
     else
-        version=$1; shift 
-        if download_nvidia_driver_version $version; then 
-            install_nvidia_driver $HOME/NVIDIA-Linux-$(uname -m)-$version-release.run $@
+        version=
+        config=release
+        while [[ $# -gt 0 ]]; do
+            case $1 in
+                debug|release|develop) config=$1 ;;
+                [0-9]*) version=$1 ;;
+                -*) break ;;
+            esac
+            shift 
+        done
+        if [[ -z $version ]]; then 
+            echo "No version specified!"
+            return 1
+        fi 
+
+        if download_nvidia_driver_version $version $config; then 
+            install_nvidia_driver $HOME/NVIDIA-Linux-$(uname -m)-$version-$config.run $@
         else 
-            sudo /mnt/linuxqa/nvt.sh drivers $version $@ || return 1
+            sudo /mnt/linuxqa/nvt.sh drivers $version $config $@ || return 1
         fi 
     fi 
 }
