@@ -11,7 +11,7 @@ void VK_TestCase_memcopy::run_subtest(const std::string& name) {
         "Subtest Name", "Size (MB)", "Src Mem Flags", "Dst Mem Flags", "CPU (GB/s)", "GPU (GB/s)"
     });
 
-    if (name.empty() || name == "buf2bug") {
+    if (name.empty() || name == "buf2buf") {
         subtest_buf2buf();
     }
     if (name.empty() || name == "buf2img") {
@@ -53,11 +53,10 @@ void VK_TestCase_memcopy::subtest_buf2buf_profile(VK_buffer_group& src_buffers) 
         VK_createInfo_memType::init_with_flags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
     );
 
-    std::cout << "Running buffer->buffer for " << VK_config::opt_as_int("profile") << " seconds ...\n";
+    std::cout << "Running buffer->buffer for " << VK_config::opt_as_int("profile") << " times ...\n";
     std::vector<VK_gpu_timer> timers;
 
-    auto start_time = std::chrono::steady_clock::now();
-    while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(VK_config::opt_as_int("profile"))) {
+    for (int i = 0; i < VK_config::opt_as_int("profile"); i++) {
         VkCommandBuffer cmdbuf = m_device.cmdqueue.alloc_and_begin_command_buffer("buf2buf:profile");
         for (int i = 0; i < MAX_CMDBUF_SIZE; i++) {
             auto timer = dst_buffers.random_pick().copy_from_buffer(src_buffers.random_pick(), cmdbuf);
@@ -153,11 +152,10 @@ void VK_TestCase_memcopy::subtest_buf2img_profile(VK_buffer_group& src_buffers) 
         VK_IMAGE_TILING_LINEAR
     );
 
-    std::cout << "Running buffer->image  for " << VK_config::opt_as_int("profile") << " seconds ...\n";
+    std::cout << "Running buffer->image  for " << VK_config::opt_as_int("profile") << " times ...\n";
     std::vector<VK_gpu_timer> timers;
 
-    auto start_time = std::chrono::steady_clock::now();
-    while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(VK_config::opt_as_int("profile"))) {
+    for (int i = 0; i < VK_config::opt_as_int("profile"); i++) {
         VkCommandBuffer cmdbuf = m_device.cmdqueue.alloc_and_begin_command_buffer("buf2img:profile");
         for (int i = 0; i < MAX_CMDBUF_SIZE; i++) {
             auto timer = dst_images.random_pick().copy_from_buffer(src_buffers.random_pick(), cmdbuf);
@@ -257,11 +255,10 @@ void VK_TestCase_memcopy::subtest_img2img_profile(VK_image_group& src_images) {
         VK_IMAGE_TILING_LINEAR
     );
 
-    std::cout << "Running image->image   for " << VK_config::opt_as_int("profile") << " seconds ...\n";
+    std::cout << "Running image->image   for " << VK_config::opt_as_int("profile") << " times ...\n";
     std::vector<VK_gpu_timer> timers;
 
-    auto start_time = std::chrono::steady_clock::now();
-    while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(VK_config::opt_as_int("profile"))) {
+    for (int i = 0; i < VK_config::opt_as_int("profile"); i++) {
         VkCommandBuffer cmdbuf = m_device.cmdqueue.alloc_and_begin_command_buffer("img2img:profile");
         for (int i = 0; i < MAX_CMDBUF_SIZE; i++) {
             auto timer = dst_images.random_pick().copy_from_image(src_images.random_pick(), cmdbuf);
