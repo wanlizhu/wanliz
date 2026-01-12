@@ -4,7 +4,7 @@ trap 'exit 130' INT
 if [[ $1 == p4env ]]; then 
     echo 'export P4PORT="p4proxy-sc.nvidia.com:2006"
 export P4USER="wanliz"
-export P4CLIENT="wanliz_sw_linux"
+export P4CLIENT="wanliz_sw_windows_wsl2"
 export P4ROOT="/home/wanliz/sw"'
 fi 
 
