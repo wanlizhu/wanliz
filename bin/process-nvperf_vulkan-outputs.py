@@ -60,4 +60,7 @@ def generate_comparison_in_csv(in_baseline, in_test):
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         raise SystemExit(f"Usgae: {sys.argv[0]} <baseline> <test>")
+    print(f"Base output: {sys.argv[1]}")
+    print(f"Test output: {sys.argv[2]}")
+    input("Press [Enter] to continue: ")
     generate_comparison_in_csv(sys.argv[1], sys.argv[2])
