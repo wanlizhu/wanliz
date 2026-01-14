@@ -3,7 +3,7 @@ import csv
 import re
 import sys 
 from collections import defaultdict
-
+from decimal import Decimal
 
 def generate_comparison_in_csv(in_baseline, in_test):
     test_data = []
@@ -32,15 +32,18 @@ def generate_comparison_in_csv(in_baseline, in_test):
             if any(record.get("name") == name for record in test_data):
                 test_record = next((record for record in test_data if record.get("name") == name), None)
                 value_test = "N/A" if test_record is None else test_record.get("value")
+                value_test = Decimal(value_test)
 
             tags = "|".join(line_base.split(" = ")[0].split("|")[1:])
-            value_base = line_base.split(" = ")[1].split(" ")[0]
+            value_base = Decimal(line_base.split(" = ")[1].split(" ")[0])
+            test_base_pct = (value_test - value_base) / value_base * Decimal("100")
             value_unit = line_base.split(" ")[-1][0:-1]
             comparison_data.append({
                 "Name": name,
                 "Tags": tags,
-                "Base Value": value_base,
-                "Test Value": value_test,
+                "Base Value": format(value_base, "f"),
+                "Test Value": format(value_test, "f"),
+                "Test vs Base": f"{test_base_pct:.2f}%",
                 "Unit": value_unit
             })
             base_records_count += 1
@@ -49,7 +52,7 @@ def generate_comparison_in_csv(in_baseline, in_test):
     print(f"Found {base_records_count} base records ({counterparts_count} counterparts in test records)")
 
     out_csv_filename = "nvperf_vulkan__base_vs_test.csv"
-    column_names = ["Name", "Tags", "Base Value", "Test Value", "Unit"]
+    column_names = ["Name", "Tags", "Base Value", "Test Value", "Test vs Base", "Unit"]
     with open(out_csv_filename, "w", newline="", encoding="utf-8") as out_csv_file:
         writer = csv.DictWriter(out_csv_file, fieldnames=column_names)
         writer.writeheader()
