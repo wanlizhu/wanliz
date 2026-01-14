@@ -36,7 +36,7 @@ def generate_comparison_in_csv(in_baseline, in_test):
 
             tags = "|".join(line_base.split(" = ")[0].split("|")[1:])
             value_base = Decimal(line_base.split(" = ")[1].split(" ")[0])
-            test_base_pct = (value_test - value_base) / value_base * Decimal("100")
+            test_base_pct = (value_test / value_base) * Decimal("100")
             value_unit = line_base.split(" ")[-1][0:-1]
             comparison_data.append({
                 "Name": name,
