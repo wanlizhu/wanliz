@@ -92,14 +92,18 @@ subcmd_env() {
         export P4ROOT=/home/wanliz/sw
         export P4IGNORE=$HOME/.p4ignore
         export NVM_GTLAPI_TOKEN='eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjNlMGZkYWU4LWM5YmUtNDgwOS1iMTQ3LTJiN2UxNDAwOTAwMyIsInNlY3JldCI6IndEUU1uMUdyT1RaY0Z0aHFXUThQT2RiS3lGZ0t5NUpaalU3QWFweUxGSmM9In0.Iad8z1fcSjA6P7SHIluppA_tYzOGxGv4koMyNawvERQ' 
-        echo "Export env vars for P4 client: $P4CLIENT -- [OK]"
-        echo "Export env var: NVM_GTLAPI_TOKEN -- [OK]"         
+        if [[ $USER == wanliz ]]; then 
+            echo "Export env vars for P4 client: $P4CLIENT -- [OK]"
+            echo "Export env var: NVM_GTLAPI_TOKEN -- [OK]" 
+        fi         
         if [[ -d /mnt/c/Users ]]; then 
             export P4CLIENT=wanliz_sw_windows_wsl2
             export GDK_SCALE=1
             export GDK_DPI_SCALE=1.25
             export QT_SCALE_FACTOR=1.25   
-            echo "Export env vars for WSL2 -- [OK]"
+            if [[ $USER == wanliz ]]; then 
+                echo "Export env vars for WSL2 -- [OK]"
+            fi 
         fi
     fi 
 
@@ -108,17 +112,17 @@ subcmd_env() {
             umd) 
                 export LD_LIBRARY_PATH=$HOME/NVIDIA-Linux-UMD-override${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} 
                 export VK_ICD_FILENAMES=$HOME/NVIDIA-Linux-UMD-override/nvidia_icd.json
-                echo "Export env vars to enable umd overrides -- [OK]"
+                [[ $USER == wanliz ]] && echo "Export env vars to enable umd overrides -- [OK]"
             ;;
             pbd) 
                 export __GL_ac12fedf=./pushbuffer-dump-%03d.xml 
                 export __GL_ac12fede=0x10183
-                echo "Export env vars to enable pushbuffer dump -- [OK]"
+                [[ $USER == wanliz ]] && echo "Export env vars to enable pushbuffer dump -- [OK]"
             ;;
             rmlog) 
                 export __GL_DEBUG_LEVEL=30 
                 export __GL_DEBUG_MASK=RM
-                echo "Export env vars to enable RM call logs -- [OK]"
+                [[ $USER == wanliz ]] && echo "Export env vars to enable RM call logs -- [OK]"
             ;;
             --) shift; break ;; 
             *) break ;;
