@@ -13,8 +13,8 @@ def get_value_of_test(test_data_dict, index, name):
         value = Decimal(value)
     return value
 
-def percentage_of_test_vs_base(out_record, test_name):
-    test_value = out_record.get(test_name)
+def percentage_of_test_vs_base(out_record, index):
+    test_value = out_record.get(f"Test-{index} Value")
     base_value = out_record.get("Base Value")
     percentage = (Decimal(test_value) / Decimal(base_value)) * Decimal(100)
     return f"{percentage:.2f}%"
@@ -34,35 +34,30 @@ def generate_comparison_in_csv(in_baseline, in_tests: list):
         print(f"Found {len(test_data_dict[i])} records in test {i}")
     
     comparison_data = []
-    tests_count = len(test_data_dict)
     with open(in_baseline, "r") as file_base:
         for line_base in file_base:
             line_base = line_base.strip()
             if not line_base.startswith("["):
                 continue 
             name = line_base.split("|")[0].split(" ")[1]
-            out_record = defaultdict({
+            out_record = {
                 "Test Case": name,
                 "Tags": "|".join(line_base.split(" = ")[0].split("|")[1:]),
                 "Base Value": format(Decimal(line_base.split(" = ")[1].split(" ")[0]), "f"),
-                "Test-1 Value": format(Decimal(get_value_of_test(test_data_dict, 1, name)), "f"),
                 "Unit": line_base.split(" ")[-1][0:-1]
-            })
-            if tests_count == 2:
-                out_record["Test-2 Value"] = format(Decimal(get_value_of_test(test_data_dict, 2, name)), "f")
-            if out_record.get("Test-1 Value"):
-                out_record["Test-1 vs Base"] = percentage_of_test_vs_base(out_record, "Test-1 Value")
-            if out_record.get("Test-2 Value"):
-                out_record["Test-2 vs Base"] = percentage_of_test_vs_base(out_record, "Test-2 Value")
+            }
+            for i in range(1, len(test_data_dict) + 1):
+                out_record[f"Test-{i} Value"] = format(Decimal(get_value_of_test(test_data_dict, i, name)), "f")
+                out_record[f"Test-{i} vs Base"] = percentage_of_test_vs_base(out_record, i)
             comparison_data.append(out_record)
     print(f"Found {len(comparison_data)} base records")
 
-    if tests_count == 2:
-        column_names = ["Name", "Tags", "Base Value", "Test-1 Value", "Test-2 Value", "Test-1 vs Base", "Test-2 vs Base", "Unit"]
-    else:
-        column_names = ["Name", "Tags", "Base Value", "Test-1 Value", "Test-1 vs Base", "Unit"]
-    
     out_csv_filename = "nvperf_vulkan__base_vs_test.csv"
+    column_names = ["Test Case", "Tags", "Base Value"]
+    for i in range(1, len(test_data_dict) + 1):
+        column_names.append(f"Test-{i} Value")
+        column_names.append(f"Test-{i} vs Base")
+    column_names.append("Unit")
     with open(out_csv_filename, "w", newline="", encoding="utf-8") as out_csv_file:
         writer = csv.DictWriter(out_csv_file, fieldnames=column_names)
         writer.writeheader()
