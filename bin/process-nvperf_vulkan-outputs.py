@@ -20,7 +20,7 @@ def percentage_of_test_vs_base(out_record, test_name):
     return f"{percentage:.2f}%"
 
 def generate_comparison_in_csv(in_baseline, in_tests: list):
-    test_data_dict = {}
+    test_data_dict = defaultdict(list)
     for i, test in enumerate(in_tests, start=1):
         with open(test, "r") as file_test:
             for line_test in file_test:
@@ -31,7 +31,7 @@ def generate_comparison_in_csv(in_baseline, in_tests: list):
                     "name": line_test.split("|")[0].split(" ")[1],
                     "value": line_test.split(" = ")[1].split(" ")[0]
                 })
-    print(f"Found {len(test_data_dict[i])} records in test {i}")
+        print(f"Found {len(test_data_dict[i])} records in test {i}")
     
     comparison_data = []
     tests_count = len(test_data_dict)
@@ -41,13 +41,13 @@ def generate_comparison_in_csv(in_baseline, in_tests: list):
             if not line_base.startswith("["):
                 continue 
             name = line_base.split("|")[0].split(" ")[1]
-            out_record = {
+            out_record = defaultdict({
                 "Test Case": name,
                 "Tags": "|".join(line_base.split(" = ")[0].split("|")[1:]),
                 "Base Value": format(Decimal(line_base.split(" = ")[1].split(" ")[0]), "f"),
                 "Test-1 Value": format(Decimal(get_value_of_test(test_data_dict, 1, name)), "f"),
                 "Unit": line_base.split(" ")[-1][0:-1]
-            }
+            })
             if tests_count == 2:
                 out_record["Test-2 Value"] = format(Decimal(get_value_of_test(test_data_dict, 2, name)), "f")
             if out_record.get("Test-1 Value"):
