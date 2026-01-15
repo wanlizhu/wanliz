@@ -5,31 +5,19 @@ import sys
 from collections import defaultdict
 from decimal import Decimal
 
-def generate_comparison_base_vs_test1():
-    name = line_base.split("|")[0].split(" ")[1]
-    value_test = "N/A"
-    if any(record.get("name") == name for record in test_data):
-        test_record = next((record for record in test_data if record.get("name") == name), None)
-        value_test = "N/A" if test_record is None else test_record.get("value")
-        value_test = Decimal(value_test)
+def get_value_of_test(test_data_dict, index, name):
+    value = "N/A"
+    if any(record.get("name") == name for record in test_data_dict[index]):
+        test_record = next((record for record in test_data_dict[index] if record.get("name") == name), None)
+        value = "N/A" if test_record is None else test_record.get("value")
+        value = Decimal(value)
+    return value
 
-    tags = "|".join(line_base.split(" = ")[0].split("|")[1:])
-    value_base = Decimal(line_base.split(" = ")[1].split(" ")[0])
-    test_base_pct = (value_test / value_base) * Decimal("100")
-    value_unit = line_base.split(" ")[-1][0:-1]
-    comparison_data.append({
-        "Name": name,
-        "Tags": tags,
-        "Base Value": format(value_base, "f"),
-        "Test Value": format(value_test, "f"),
-        "Test vs Base": f"{test_base_pct:.2f}%",
-        "Unit": value_unit
-    })
-    base_records_count += 1
-    counterparts_count += 0 if value_test == "N/A" else 1
-
-def generate_comparison_base_vs_test1_and_test2():
-    pass
+def percentage_of_test_vs_base(out_record, test_name):
+    test_value = out_record.get(test_name)
+    base_value = out_record.get("Base Value")
+    percentage = (Decimal(test_value) / Decimal(base_value)) * Decimal(100)
+    return f"{percentage:.2f}%"
 
 def generate_comparison_in_csv(in_baseline, in_tests: list):
     test_data_dict = {}
@@ -46,18 +34,34 @@ def generate_comparison_in_csv(in_baseline, in_tests: list):
     print(f"Found {len(test_data_dict[i])} records in test {i}")
     
     comparison_data = []
-    base_records_count = 0
-    column_names = ["Name", "Tags", "Base Value", "Test Value", "Test vs Base", "Unit"]
+    tests_count = len(test_data_dict)
     with open(in_baseline, "r") as file_base:
         for line_base in file_base:
             line_base = line_base.strip()
             if not line_base.startswith("["):
                 continue 
-            
-            
+            name = line_base.split("|")[0].split(" ")[1]
+            out_record = {
+                "Test Case": name,
+                "Tags": "|".join(line_base.split(" = ")[0].split("|")[1:]),
+                "Base Value": format(Decimal(line_base.split(" = ")[1].split(" ")[0]), "f"),
+                "Test-1 Value": format(Decimal(get_value_of_test(test_data_dict, 1, name)), "f"),
+                "Unit": line_base.split(" ")[-1][0:-1]
+            }
+            if tests_count == 2:
+                out_record["Test-2 Value"] = format(Decimal(get_value_of_test(test_data_dict, 2, name)), "f")
+            if out_record.get("Test-1 Value"):
+                out_record["Test-1 vs Base"] = percentage_of_test_vs_base(out_record, "Test-1 Value")
+            if out_record.get("Test-2 Value"):
+                out_record["Test-2 vs Base"] = percentage_of_test_vs_base(out_record, "Test-2 Value")
+            comparison_data.append(out_record)
+    print(f"Found {len(comparison_data)} base records")
 
-    print(f"Found {base_records_count} base records")
-
+    if tests_count == 2:
+        column_names = ["Name", "Tags", "Base Value", "Test-1 Value", "Test-2 Value", "Test-1 vs Base", "Test-2 vs Base", "Unit"]
+    else:
+        column_names = ["Name", "Tags", "Base Value", "Test-1 Value", "Test-1 vs Base", "Unit"]
+    
     out_csv_filename = "nvperf_vulkan__base_vs_test.csv"
     with open(out_csv_filename, "w", newline="", encoding="utf-8") as out_csv_file:
         writer = csv.DictWriter(out_csv_file, fieldnames=column_names)
@@ -68,7 +72,7 @@ def generate_comparison_in_csv(in_baseline, in_tests: list):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        raise SystemExit(f"Usgae: {sys.argv[0]} <baseline> <test1> [test2 ...]")
+        raise SystemExit(f"Usgae: {sys.argv[0]} <baseline> <test1> [test2]")
     
     print(f"  Base output: {sys.argv[1]}")
     for i, test in enumerate(sys.argv[2:], start=1):
