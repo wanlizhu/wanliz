@@ -458,7 +458,8 @@ subcmd_viewperf() {
         *) return 1 ;;
     esac 
     pushd ~ >/dev/null 
-    ./viewperf2020v3/viewperf/bin/viewperf $viewset -resolution 3840x2160
+    rm -rf ./viewperf2020v3/results/$vsname/results.xml
+    ./viewperf2020v3/viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml -resolution 3840x2160
     if [[ -f ./viewperf2020v3/results/$vsname/results.xml ]]; then 
         cat ./viewperf2020v3/results/$vsname/results.xml
     fi 
