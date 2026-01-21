@@ -452,19 +452,37 @@ subcmd_docker() {
 }
 
 subcmd_viewperf() {
-    viewset=$1
-    shift 
-    case $viewset in 
-        maya) vsname="maya-06" ;;
-        *) return 1 ;;
-    esac 
-    pushd $HOME/viewperf2020v3 >/dev/null 
-    rm -rf ./results/$vsname/results.xml
-    ./viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml $@ -resolution 3840x2160
-    if [[ -f ./results/$vsname/results.xml ]]; then 
-        cat ./results/$vsname/results.xml
+    if [[ -z $1 ]]; then 
+        rm -rf $HOME/viewperf2020v3/results
+        subcmd_viewperf catia
+        subcmd_viewperf creo
+        subcmd_viewperf energy
+        subcmd_viewperf maya
+        subcmd_viewperf medical
+        subcmd_viewperf snx
+        subcmd_viewperf sw
+    else 
+        viewset=$1
+        shift 
+        case $viewset in 
+            catia) vsname="catia-06" ;;
+            creo) vsname="creo-03" ;;
+            energy) vsname="energy-03" ;;
+            maya) vsname="maya-06" ;;
+            medical) vsname="medical-03" ;;
+            snx) vsname="snx-04" ;;
+            sw) vsname="solidworks-07" ;;
+            *) return 1 ;;
+        esac 
+        pushd $HOME/viewperf2020v3 >/dev/null 
+        rm -rf ./results/$vsname/results.xml
+        mkdir -p ./results/$vsname
+        ./viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml $@ -resolution 3840x2160
+        if [[ -f ./results/$vsname/results.xml ]]; then 
+            cat ./results/$vsname/results.xml
+        fi 
+        popd >/dev/null 
     fi 
-    popd >/dev/null 
 }
 
 case $1 in 
