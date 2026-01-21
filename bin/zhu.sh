@@ -452,6 +452,10 @@ subcmd_docker() {
 }
 
 subcmd_viewperf() {
+    if [[ -z $DISPLAY ]]; then 
+        echo "DISPLAY fallback to :0"
+        export DISPLAY=:0
+    fi 
     if [[ -z $1 ]]; then 
         rm -rf $HOME/viewperf2020v3/results
         subcmd_viewperf catia
