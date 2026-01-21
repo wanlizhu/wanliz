@@ -190,9 +190,11 @@ if [[ ! -z $REGEN_CLANGD_DB && $(basename $(pwd)) == OpenGL ]]; then
     fi 
 fi 
 
-if [[ $TARGET == drivers || $TARGET == opengl ]]; then 
-    MY_IP=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
-    NVSRC_VERSION=$(sed -n 's/^[[:space:]]*#define[[:space:]]\+NV_VERSION_STRING[[:space:]]\+"\([^"]\+\)".*/\1/p' /home/wanliz/sw/branch/$BRANCH/drivers/common/inc/nvUnixVersion.h | head -n1)
+MY_IP=$(ip -4 route get $(getent ahostsv4 1.1.1.1 | awk 'NR==1{print $1}') | sed -n 's/.* src \([0-9.]\+\).*/\1/p')
+NVSRC_VERSION=$(sed -n 's/^[[:space:]]*#define[[:space:]]\+NV_VERSION_STRING[[:space:]]\+"\([^"]\+\)".*/\1/p' /home/wanliz/sw/branch/$BRANCH/drivers/common/inc/nvUnixVersion.h | head -n1)
+if [[ $TARGET == drivers ]]; then 
+    echo "zhu recv drvpkg from $USER@$MY_IP branch=$BRANCH version=$NVSRC_VERSION $ARCH $CONFIG"
+elif [[ $TARGET == opengl ]]; then 
     echo "zhu recv umd from $USER@$MY_IP branch=$BRANCH version=$NVSRC_VERSION $ARCH $CONFIG"
 fi 
 
