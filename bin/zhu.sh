@@ -451,6 +451,20 @@ subcmd_docker() {
     fi 
 }
 
+subcmd_viewperf() {
+    viewset=$1
+    case $viewset in 
+        maya) vsname="maya-06" ;;
+        *) return 1 ;;
+    esac 
+    pushd ~ >/dev/null 
+    ./viewperf2020v3/viewperf/bin/viewperf $viewset -resolution 3840x2160
+    if [[ -f ./viewperf2020v3/results/$vsname/results.xml ]]; then 
+        cat ./viewperf2020v3/results/$vsname/results.xml
+    fi 
+    popd >/dev/null 
+}
+
 case $1 in 
     wsl2backup) shift; subcmd_backup_wsl2_home ;;
     pl)  shift; subcmd_wanliz_git pull $@ ;;
@@ -464,4 +478,5 @@ case $1 in
     recv) shift; subcmd_recv $@ ;;
     driver) shift; subcmd_driver $@ ;;
     docker) shift; subcmd_docker $@ ;;
+    viewperf) shift; subcmd_viewperf $@ ;;
 esac 
