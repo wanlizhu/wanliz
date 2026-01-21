@@ -453,13 +453,14 @@ subcmd_docker() {
 
 subcmd_viewperf() {
     viewset=$1
+    shift 
     case $viewset in 
         maya) vsname="maya-06" ;;
         *) return 1 ;;
     esac 
     pushd $HOME/viewperf2020v3 >/dev/null 
     rm -rf ./results/$vsname/results.xml
-    ./viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml -resolution 3840x2160
+    ./viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml $@ -resolution 3840x2160
     if [[ -f ./results/$vsname/results.xml ]]; then 
         cat ./results/$vsname/results.xml
     fi 
