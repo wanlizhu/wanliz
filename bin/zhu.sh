@@ -457,11 +457,11 @@ subcmd_viewperf() {
         maya) vsname="maya-06" ;;
         *) return 1 ;;
     esac 
-    pushd ~ >/dev/null 
-    rm -rf ./viewperf2020v3/results/$vsname/results.xml
-    ./viewperf2020v3/viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml -resolution 3840x2160
-    if [[ -f ./viewperf2020v3/results/$vsname/results.xml ]]; then 
-        cat ./viewperf2020v3/results/$vsname/results.xml
+    pushd $HOME/viewperf2020v3 >/dev/null 
+    rm -rf ./results/$vsname/results.xml
+    ./viewperf/bin/viewperf viewsets/$viewset/config/$viewset.xml -resolution 3840x2160
+    if [[ -f ./results/$vsname/results.xml ]]; then 
+        cat ./results/$vsname/results.xml
     fi 
     popd >/dev/null 
 }
