@@ -42,10 +42,10 @@ NVMAKE_EXTRA_ARGS=
 DUPLICATED_BRANCH_ARGS=
 while [[ ! -z $1 ]]; do 
     case $1 in 
-        all|bugfix_main|r*)    BRANCH=$1 ;;
         drivers|opengl|glcore) TARGET=$1;                   DUPLICATED_BRANCH_ARGS+=" $1" ;;
         amd64|aarch64)         ARCH=$1;                     DUPLICATED_BRANCH_ARGS+=" $1" ;;
         debug|release|develop) CONFIG=$1;                   DUPLICATED_BRANCH_ARGS+=" $1" ;;
+        all|bugfix_main|r*)    BRANCH=$1 ;;
         -j[0-9]*)              THREADS=${1#-j};             DUPLICATED_BRANCH_ARGS+=" $1" ;;
         --cleanbuild)          CLEAN_BUILD="$1";            DUPLICATED_BRANCH_ARGS+=" $1" ;;
         --regen-clangd-db)     REGEN_CLANGD_DB="$1";        DUPLICATED_BRANCH_ARGS+=" $1" ;;
