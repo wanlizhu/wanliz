@@ -76,8 +76,10 @@ subcmd_sw() {
             find $HOME/sw/branch -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | 
             while IFS= read -r name; do 
                 filename=$HOME/sw/branch/$name/drivers/common/inc/nvUnixVersion.h
-                version=$(cat $filename | grep '#define NV_VERSION_STRING' | awk -F'"' '{print $2}')
-                echo "~/sw/branch/$name -> $version"
+                if [[ -f $filename ]]; then 
+                    version=$(cat $filename | grep '#define NV_VERSION_STRING' | awk -F'"' '{print $2}')
+                    echo "~/sw/branch/$name -> $version"
+                fi 
             done  
         ;;
         *) echo "Error: unknown arg \"$1\" for zhu sw"; return 1 ;;
