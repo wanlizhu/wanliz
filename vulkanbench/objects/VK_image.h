@@ -9,8 +9,10 @@ struct VK_image {
     VkImageAspectFlags aspectFlags = 0;
     VkFormat format = VK_FORMAT_UNDEFINED;
     VkImageLayout currentImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
     VkExtent2D extent = {};
     size_t sizeInBytes = 0;
+    size_t rowPitch = 0;
     VkDeviceMemory memory = NULL;
     VkMemoryPropertyFlags memoryFlags = 0;
     uint32_t memoryTypeIndex = UINT32_MAX;

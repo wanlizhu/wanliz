@@ -90,6 +90,19 @@ void VK_image::init(
         throw std::runtime_error("Failed to bind image memory");
     }
 
+    this->tiling = tiling;
+    if (tiling == VK_IMAGE_TILING_LINEAR) {
+        VkImageSubresource subresource = {};
+        subresource.aspectMask = aspectFlags;
+        subresource.mipLevel = 0;
+        subresource.arrayLayer = 0;
+        VkSubresourceLayout layout = {};
+        vkGetImageSubresourceLayout(device->handle, handle, &subresource, &layout);
+        rowPitch = layout.rowPitch;
+    } else {
+        rowPitch = 0;
+    }
+
     VkImageViewCreateInfo viewInfo = {};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = handle;
@@ -341,16 +354,35 @@ VK_gpu_timer VK_image::copy_from_buffer(VK_buffer& src, VkCommandBuffer cmdbuf) 
     VkImageLayout oldLayout = currentImageLayout;
     image_layout_transition(cmdbuf, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
+    uint32_t copyWidth = extent.width;
+    uint32_t copyHeight = extent.height;
+    uint32_t bufferRowLengthTexels = 0;
+
+    if (tiling == VK_IMAGE_TILING_LINEAR && rowPitch > 0) {
+        size_t bytesPerPixel = rowPitch / extent.width;
+        if (bytesPerPixel == 0) bytesPerPixel = 16;
+        bufferRowLengthTexels = static_cast<uint32_t>(rowPitch / bytesPerPixel);
+        size_t requiredBufferSize = rowPitch * extent.height;
+        if (src.sizeInBytes < requiredBufferSize) {
+            copyHeight = static_cast<uint32_t>(src.sizeInBytes / rowPitch);
+            if (copyHeight == 0) {
+                copyWidth = static_cast<uint32_t>(src.sizeInBytes / bytesPerPixel);
+                if (copyWidth > extent.width) copyWidth = extent.width;
+                copyHeight = 1;
+            }
+        }
+    }
+
     VkBufferImageCopy region = {};
     region.bufferOffset = 0;
-    region.bufferRowLength = 0;
+    region.bufferRowLength = bufferRowLengthTexels;
     region.bufferImageHeight = 0;
     region.imageSubresource.aspectMask = aspectFlags;
     region.imageSubresource.mipLevel = 0;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
     region.imageOffset = {0, 0, 0};
-    region.imageExtent = {extent.width, extent.height, 1};
+    region.imageExtent = {copyWidth, copyHeight, 1};
 
     timer.gpu_begin(cmdbuf);
     vkCmdCopyBufferToImage(

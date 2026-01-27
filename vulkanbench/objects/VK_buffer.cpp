@@ -245,20 +245,28 @@ VK_gpu_timer VK_buffer::copy_from_image(VK_image& src, VkCommandBuffer cmdbuf) {
     VkImageLayout oldLayout = src.currentImageLayout;
     src.image_layout_transition(cmdbuf, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-    size_t srcPixelCount = (size_t)src.extent.width * src.extent.height;
-    size_t pixelSize = (srcPixelCount > 0) ? (src.sizeInBytes / srcPixelCount) : 1;
-    size_t maxPixels = sizeInBytes / pixelSize;
-    
     uint32_t copyWidth = src.extent.width;
-    uint32_t copyHeight = (uint32_t)std::min((size_t)src.extent.height, maxPixels / copyWidth);
-    if (copyHeight == 0 && maxPixels > 0) {
-        copyWidth = (uint32_t)std::min((size_t)src.extent.width, maxPixels);
-        copyHeight = 1;
+    uint32_t copyHeight = src.extent.height;
+    uint32_t bufferRowLengthTexels = 0;
+
+    if (src.tiling == VK_IMAGE_TILING_LINEAR && src.rowPitch > 0) {
+        size_t bytesPerPixel = src.rowPitch / src.extent.width;
+        if (bytesPerPixel == 0) bytesPerPixel = 16;
+        bufferRowLengthTexels = static_cast<uint32_t>(src.rowPitch / bytesPerPixel);
+        size_t requiredBufferSize = src.rowPitch * src.extent.height;
+        if (sizeInBytes < requiredBufferSize) {
+            copyHeight = static_cast<uint32_t>(sizeInBytes / src.rowPitch);
+            if (copyHeight == 0) {
+                copyWidth = static_cast<uint32_t>(sizeInBytes / bytesPerPixel);
+                if (copyWidth > src.extent.width) copyWidth = src.extent.width;
+                copyHeight = 1;
+            }
+        }
     }
 
     VkBufferImageCopy region = {};
     region.bufferOffset = 0;
-    region.bufferRowLength = 0;
+    region.bufferRowLength = bufferRowLengthTexels;
     region.bufferImageHeight = 0;
     region.imageSubresource.aspectMask = src.aspectFlags;
     region.imageSubresource.mipLevel = 0;
