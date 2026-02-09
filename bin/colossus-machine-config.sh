@@ -30,8 +30,17 @@ sudo vim /etc/gdm3/custom.conf # to enable wayland
 echo 'options nvidia-drm modeset=1' | sudo tee /etc/modprobe.d/nvidia-kms.conf
 sudo update-initramfs -u -k all 
 sudo apt install -y gdm3 gnome-remote-desktop
+sudo systemctl set-default graphical.target
+sudo systemctl enable --now gdm
+sudo systemctl enable --now gnome-remote-desktop.service
+sudo apt install -y winpr3-utils
+sudo -u gnome-remote-desktop mkdir -p ~gnome-remote-desktop/.local/share/gnome-remote-desktop
+sudo -u gnome-remote-desktop winpr-makecert3 -silent -rdp -path ~gnome-remote-desktop/.local/share/gnome-remote-desktop tls
+sudo grdctl --system rdp set-tls-key  ~gnome-remote-desktop/.local/share/gnome-remote-desktop/tls.key
+sudo grdctl --system rdp set-tls-cert ~gnome-remote-desktop/.local/share/gnome-remote-desktop/tls.crt
+sudo grdctl --system rdp set-credentials wanliz zhujie
+sudo grdctl --system rdp enable
 sudo reboot 
-
 
 
 # make sure Xorg is running on nvidia gpu
