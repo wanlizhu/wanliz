@@ -22,7 +22,7 @@ sudo rmmod nvidia_drm nvidia_modeset nvidia_uvm nvidia
 sudo ./NVIDIA-Linux-
 sudo systemctl isolate graphical 
 
-# headless desktop sharing via RDP
+# wayland headless desktop sharing via RDP
 for f in /sys/class/drm/card*-*/status; do 
     printf "%-60s %s\n" "$f" "$(cat "$f" 2>/dev/null)"
 done
@@ -31,7 +31,7 @@ echo 'options nvidia-drm modeset=1' | sudo tee /etc/modprobe.d/nvidia-kms.conf
 sudo update-initramfs -u -k all 
 sudo apt install -y gdm3 gnome-remote-desktop
 sudo systemctl set-default graphical.target
-sudo systemctl enable --now gdm
+sudo systemctl enable --now gdm3
 sudo systemctl enable --now gnome-remote-desktop.service
 sudo apt install -y winpr3-utils
 sudo -u gnome-remote-desktop mkdir -p ~gnome-remote-desktop/.local/share/gnome-remote-desktop
@@ -42,6 +42,11 @@ sudo grdctl --system rdp set-credentials wanliz zhujie
 sudo grdctl --system rdp enable
 sudo reboot 
 
+# wayland headless desktop sharing via sunshine 
+sudo apt install -y libboost-all-dev pkg-config libcurl4-openssl-dev libminiupnpc-dev nvidia-cuda-toolkit libdrm-dev libcap-dev libva-dev libva-drm2 libglib2.0-dev libpipewire-0.3-dev libnotify-dev libayatana-appindicator3-dev npm nodejs libevdev-dev doxygen graphviz libsystemd-dev libopus-dev  libgbm-dev libxcb-xfixes0-dev libpulse-dev libnuma-dev nfs-common
+
+cd ~/Sunshine && mkdir build && cd build 
+cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_DOCS=OFF && cmake --build . -j$(nproc) && sudo cmake --build . --target install 
 
 # make sure Xorg is running on nvidia gpu
 sudo nvidia-xconfig -s -o /etc/X11/xorg.conf --force-generate --mode-debug --layout=Layout0 --render-accel --cool-bits=4 --mode-list=3840x2160 --depth 24 --no-ubb --x-screens-per-gpu=1 --no-separate-x-screens --busid=$(nvidia-xconfig --query-gpu-info | sed -n '/PCI BusID/{{s/^[^:]*:[[:space:]]*//;p;q}}') --connected-monitor=GPU-0.DFP-0 --custom-edid=GPU-0.DFP-0:/mnt/linuxqa/nvtest/pynv_files/edids_db/ASUSPB287_DP_3840x2160x60.000_1151.bin 
